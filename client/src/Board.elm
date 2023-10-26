@@ -200,79 +200,81 @@ drawTopLabel label p =
     drawTextLabel label p -5 -15
 
 
-viewEmptyBoard : List (Svg msg)
+viewEmptyBoard : Svg msg
 viewEmptyBoard =
-    [ -- interior polygon
-      rect
-        [ x "25"
-        , y "25"
-        , width "610"
-        , height "730"
-        , fill "#F0F0F0"
-        ]
-        []
-    , polygon
-        [ points
-            (coordsToPoints
-                [ Coord 1 1
-                , Coord 4 1
-                , Coord 7 4
-                , Coord 7 7
-                , Coord 4 7
-                , Coord 1 4
-                , Coord 1 1
-                ]
-            )
-        , Svg.Attributes.style "fill: white;"
-        ]
-        []
+    g []
+        ([ -- interior polygon
+           rect
+            [ x "25"
+            , y "25"
+            , width "610"
+            , height "730"
+            , fill "#F0F0F0"
+            ]
+            []
+         , polygon
+            [ points
+                (coordsToPoints
+                    [ Coord 1 1
+                    , Coord 4 1
+                    , Coord 7 4
+                    , Coord 7 7
+                    , Coord 4 7
+                    , Coord 1 4
+                    , Coord 1 1
+                    ]
+                )
+            , Svg.Attributes.style "fill: white;"
+            ]
+            []
 
-    -- lines
-    , drawLine (Coord 1 0) (Coord 1 5)
-    , drawLine (Coord 2 0) (Coord 2 6)
-    , drawLine (Coord 3 0) (Coord 3 7)
-    , drawLine (Coord 4 0) (Coord 4 8)
-    , drawLine (Coord 5 1) (Coord 5 8)
-    , drawLine (Coord 6 2) (Coord 6 8)
-    , drawLine (Coord 7 3) (Coord 7 8)
-    , drawLine (Coord 0 3) (Coord 5 8)
-    , drawLine (Coord 0 2) (Coord 6 8)
-    , drawLine (Coord 0 1) (Coord 7 8)
-    , drawLine (Coord 0 0) (Coord 8 8)
-    , drawLine (Coord 1 0) (Coord 8 7)
-    , drawLine (Coord 2 0) (Coord 8 6)
-    , drawLine (Coord 3 0) (Coord 8 5)
-    , drawLine (Coord 3 7) (Coord 8 7)
-    , drawLine (Coord 2 6) (Coord 8 6)
-    , drawLine (Coord 1 5) (Coord 8 5)
-    , drawLine (Coord 0 4) (Coord 8 4)
-    , drawLine (Coord 0 3) (Coord 7 3)
-    , drawLine (Coord 0 2) (Coord 6 2)
-    , drawLine (Coord 0 1) (Coord 5 1)
+         -- lines
+         , drawLine (Coord 1 0) (Coord 1 5)
+         , drawLine (Coord 2 0) (Coord 2 6)
+         , drawLine (Coord 3 0) (Coord 3 7)
+         , drawLine (Coord 4 0) (Coord 4 8)
+         , drawLine (Coord 5 1) (Coord 5 8)
+         , drawLine (Coord 6 2) (Coord 6 8)
+         , drawLine (Coord 7 3) (Coord 7 8)
+         , drawLine (Coord 0 3) (Coord 5 8)
+         , drawLine (Coord 0 2) (Coord 6 8)
+         , drawLine (Coord 0 1) (Coord 7 8)
+         , drawLine (Coord 0 0) (Coord 8 8)
+         , drawLine (Coord 1 0) (Coord 8 7)
+         , drawLine (Coord 2 0) (Coord 8 6)
+         , drawLine (Coord 3 0) (Coord 8 5)
+         , drawLine (Coord 3 7) (Coord 8 7)
+         , drawLine (Coord 2 6) (Coord 8 6)
+         , drawLine (Coord 1 5) (Coord 8 5)
+         , drawLine (Coord 0 4) (Coord 8 4)
+         , drawLine (Coord 0 3) (Coord 7 3)
+         , drawLine (Coord 0 2) (Coord 6 2)
+         , drawLine (Coord 0 1) (Coord 5 1)
 
-    -- bottom labels
-    , drawBottomLabel "a1" (Coord 0 0)
-    , drawBottomLabel "b1" (Coord 1 0)
-    , drawBottomLabel "c1" (Coord 2 0)
-    , drawBottomLabel "d1" (Coord 3 0)
-    , drawBottomLabel "e1" (Coord 4 0)
-    , drawBottomLabel "f1" (Coord 5 1)
-    , drawBottomLabel "g1" (Coord 6 2)
-    , drawBottomLabel "h1" (Coord 7 3)
-    , drawBottomLabel "i1" (Coord 8 4)
+         -- bottom labels
+         , drawBottomLabel "a1" (Coord 0 0)
+         , drawBottomLabel "b1" (Coord 1 0)
+         , drawBottomLabel "c1" (Coord 2 0)
+         , drawBottomLabel "d1" (Coord 3 0)
+         , drawBottomLabel "e1" (Coord 4 0)
+         , drawBottomLabel "f1" (Coord 5 1)
+         , drawBottomLabel "g1" (Coord 6 2)
+         , drawBottomLabel "h1" (Coord 7 3)
+         , drawBottomLabel "i1" (Coord 8 4)
 
-    -- top labels
-    , drawTopLabel "a5" (Coord 0 4)
-    , drawTopLabel "b6" (Coord 1 5)
-    , drawTopLabel "c7" (Coord 2 6)
-    , drawTopLabel "d8" (Coord 3 7)
-    , drawTopLabel "e9" (Coord 4 8)
-    , drawTopLabel "f8" (Coord 5 8)
-    , drawTopLabel "g7" (Coord 6 8)
-    , drawTopLabel "h6" (Coord 7 8)
-    , drawTopLabel "i5" (Coord 8 8)
-    ]
-        ++ List.map (\p -> drawCircle p 0.1 "black") edgeBoardPoints
+         -- top labels
+         , drawTopLabel "a5" (Coord 0 4)
+         , drawTopLabel "b6" (Coord 1 5)
+         , drawTopLabel "c7" (Coord 2 6)
+         , drawTopLabel "d8" (Coord 3 7)
+         , drawTopLabel "e9" (Coord 4 8)
+         , drawTopLabel "f8" (Coord 5 8)
+         , drawTopLabel "g7" (Coord 6 8)
+         , drawTopLabel "h6" (Coord 7 8)
+         , drawTopLabel "i5" (Coord 8 8)
+         ]
+            ++ List.map (\p -> drawCircle p 0.1 "black") edgeBoardPoints
+        )
 
 
 viewPiece : Piece -> Svg msg
@@ -305,7 +307,7 @@ view model =
         , viewBox "0 0 660 780"
         ]
         (viewEmptyBoard
-            ++ List.map viewPiece model.board
+            :: List.map viewPiece model.board
         )
 
 
