@@ -34,7 +34,8 @@ type alias Move =
 type alias Model =
     { pieces : List Piece
     , availableMoves : List Move
-    , currentMove : Kind
+    , currentColor : Kind
+    , moveFrom : Maybe Coord
     }
 
 
@@ -81,7 +82,8 @@ init =
         [ Move (Coord 0 3) (Coord 1 4)
         , Move (Coord 0 3) (Coord 1 3)
         ]
-    , currentMove = Black
+    , currentColor = Black
+    , moveFrom = Nothing
     }
 
 
@@ -98,14 +100,14 @@ update msg model =
     case msg of
         ChangeColor ->
             { model
-                | currentMove =
-                    if model.currentMove == Black then
+                | currentColor =
+                    if model.currentColor == Black then
                         BlackGipf
 
-                    else if model.currentMove == BlackGipf then
+                    else if model.currentColor == BlackGipf then
                         White
 
-                    else if model.currentMove == White then
+                    else if model.currentColor == White then
                         WhiteGipf
 
                     else
@@ -319,8 +321,8 @@ viewPiece { coord, kind } =
                 ]
 
 
-viewSvgWithAction : Svg msg -> String -> msg -> Svg msg
-viewSvgWithAction svgElement event msg =
+addSvgAction : Svg msg -> String -> msg -> Svg msg
+addSvgAction svgElement event msg =
     case event of
         "hover" ->
             g [ onMouseOver msg ] [ svgElement ]
@@ -332,9 +334,14 @@ viewSvgWithAction svgElement event msg =
             svgElement
 
 
+addSvgOpacity : Svg msg -> Float -> Svg msg
+addSvgOpacity originalSvg opacity =
+    g [ Svg.Attributes.opacity (String.fromFloat opacity) ] [ originalSvg ]
+
+
 viewPieceWithAction : Piece -> String -> msg -> Svg msg
 viewPieceWithAction piece event msg =
-    viewSvgWithAction (viewPiece piece) event msg
+    addSvgAction (viewPiece piece) event msg
 
 
 view : Model -> Html Msg
@@ -346,7 +353,7 @@ view model =
         , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
         ]
         ([ viewEmptyBoard
-         , viewPieceWithAction (Piece (Coord 8 10) model.currentMove) "click" ChangeColor
+         , viewPieceWithAction (Piece (Coord 8 10) model.currentColor) "click" ChangeColor
          ]
             ++ List.map viewPiece model.pieces
         )
