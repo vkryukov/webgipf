@@ -2,8 +2,8 @@ module Board exposing (..)
 
 import Browser
 import Html exposing (Html)
-import Svg exposing (Svg, circle, line, polygon, svg, text_)
-import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
+import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
 
 
 
@@ -72,7 +72,7 @@ makePiece x y kind =
 init : Model
 init =
     { board =
-        [ makePiece 0 0 Black
+        [ makePiece 1 2 Black
         , makePiece 1 1 White
         , makePiece 2 2 BlackGipf
         , makePiece 3 3 WhiteGipf
@@ -154,8 +154,8 @@ drawLine p1 p2 =
         []
 
 
-drawCircle : Coord -> Float -> Svg msg
-drawCircle p radius =
+drawCircleWithStroke : Coord -> Float -> String -> String -> String -> Svg msg
+drawCircleWithStroke p radius fill_ stroke_ strokeWidth_ =
     let
         ( x, y ) =
             coordToXY p
@@ -164,9 +164,16 @@ drawCircle p radius =
         [ cx (String.fromInt x)
         , cy (String.fromInt y)
         , r (String.fromInt (round (radius * scale)))
-        , fill "black"
+        , fill fill_
+        , stroke stroke_
+        , strokeWidth strokeWidth_
         ]
         []
+
+
+drawCircle : Coord -> Float -> String -> Svg msg
+drawCircle p radius fill_ =
+    drawCircleWithStroke p radius fill_ "black" "1"
 
 
 drawTextLabel : String -> Coord -> Int -> Int -> Svg msg
@@ -193,10 +200,18 @@ drawTopLabel label p =
     drawTextLabel label p -5 -15
 
 
-viewBoard : List (Svg msg)
-viewBoard =
+viewEmptyBoard : List (Svg msg)
+viewEmptyBoard =
     [ -- interior polygon
-      polygon
+      rect
+        [ x "25"
+        , y "25"
+        , width "610"
+        , height "730"
+        , fill "#F0F0F0"
+        ]
+        []
+    , polygon
         [ points
             (coordsToPoints
                 [ Coord 1 1
@@ -208,7 +223,7 @@ viewBoard =
                 , Coord 1 1
                 ]
             )
-        , Svg.Attributes.style "fill: lightyellow;"
+        , Svg.Attributes.style "fill: white;"
         ]
         []
 
@@ -235,7 +250,7 @@ viewBoard =
     , drawLine (Coord 0 2) (Coord 6 2)
     , drawLine (Coord 0 1) (Coord 5 1)
 
-    -- labels
+    -- bottom labels
     , drawBottomLabel "a1" (Coord 0 0)
     , drawBottomLabel "b1" (Coord 1 0)
     , drawBottomLabel "c1" (Coord 2 0)
@@ -245,6 +260,8 @@ viewBoard =
     , drawBottomLabel "g1" (Coord 6 2)
     , drawBottomLabel "h1" (Coord 7 3)
     , drawBottomLabel "i1" (Coord 8 4)
+
+    -- top labels
     , drawTopLabel "a5" (Coord 0 4)
     , drawTopLabel "b6" (Coord 1 5)
     , drawTopLabel "c7" (Coord 2 6)
@@ -255,20 +272,43 @@ viewBoard =
     , drawTopLabel "h6" (Coord 7 8)
     , drawTopLabel "i5" (Coord 8 8)
     ]
-        ++ List.map (\p -> drawCircle p 0.1) edgeBoardPoints
+        ++ List.map (\p -> drawCircle p 0.1 "black") edgeBoardPoints
+
+
+viewPiece : Piece -> Svg msg
+viewPiece { coord, kind } =
+    case kind of
+        Black ->
+            drawCircle coord 0.25 "black"
+
+        BlackGipf ->
+            g []
+                [ drawCircle coord 0.25 "black"
+                , drawCircleWithStroke coord 0.125 "none" "white" "2"
+                ]
+
+        White ->
+            drawCircle coord 0.25 "lightyellow"
+
+        WhiteGipf ->
+            g []
+                [ drawCircle coord 0.25 "lightyellow"
+                , drawCircleWithStroke coord 0.125 "none" "black" "2"
+                ]
 
 
 view : Model -> Html Msg
 view model =
     svg
-        [ width "800"
-        , height "800"
-        , viewBox "0 0 800 800"
+        [ width "660"
+        , height "780"
+        , viewBox "0 0 660 780"
         ]
-        (viewBoard
-            ++ []
+        (viewEmptyBoard
+            ++ List.map viewPiece model.board
         )
 
 
+main : Program () Model Msg
 main =
     Browser.sandbox { init = init, update = update, view = view }
