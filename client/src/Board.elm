@@ -2,8 +2,10 @@ module Board exposing (..)
 
 import Browser
 import Html exposing (Html)
+import Html.Events exposing (onMouseOver)
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
 import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg.Events exposing (onClick)
 
 
 
@@ -88,12 +90,27 @@ init =
 
 
 type Msg
-    = NoOp
+    = ChangeColor
 
 
 update : Msg -> Model -> Model
-update _ model =
-    model
+update msg model =
+    case msg of
+        ChangeColor ->
+            { model
+                | currentMove =
+                    if model.currentMove == Black then
+                        BlackGipf
+
+                    else if model.currentMove == BlackGipf then
+                        White
+
+                    else if model.currentMove == White then
+                        WhiteGipf
+
+                    else
+                        Black
+            }
 
 
 
@@ -302,15 +319,35 @@ viewPiece { coord, kind } =
                 ]
 
 
+viewPieceWithAction : Piece -> String -> msg -> Svg msg
+viewPieceWithAction piece event msg =
+    let
+        svgElement =
+            viewPiece piece
+    in
+    case event of
+        "hover" ->
+            g [ onMouseOver msg ] [ svgElement ]
+
+        "click" ->
+            g [ onClick msg ] [ svgElement ]
+
+        _ ->
+            svgElement
+
+
 view : Model -> Html Msg
 view model =
     svg
         [ width "660"
         , height "780"
         , viewBox "0 0 660 780"
+        , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
         ]
-        (viewEmptyBoard
+        ((viewEmptyBoard
             :: List.map viewPiece model.pieces
+         )
+            ++ [ viewPieceWithAction (Piece (Coord 8 10) model.currentMove) "click" ChangeColor ]
         )
 
 
