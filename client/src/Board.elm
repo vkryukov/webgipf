@@ -345,10 +345,10 @@ view model =
         , viewBox "0 0 660 780"
         , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
         ]
-        ((viewEmptyBoard
-            :: List.map viewPiece model.pieces
-         )
-            ++ [ viewPieceWithAction (Piece (Coord 8 10) model.currentMove) "click" ChangeColor ]
+        ([ viewEmptyBoard
+         , viewPieceWithAction (Piece (Coord 8 10) model.currentMove) "click" ChangeColor
+         ]
+            ++ List.map viewPiece model.pieces
         )
 
 
