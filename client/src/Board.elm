@@ -319,12 +319,8 @@ viewPiece { coord, kind } =
                 ]
 
 
-viewPieceWithAction : Piece -> String -> msg -> Svg msg
-viewPieceWithAction piece event msg =
-    let
-        svgElement =
-            viewPiece piece
-    in
+viewSvgWithAction : Svg msg -> String -> msg -> Svg msg
+viewSvgWithAction svgElement event msg =
     case event of
         "hover" ->
             g [ onMouseOver msg ] [ svgElement ]
@@ -334,6 +330,11 @@ viewPieceWithAction piece event msg =
 
         _ ->
             svgElement
+
+
+viewPieceWithAction : Piece -> String -> msg -> Svg msg
+viewPieceWithAction piece event msg =
+    viewSvgWithAction (viewPiece piece) event msg
 
 
 view : Model -> Html Msg
