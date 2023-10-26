@@ -10,14 +10,6 @@ import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeW
 -- Model definition
 
 
-type alias Model =
-    { board : Board }
-
-
-type alias Board =
-    List Piece
-
-
 type alias Coord =
     { x : Int, y : Int }
 
@@ -31,6 +23,17 @@ type Kind
     | BlackGipf
     | White
     | WhiteGipf
+
+
+type alias Move =
+    { from : Coord, to : Coord }
+
+
+type alias Model =
+    { pieces : List Piece
+    , availableMoves : List Move
+    , currentMove : Kind
+    }
 
 
 boardPointQ : Coord -> Bool
@@ -64,19 +67,19 @@ edgeBoardPoints =
     List.filter edgeBoardPointQ boardPoints
 
 
-makePiece : Int -> Int -> Kind -> Piece
-makePiece x y kind =
-    { coord = { x = x, y = y }, kind = kind }
-
-
 init : Model
 init =
-    { board =
-        [ makePiece 1 2 Black
-        , makePiece 1 1 White
-        , makePiece 2 2 BlackGipf
-        , makePiece 3 3 WhiteGipf
+    { pieces =
+        [ Piece (Coord 1 2) Black
+        , Piece (Coord 1 1) White
+        , Piece (Coord 2 2) BlackGipf
+        , Piece (Coord 3 3) WhiteGipf
         ]
+    , availableMoves =
+        [ Move (Coord 0 3) (Coord 1 4)
+        , Move (Coord 0 3) (Coord 1 3)
+        ]
+    , currentMove = Black
     }
 
 
@@ -307,7 +310,7 @@ view model =
         , viewBox "0 0 660 780"
         ]
         (viewEmptyBoard
-            :: List.map viewPiece model.board
+            :: List.map viewPiece model.pieces
         )
 
 
