@@ -2,7 +2,7 @@ module Board exposing (..)
 
 import Browser
 import Html exposing (Html)
-import Html.Events exposing (onMouseOver)
+import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
 import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
 import Svg.Events exposing (onClick)
@@ -93,6 +93,9 @@ init =
 
 type Msg
     = ChangeColor
+    | MouseEnter Coord
+    | MouseLeave Coord
+    | PointClicked Coord
 
 
 update : Msg -> Model -> Model
@@ -113,6 +116,27 @@ update msg model =
                     else
                         Black
             }
+
+        MouseEnter coord ->
+            let
+                _ =
+                    Debug.log "MouseEnter" coord
+            in
+            model
+
+        MouseLeave coord ->
+            let
+                _ =
+                    Debug.log "MouseLeave" coord
+            in
+            model
+
+        PointClicked coord ->
+            let
+                _ =
+                    Debug.log "PointClicked" coord
+            in
+            model
 
 
 
@@ -220,6 +244,25 @@ drawBottomLabel label p =
 drawTopLabel : String -> Coord -> Svg msg
 drawTopLabel label p =
     drawTextLabel label p -5 -15
+
+
+drawSelectPoint : Coord -> Float -> Svg Msg
+drawSelectPoint p radius =
+    let
+        ( x, y ) =
+            coordToXY p
+    in
+    circle
+        [ cx (String.fromInt x)
+        , cy (String.fromInt y)
+        , r (String.fromInt (round (radius * scale)))
+        , fill "none"
+        , onMouseEnter (MouseEnter p)
+        , onMouseLeave (MouseLeave p)
+        , onClick (PointClicked p)
+        , Svg.Attributes.style "pointer-events: all;"
+        ]
+        []
 
 
 viewEmptyBoard : Svg msg
@@ -356,6 +399,7 @@ view model =
          , viewPieceWithAction (Piece (Coord 8 10) model.currentColor) "click" ChangeColor
          ]
             ++ List.map viewPiece model.pieces
+            ++ List.map (\{ from } -> drawSelectPoint from 0.25) model.availableMoves
         )
 
 
