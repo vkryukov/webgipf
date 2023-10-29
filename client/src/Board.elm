@@ -5,7 +5,7 @@ import Debug
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
-import Svg.Attributes exposing (cx, cy, fill, height, mode, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
 import Svg.Events exposing (onClick)
 
 
