@@ -35,7 +35,9 @@ type alias Model =
     { pieces : List Piece
     , availableMoves : List Move
     , currentColor : Kind
+    , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
+    , moveTo : Maybe Coord
     }
 
 
@@ -83,7 +85,9 @@ init =
         , Move (Coord 0 3) (Coord 1 3)
         ]
     , currentColor = Black
+    , highlightedPiece = Nothing
     , moveFrom = Nothing
+    , moveTo = Nothing
     }
 
 
@@ -118,18 +122,10 @@ update msg model =
             }
 
         MouseEnter coord ->
-            let
-                _ =
-                    Debug.log "MouseEnter" coord
-            in
-            model
+            { model | highlightedPiece = Just coord }
 
-        MouseLeave coord ->
-            let
-                _ =
-                    Debug.log "MouseLeave" coord
-            in
-            model
+        MouseLeave _ ->
+            { model | highlightedPiece = Nothing }
 
         PointClicked coord ->
             let
@@ -395,7 +391,16 @@ viewPieces model =
 
 viewPossibleMoves : Model -> Svg Msg
 viewPossibleMoves model =
-    g [] (List.map (\{ from } -> drawSelectPoint from 0.25) model.availableMoves)
+    g []
+        ((case model.highlightedPiece of
+            Just coord ->
+                addSvgOpacity (viewPiece (Piece coord model.currentColor)) 0.5
+
+            Nothing ->
+                g [] []
+         )
+            :: List.map (\{ from } -> drawSelectPoint from 0.25) model.availableMoves
+        )
 
 
 view : Model -> Html Msg
