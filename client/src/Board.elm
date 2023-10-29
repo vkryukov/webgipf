@@ -3,9 +3,11 @@ module Board exposing (..)
 import Browser
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
+import Platform.Cmd as Cmd
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
 import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
 import Svg.Events exposing (onClick)
+import Task
 
 
 
@@ -73,26 +75,28 @@ edgeBoardPoints =
     List.filter edgeBoardPointQ boardPoints
 
 
-init : Model
-init =
-    { pieces =
-        [ Piece (Coord 4 1) BlackGipf
-        , Piece (Coord 7 7) BlackGipf
-        , Piece (Coord 1 4) BlackGipf
-        , Piece (Coord 4 7) WhiteGipf
-        , Piece (Coord 7 4) WhiteGipf
-        , Piece (Coord 1 1) WhiteGipf
-        ]
-    , availableMoves =
-        [ Move (Coord 0 3) (Coord 1 4)
-        , Move (Coord 0 3) (Coord 1 3)
-        ]
-    , currentColor = Black
-    , highlightedPiece = Nothing
-    , moveFrom = Nothing
-    , moveTo = Nothing
-    , move = Nothing
-    }
+init : () -> ( Model, Cmd msg )
+init () =
+    ( { pieces =
+            [ Piece (Coord 4 1) BlackGipf
+            , Piece (Coord 7 7) BlackGipf
+            , Piece (Coord 1 4) BlackGipf
+            , Piece (Coord 4 7) WhiteGipf
+            , Piece (Coord 7 4) WhiteGipf
+            , Piece (Coord 1 1) WhiteGipf
+            ]
+      , availableMoves =
+            [ Move (Coord 0 3) (Coord 1 4)
+            , Move (Coord 0 3) (Coord 1 3)
+            ]
+      , currentColor = Black
+      , highlightedPiece = Nothing
+      , moveFrom = Nothing
+      , moveTo = Nothing
+      , move = Nothing
+      }
+    , Cmd.none
+    )
 
 
 
@@ -104,13 +108,14 @@ type Msg
     | MouseEnter Coord
     | MouseLeave Coord
     | PointClicked Coord
+    | MoveMade Move
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeColor ->
-            { model
+            ( { model
                 | currentColor =
                     if model.currentColor == Black then
                         BlackGipf
@@ -123,30 +128,36 @@ update msg model =
 
                     else
                         Black
-            }
+              }
+            , Cmd.none
+            )
 
         MouseEnter coord ->
-            { model | highlightedPiece = Just coord }
+            ( { model | highlightedPiece = Just coord }, Cmd.none )
 
         MouseLeave _ ->
-            { model | highlightedPiece = Nothing }
+            ( { model | highlightedPiece = Nothing }, Cmd.none )
 
         PointClicked coord ->
             case model.moveFrom of
                 Nothing ->
-                    { model | moveFrom = Just coord, highlightedPiece = Nothing }
+                    ( { model | moveFrom = Just coord, highlightedPiece = Nothing }, Cmd.none )
 
                 Just from ->
                     if from == coord then
-                        { model | moveFrom = Nothing, highlightedPiece = Nothing }
+                        ( { model | moveFrom = Nothing, highlightedPiece = Nothing }, Cmd.none )
 
                     else
-                        { model
-                            | move = Just (Move from coord)
-                            , moveFrom = Nothing
+                        ( { model
+                            | moveFrom = Nothing
                             , moveTo = Nothing
                             , highlightedPiece = Nothing
-                        }
+                          }
+                        , Task.succeed (MoveMade (Move from coord)) |> Task.perform identity
+                        )
+
+        MoveMade move ->
+            ( { model | move = Just move }, Cmd.none )
 
 
 
@@ -525,4 +536,4 @@ view model =
 
 main : Program () Model Msg
 main =
-    Browser.sandbox { init = init, update = update, view = view }
+    Browser.element { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
