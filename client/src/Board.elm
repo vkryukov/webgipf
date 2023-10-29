@@ -387,6 +387,17 @@ viewPieceWithAction piece event msg =
     addSvgAction (viewPiece piece) event msg
 
 
+viewPieces : Model -> Svg msg
+viewPieces model =
+    g []
+        (List.map viewPiece model.pieces)
+
+
+viewPossibleMoves : Model -> Svg Msg
+viewPossibleMoves model =
+    g [] (List.map (\{ from } -> drawSelectPoint from 0.25) model.availableMoves)
+
+
 view : Model -> Html Msg
 view model =
     svg
@@ -395,12 +406,11 @@ view model =
         , viewBox "0 0 660 780"
         , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
         ]
-        ([ viewEmptyBoard
-         , viewPieceWithAction (Piece (Coord 8 10) model.currentColor) "click" ChangeColor
-         ]
-            ++ List.map viewPiece model.pieces
-            ++ List.map (\{ from } -> drawSelectPoint from 0.25) model.availableMoves
-        )
+        [ viewEmptyBoard
+        , viewPieceWithAction (Piece (Coord 8 10) model.currentColor) "click" ChangeColor
+        , viewPieces model
+        , viewPossibleMoves model
+        ]
 
 
 main : Program () Model Msg
