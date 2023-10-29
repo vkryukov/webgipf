@@ -1,7 +1,6 @@
 module Board exposing (..)
 
 import Browser
-import Debug
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
@@ -39,6 +38,7 @@ type alias Model =
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
+    , move : Maybe Move
     }
 
 
@@ -91,6 +91,7 @@ init =
     , highlightedPiece = Nothing
     , moveFrom = Nothing
     , moveTo = Nothing
+    , move = Nothing
     }
 
 
@@ -133,10 +134,6 @@ update msg model =
         PointClicked coord ->
             case model.moveFrom of
                 Nothing ->
-                    let
-                        _ =
-                            Debug.log "PointClicked" ("Move from " ++ Debug.toString coord)
-                    in
                     { model | moveFrom = Just coord, highlightedPiece = Nothing }
 
                 Just from ->
@@ -144,11 +141,12 @@ update msg model =
                         { model | moveFrom = Nothing, highlightedPiece = Nothing }
 
                     else
-                        let
-                            _ =
-                                Debug.log "PointClicked" ("Move from " ++ Debug.toString from ++ " to " ++ Debug.toString coord)
-                        in
-                        { model | moveTo = Just coord, highlightedPiece = Nothing }
+                        { model
+                            | move = Just (Move from coord)
+                            , moveFrom = Nothing
+                            , moveTo = Nothing
+                            , highlightedPiece = Nothing
+                        }
 
 
 
@@ -451,6 +449,64 @@ drawHighlightedPiece maybeCoord color =
             g [] []
 
 
+viewMove : Model -> Svg msg
+viewMove model =
+    case model.move of
+        Just move ->
+            drawArrow move.from move.to
+
+        Nothing ->
+            g [] []
+
+
+drawArrow : Coord -> Coord -> Svg msg
+drawArrow from to =
+    let
+        ( x1, y1 ) =
+            coordToXY from
+
+        ( x2, y2 ) =
+            coordToXY to
+    in
+    drawArrowXY (toFloat x1) (toFloat y1) (toFloat x2) (toFloat y2)
+
+
+degToRad : Float -> Float
+degToRad deg =
+    deg * pi / 180
+
+
+drawArrowXY : Float -> Float -> Float -> Float -> Svg msg
+drawArrowXY x1_ y1_ x2_ y2_ =
+    let
+        angle =
+            atan2 (y2_ - y1_) (x2_ - x1_)
+
+        arrowheadLength =
+            15
+
+        arrowheadAngle =
+            degToRad 30
+
+        arrowheadX1 =
+            x2_ - arrowheadLength * cos (angle - arrowheadAngle)
+
+        arrowheadY1 =
+            y2_ - arrowheadLength * sin (angle - arrowheadAngle)
+
+        arrowheadX2 =
+            x2_ - arrowheadLength * cos (angle + arrowheadAngle)
+
+        arrowheadY2 =
+            y2_ - arrowheadLength * sin (angle + arrowheadAngle)
+    in
+    g []
+        [ line [ x1 (String.fromFloat x1_), y1 (String.fromFloat y1_), x2 (String.fromFloat x2_), y2 (String.fromFloat y2_), stroke "red", strokeWidth "2" ] []
+        , line [ x1 (String.fromFloat x2_), y1 (String.fromFloat y2_), x2 (String.fromFloat arrowheadX1), y2 (String.fromFloat arrowheadY1), stroke "red", strokeWidth "2" ] []
+        , line [ x1 (String.fromFloat x2_), y1 (String.fromFloat y2_), x2 (String.fromFloat arrowheadX2), y2 (String.fromFloat arrowheadY2), stroke "red", strokeWidth "2" ] []
+        ]
+
+
 view : Model -> Html Msg
 view model =
     svg
@@ -463,6 +519,7 @@ view model =
         , viewPieceWithAction (Piece (Coord 8 10) model.currentColor) "click" ChangeColor
         , viewPieces model
         , viewPossibleMoves model
+        , viewMove model
         ]
 
 
