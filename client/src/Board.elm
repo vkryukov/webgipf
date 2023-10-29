@@ -1,10 +1,11 @@
 module Board exposing (..)
 
 import Browser
+import Debug
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
-import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg.Attributes exposing (cx, cy, fill, height, mode, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
 import Svg.Events exposing (onClick)
 
 
@@ -75,10 +76,12 @@ edgeBoardPoints =
 init : Model
 init =
     { pieces =
-        [ Piece (Coord 1 2) Black
-        , Piece (Coord 1 1) White
-        , Piece (Coord 2 2) BlackGipf
-        , Piece (Coord 3 3) WhiteGipf
+        [ Piece (Coord 4 1) BlackGipf
+        , Piece (Coord 7 7) BlackGipf
+        , Piece (Coord 1 4) BlackGipf
+        , Piece (Coord 4 7) WhiteGipf
+        , Piece (Coord 7 4) WhiteGipf
+        , Piece (Coord 1 1) WhiteGipf
         ]
     , availableMoves =
         [ Move (Coord 0 3) (Coord 1 4)
@@ -128,11 +131,24 @@ update msg model =
             { model | highlightedPiece = Nothing }
 
         PointClicked coord ->
-            let
-                _ =
-                    Debug.log "PointClicked" coord
-            in
-            model
+            case model.moveFrom of
+                Nothing ->
+                    let
+                        _ =
+                            Debug.log "PointClicked" ("Move from " ++ Debug.toString coord)
+                    in
+                    { model | moveFrom = Just coord, highlightedPiece = Nothing }
+
+                Just from ->
+                    if from == coord then
+                        { model | moveFrom = Nothing, highlightedPiece = Nothing }
+
+                    else
+                        let
+                            _ =
+                                Debug.log "PointClicked" ("Move from " ++ Debug.toString from ++ " to " ++ Debug.toString coord)
+                        in
+                        { model | moveTo = Just coord, highlightedPiece = Nothing }
 
 
 
@@ -242,8 +258,8 @@ drawTopLabel label p =
     drawTextLabel label p -5 -15
 
 
-drawSelectPoint : Coord -> Float -> Svg Msg
-drawSelectPoint p radius =
+drawClickPoint : Coord -> Float -> Svg Msg
+drawClickPoint p radius =
     let
         ( x, y ) =
             coordToXY p
@@ -391,16 +407,48 @@ viewPieces model =
 
 viewPossibleMoves : Model -> Svg Msg
 viewPossibleMoves model =
-    g []
-        ((case model.highlightedPiece of
-            Just coord ->
-                addSvgOpacity (viewPiece (Piece coord model.currentColor)) 0.5
+    let
+        possibleClicks =
+            case model.moveFrom of
+                Nothing ->
+                    List.map .from model.availableMoves
 
-            Nothing ->
-                g [] []
-         )
-            :: List.map (\{ from } -> drawSelectPoint from 0.25) model.availableMoves
+                Just coord ->
+                    if model.moveTo == Nothing then
+                        coord :: List.map .to (List.filter (\move -> move.from == coord) model.availableMoves)
+
+                    else
+                        []
+    in
+    g []
+        (drawHighlights model
+            :: List.map (\p -> drawClickPoint p 0.25) possibleClicks
         )
+
+
+drawHighlights : Model -> Svg msg
+drawHighlights model =
+    if model.moveFrom == Nothing then
+        drawHighlightedPiece model.highlightedPiece model.currentColor
+
+    else
+        g []
+            [ drawHighlightedPiece model.moveFrom model.currentColor
+            , drawHighlightedPiece model.highlightedPiece model.currentColor
+            ]
+
+
+drawHighlightedPiece : Maybe Coord -> Kind -> Svg msg
+drawHighlightedPiece maybeCoord color =
+    case maybeCoord of
+        Just coord ->
+            g []
+                [ drawCircleWithStroke coord 0.25 "white" "grey" "1"
+                , addSvgOpacity (viewPiece (Piece coord color)) 0.5
+                ]
+
+        Nothing ->
+            g [] []
 
 
 view : Model -> Html Msg
