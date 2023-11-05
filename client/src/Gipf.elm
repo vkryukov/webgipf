@@ -198,6 +198,18 @@ nameToCoord name =
         Nothing
 
 
+coordToName : Coord -> String
+coordToName coord =
+    let
+        xChar =
+            Char.fromCode (coord.x + Char.toCode 'a')
+
+        adjustedY =
+            coord.y + 1 - max 0 (coord.x - 4)
+    in
+    String.fromChar xChar ++ String.fromInt adjustedY
+
+
 largestPrefixWithoutNothing : List (Maybe a) -> List a
 largestPrefixWithoutNothing list =
     case list of
@@ -277,3 +289,27 @@ performMove move kind boardPieces =
 
     else
         Nothing
+
+
+boardToString : BoardPieces -> String
+boardToString boardPieces =
+    Dict.toList boardPieces
+        |> List.map
+            (\( ( x, y ), kind ) ->
+                (case kind of
+                    Black ->
+                        "K"
+
+                    BlackGipf ->
+                        "GK"
+
+                    White ->
+                        "W"
+
+                    WhiteGipf ->
+                        "GW"
+                )
+                    ++ coordToName { x = x, y = y }
+            )
+        |> List.sort
+        |> String.join " "

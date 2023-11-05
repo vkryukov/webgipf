@@ -2,7 +2,7 @@ module GipfTests exposing (..)
 
 import Dict
 import Expect
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, coordinatesSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardToString, coordinatesSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors, standardStartingBoard)
 import List exposing (sortWith)
 import Test exposing (..)
 
@@ -128,6 +128,11 @@ board =
             , test "Invalid 'gf' returns Nothing" <|
                 \_ ->
                     Expect.equal Nothing (nameToCoord "gf")
+            ]
+        , describe "boardToString function"
+            [ test "converts standard board to string" <|
+                \_ ->
+                    Expect.equal "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2" (boardToString standardStartingBoard)
             ]
         ]
 
