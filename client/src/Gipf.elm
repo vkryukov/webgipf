@@ -26,8 +26,8 @@ type alias BoardPieces =
     Dict ( Int, Int ) Kind
 
 
-startingBoard : BoardPieces
-startingBoard =
+standardStartingBoard : BoardPieces
+standardStartingBoard =
     Dict.fromList
         [ ( ( 4, 1 ), BlackGipf )
         , ( ( 7, 7 ), BlackGipf )
