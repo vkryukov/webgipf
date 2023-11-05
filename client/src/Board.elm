@@ -1,7 +1,7 @@
 module Board exposing (..)
 
 import Browser
-import Gipf exposing (Coord, Kind(..), Move, Piece, edgeBoardPoints)
+import Gipf exposing (Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, edgeBoardPoints, standardStartingBoard)
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Platform.Cmd as Cmd
@@ -30,16 +30,8 @@ init : () -> ( Model, Cmd msg )
 init =
     \_ ->
         ( initFromPiecesAndMoves
-            [ Piece (Coord 4 1) BlackGipf
-            , Piece (Coord 7 7) BlackGipf
-            , Piece (Coord 1 4) BlackGipf
-            , Piece (Coord 4 7) WhiteGipf
-            , Piece (Coord 7 4) WhiteGipf
-            , Piece (Coord 1 1) WhiteGipf
-            ]
-            [ Move (Coord 0 3) (Coord 1 4)
-            , Move (Coord 0 3) (Coord 1 3)
-            ]
+            (boardToPieces standardStartingBoard)
+            (availableMoves standardStartingBoard)
         , Cmd.none
         )
 
