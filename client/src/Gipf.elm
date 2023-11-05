@@ -157,14 +157,17 @@ allMoves =
         edgeBoardPoints
 
 
+movePossibleQ : BoardPieces -> Move -> Bool
+movePossibleQ boardPieces move =
+    anyKeyMissing
+        boardPieces
+        (List.map coordToTuples (coordinatesSlice move.from move.to))
+
+
 availableMoves : BoardPieces -> List Move
 availableMoves boardPieces =
     List.filter
-        (\move ->
-            anyKeyMissing
-                boardPieces
-                (List.map coordToTuples (coordinatesSlice move.from move.to))
-        )
+        (movePossibleQ boardPieces)
         allMoves
 
 
