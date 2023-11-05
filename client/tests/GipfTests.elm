@@ -1,7 +1,8 @@
 module GipfTests exposing (..)
 
+import Dict
 import Expect
-import Gipf exposing (Coord, Move, allMoves, boardPointQ, boardPoints, boardSlice, edgeBoardPointQ, interiorBoardPointQ, neighbors)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardSlice, edgeBoardPointQ, interiorBoardPointQ, neighbors)
 import List exposing (sortWith)
 import Test exposing (..)
 
@@ -120,6 +121,140 @@ sortMoves moves =
     sortWith compareMoves moves
 
 
+randomBoard1 : BoardPieces
+randomBoard1 =
+    Dict.fromList
+        [ ( ( 2, 2 ), White )
+        , ( ( 4, 1 ), WhiteGipf )
+        , ( ( 1, 4 ), White )
+        , ( ( 2, 3 ), BlackGipf )
+        , ( ( 1, 2 ), White )
+        , ( ( 7, 4 ), BlackGipf )
+        , ( ( 6, 7 ), Black )
+        , ( ( 2, 4 ), White )
+        , ( ( 5, 7 ), BlackGipf )
+        , ( ( 4, 3 ), BlackGipf )
+        , ( ( 3, 1 ), WhiteGipf )
+        , ( ( 3, 4 ), White )
+        , ( ( 4, 4 ), Black )
+        , ( ( 4, 5 ), WhiteGipf )
+        , ( ( 7, 5 ), BlackGipf )
+        , ( ( 4, 6 ), BlackGipf )
+        , ( ( 7, 7 ), Black )
+        , ( ( 2, 5 ), WhiteGipf )
+        , ( ( 5, 6 ), White )
+        , ( ( 5, 2 ), BlackGipf )
+        , ( ( 3, 3 ), White )
+        , ( ( 5, 4 ), BlackGipf )
+        , ( ( 7, 6 ), WhiteGipf )
+        , ( ( 2, 1 ), Black )
+        , ( ( 6, 5 ), WhiteGipf )
+        , ( ( 1, 3 ), White )
+        , ( ( 3, 6 ), Black )
+        , ( ( 6, 3 ), White )
+        , ( ( 3, 2 ), WhiteGipf )
+        , ( ( 1, 1 ), WhiteGipf )
+        , ( ( 6, 6 ), Black )
+        , ( ( 4, 2 ), BlackGipf )
+        ]
+
+
+randomBoard1Moves : List Move
+randomBoard1Moves =
+    [ { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } }
+    , { from = { x = 0, y = 2 }, to = { x = 1, y = 3 } }
+    , { from = { x = 0, y = 3 }, to = { x = 1, y = 3 } }
+    , { from = { x = 0, y = 3 }, to = { x = 1, y = 4 } }
+    , { from = { x = 0, y = 4 }, to = { x = 1, y = 4 } }
+    , { from = { x = 1, y = 5 }, to = { x = 2, y = 5 } }
+    , { from = { x = 2, y = 0 }, to = { x = 3, y = 1 } }
+    , { from = { x = 3, y = 0 }, to = { x = 3, y = 1 } }
+    , { from = { x = 3, y = 7 }, to = { x = 3, y = 6 } }
+    , { from = { x = 3, y = 7 }, to = { x = 4, y = 7 } }
+    , { from = { x = 4, y = 0 }, to = { x = 4, y = 1 } }
+    , { from = { x = 4, y = 8 }, to = { x = 4, y = 7 } }
+    , { from = { x = 5, y = 1 }, to = { x = 5, y = 2 } }
+    , { from = { x = 5, y = 8 }, to = { x = 5, y = 7 } }
+    , { from = { x = 5, y = 8 }, to = { x = 4, y = 7 } }
+    , { from = { x = 6, y = 2 }, to = { x = 6, y = 3 } }
+    , { from = { x = 6, y = 8 }, to = { x = 6, y = 7 } }
+    , { from = { x = 6, y = 8 }, to = { x = 5, y = 7 } }
+    , { from = { x = 7, y = 3 }, to = { x = 6, y = 3 } }
+    , { from = { x = 8, y = 4 }, to = { x = 7, y = 4 } }
+    , { from = { x = 8, y = 5 }, to = { x = 7, y = 5 } }
+    , { from = { x = 8, y = 6 }, to = { x = 7, y = 5 } }
+    , { from = { x = 8, y = 7 }, to = { x = 7, y = 7 } }
+    , { from = { x = 8, y = 8 }, to = { x = 7, y = 7 } }
+    ]
+
+
+randomBoard2 : BoardPieces
+randomBoard2 =
+    Dict.fromList
+        [ ( ( 4, 7 ), BlackGipf )
+        , ( ( 4, 4 ), White )
+        , ( ( 2, 5 ), WhiteGipf )
+        , ( ( 1, 3 ), WhiteGipf )
+        , ( ( 2, 2 ), Black )
+        , ( ( 7, 5 ), WhiteGipf )
+        , ( ( 5, 4 ), BlackGipf )
+        , ( ( 4, 6 ), BlackGipf )
+        , ( ( 5, 7 ), WhiteGipf )
+        , ( ( 5, 2 ), White )
+        , ( ( 4, 5 ), WhiteGipf )
+        , ( ( 5, 3 ), BlackGipf )
+        , ( ( 3, 6 ), BlackGipf )
+        , ( ( 3, 2 ), BlackGipf )
+        , ( ( 7, 6 ), WhiteGipf )
+        , ( ( 3, 4 ), WhiteGipf )
+        , ( ( 3, 3 ), BlackGipf )
+        , ( ( 3, 5 ), White )
+        , ( ( 4, 2 ), White )
+        , ( ( 6, 7 ), Black )
+        , ( ( 3, 1 ), WhiteGipf )
+        , ( ( 1, 1 ), BlackGipf )
+        , ( ( 6, 4 ), White )
+        , ( ( 6, 5 ), WhiteGipf )
+        , ( ( 5, 5 ), White )
+        , ( ( 5, 6 ), Black )
+        , ( ( 7, 4 ), BlackGipf )
+        , ( ( 2, 1 ), WhiteGipf )
+        , ( ( 4, 1 ), Black )
+        , ( ( 1, 2 ), White )
+        , ( ( 1, 4 ), WhiteGipf )
+        , ( ( 6, 6 ), Black )
+        ]
+
+
+randomBoard2Moves : List Move
+randomBoard2Moves =
+    [ { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } }
+    , { from = { x = 0, y = 1 }, to = { x = 1, y = 2 } }
+    , { from = { x = 0, y = 2 }, to = { x = 1, y = 3 } }
+    , { from = { x = 0, y = 3 }, to = { x = 1, y = 3 } }
+    , { from = { x = 0, y = 4 }, to = { x = 1, y = 4 } }
+    , { from = { x = 1, y = 0 }, to = { x = 2, y = 1 } }
+    , { from = { x = 2, y = 0 }, to = { x = 2, y = 1 } }
+    , { from = { x = 2, y = 6 }, to = { x = 2, y = 5 } }
+    , { from = { x = 3, y = 0 }, to = { x = 4, y = 1 } }
+    , { from = { x = 3, y = 7 }, to = { x = 4, y = 7 } }
+    , { from = { x = 4, y = 0 }, to = { x = 4, y = 1 } }
+    , { from = { x = 4, y = 8 }, to = { x = 4, y = 7 } }
+    , { from = { x = 6, y = 2 }, to = { x = 6, y = 3 } }
+    , { from = { x = 6, y = 8 }, to = { x = 6, y = 7 } }
+    , { from = { x = 6, y = 8 }, to = { x = 5, y = 7 } }
+    , { from = { x = 7, y = 3 }, to = { x = 7, y = 4 } }
+    , { from = { x = 7, y = 3 }, to = { x = 6, y = 3 } }
+    , { from = { x = 7, y = 8 }, to = { x = 7, y = 7 } }
+    , { from = { x = 7, y = 8 }, to = { x = 6, y = 7 } }
+    , { from = { x = 8, y = 4 }, to = { x = 7, y = 4 } }
+    , { from = { x = 8, y = 5 }, to = { x = 7, y = 4 } }
+    , { from = { x = 8, y = 7 }, to = { x = 7, y = 7 } }
+    , { from = { x = 8, y = 7 }, to = { x = 7, y = 6 } }
+    , { from = { x = 8, y = 8 }, to = { x = 7, y = 7 } }
+    ]
+
+
 movesTest : Test
 movesTest =
     describe "move tests"
@@ -149,5 +284,11 @@ movesTest =
             [ test "allMoves contains 42 elements" <|
                 \_ ->
                     Expect.equal 42 (List.length allMoves)
+            , test "available moves on random board 1" <|
+                \_ ->
+                    Expect.equal (sortMoves randomBoard1Moves) (sortMoves (availableMoves randomBoard1))
+            , test "available moves on random board 2" <|
+                \_ ->
+                    Expect.equal (sortMoves randomBoard2Moves) (sortMoves (availableMoves randomBoard2))
             ]
         ]
