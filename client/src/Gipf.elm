@@ -213,14 +213,67 @@ largestPrefixWithoutNothing list =
                     xx :: largestPrefixWithoutNothing xs
 
 
+removeCoords : List ( Int, Int ) -> BoardPieces -> BoardPieces
+removeCoords coords boardPieces =
+    List.foldl
+        (\coord board -> Dict.remove coord board)
+        boardPieces
+        coords
 
--- performMove : BoardPieces -> Move -> Maybe BoardPieces
--- performMove boardPieces move =
---     if movePossibleQ boardPieces move then
---         let
---             vec =
---                 stepVector move.from move.to
---         in
---         Just
---     else
---         Nothing
+
+fst : ( Int, Int ) -> Int
+fst ( x, _ ) =
+    x
+
+
+snd : ( Int, Int ) -> Int
+snd ( _, y ) =
+    y
+
+
+insertWithVector : List ( Int, Int ) -> List Kind -> Coord -> BoardPieces -> BoardPieces
+insertWithVector coords kinds vector boardPieces =
+    let
+        zippedList =
+            List.map2 (\coord kind -> ( coord, kind )) coords kinds
+    in
+    List.foldl
+        (\( coord, kind ) board ->
+            let
+                newCoord =
+                    ( fst coord + vector.x, snd coord + vector.y )
+            in
+            Dict.insert newCoord kind board
+        )
+        boardPieces
+        zippedList
+
+
+performMove : Move -> Kind -> BoardPieces -> Maybe BoardPieces
+performMove move kind boardPieces =
+    if movePossibleQ boardPieces move then
+        let
+            vec =
+                stepVector move.from move.to
+
+            coordSlice =
+                List.map coordToTuples (coordinatesSlice move.from move.to)
+
+            slice =
+                dictSlice boardPieces coordSlice
+
+            sliceWithoutNothing =
+                largestPrefixWithoutNothing slice
+
+            coordsSliceWithoutNothing =
+                List.take (List.length sliceWithoutNothing) coordSlice
+        in
+        Just
+            (boardPieces
+                |> removeCoords coordsSliceWithoutNothing
+                |> insertWithVector coordsSliceWithoutNothing sliceWithoutNothing vec
+                |> Dict.insert ( move.from.x + vec.x, move.from.y + vec.y ) kind
+            )
+
+    else
+        Nothing
