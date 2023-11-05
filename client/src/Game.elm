@@ -42,13 +42,61 @@ initFromDict boardDict =
     }
 
 
-
--- boardToPieces takes a board and returns a list of pieces where each piece is a tuple of (key, value)
-
-
 boardToPieces : BoardPieces -> List Board.Piece
 boardToPieces board =
     Dict.toList board |> List.map (\( ( x, y ), kind ) -> Board.Piece { x = x, y = y } kind)
+
+
+neighbors : Board.Coord -> List Board.Coord
+neighbors point =
+    let
+        adjustments =
+            [ { x = 0, y = 1 }
+            , { x = 0, y = -1 }
+            , { x = 1, y = 0 }
+            , { x = -1, y = 0 }
+            , { x = 1, y = 1 }
+            , { x = -1, y = -1 }
+            ]
+
+        addPoints p adjustment =
+            { x = p.x + adjustment.x, y = p.y + adjustment.y }
+
+        allNeighbors =
+            List.map (addPoints point) adjustments
+    in
+    List.filter Board.interiorBoardPointQ allNeighbors
+
+
+stepVector : Board.Coord -> Board.Coord -> Board.Coord
+stepVector p1 p2 =
+    let
+        v =
+            { x = p2.x - p1.x, y = p2.y - p1.y }
+
+        maxAbs =
+            max (abs v.x) (abs v.y)
+    in
+    if maxAbs == 0 then
+        { x = 0, y = 0 }
+
+    else
+        { x = v.x // maxAbs, y = v.y // maxAbs }
+
+
+boardSlice : Board.Coord -> Board.Coord -> List Board.Coord
+boardSlice p1 p2 =
+    let
+        generatePoints i =
+            let
+                step =
+                    stepVector p1 p2
+            in
+            { x = p1.x + step.x * i, y = p1.y + step.y * i }
+    in
+    List.range 0 6
+        |> List.map generatePoints
+        |> List.filter Board.interiorBoardPointQ
 
 
 type Msg
