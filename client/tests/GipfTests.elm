@@ -12,11 +12,23 @@ sortByXY coords =
         |> List.sortBy .x
 
 
+sortedEqual : List Gipf.Coord -> List Gipf.Coord -> Expect.Expectation
+sortedEqual a b =
+    Expect.equal (sortByXY a) (sortByXY b)
+
+
 neighborsTest : String -> Gipf.Coord -> List Gipf.Coord -> Test
 neighborsTest description point expectedNeighbors =
     test description <|
         \_ ->
-            Expect.equal (sortByXY expectedNeighbors) (sortByXY (Gipf.neighbors point))
+            sortedEqual expectedNeighbors (Gipf.neighbors point)
+
+
+boardSliceTest : String -> Gipf.Coord -> Gipf.Coord -> List Gipf.Coord -> Test
+boardSliceTest description start end expectedSlice =
+    test description <|
+        \_ ->
+            sortedEqual expectedSlice (Gipf.boardSlice start end)
 
 
 all : Test
@@ -74,6 +86,33 @@ all =
                 [ { x = 6, y = 7 }
                 , { x = 7, y = 6 }
                 , { x = 6, y = 6 }
+                ]
+            ]
+        , describe "boardPoints function"
+            [ test "finds all board points" <|
+                \_ ->
+                    Expect.equal 61 (List.length Gipf.boardPoints)
+            ]
+        , describe "boardSlice function"
+            [ boardSliceTest "checks board slice from {2,0} to {6,4}"
+                { x = 2, y = 0 }
+                { x = 6, y = 4 }
+                [ { x = 3, y = 1 }
+                , { x = 4, y = 2 }
+                , { x = 5, y = 3 }
+                , { x = 6, y = 4 }
+                , { x = 7, y = 5 }
+                ]
+            , boardSliceTest "checks board slice from {4,8} to {4,5}"
+                { x = 4, y = 8 }
+                { x = 4, y = 5 }
+                [ { x = 4, y = 1 }
+                , { x = 4, y = 2 }
+                , { x = 4, y = 3 }
+                , { x = 4, y = 4 }
+                , { x = 4, y = 5 }
+                , { x = 4, y = 6 }
+                , { x = 4, y = 7 }
                 ]
             ]
         ]

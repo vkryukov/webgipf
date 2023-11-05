@@ -121,6 +121,6 @@ boardSlice p1 p2 =
             in
             { x = p1.x + step.x * i, y = p1.y + step.y * i }
     in
-    List.range 0 6
+    List.range 1 7
         |> List.map generatePoints
         |> List.filter interiorBoardPointQ
