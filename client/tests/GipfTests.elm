@@ -318,3 +318,22 @@ movesTest =
                     Expect.equal (sortMoves randomBoard2Moves) (sortMoves (availableMoves randomBoard2))
             ]
         ]
+
+
+toolsTest : Test
+toolsTest =
+    describe "Tools tests"
+        [ describe "sortCoords function"
+            [ test "sorts a list of coordinates" <|
+                \_ ->
+                    sortedEqual [ { x = 1, y = 1 }, { x = 2, y = 2 }, { x = 3, y = 3 } ] [ { x = 3, y = 3 }, { x = 1, y = 1 }, { x = 2, y = 2 } ]
+            ]
+        , describe "largestPrefixWithoutNothihg function"
+            [ test "finds the largest prefix without Nothing" <|
+                \_ ->
+                    Expect.equal [ 1, 2, 3 ] (Gipf.largestPrefixWithoutNothing [ Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
+            , test "finds the largest prefix without Nothing when it's emmpty" <|
+                \_ ->
+                    Expect.equal [] (Gipf.largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
+            ]
+        ]

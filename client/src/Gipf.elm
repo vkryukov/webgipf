@@ -196,3 +196,31 @@ nameToCoord name =
 
     else
         Nothing
+
+
+largestPrefixWithoutNothing : List (Maybe a) -> List a
+largestPrefixWithoutNothing list =
+    case list of
+        [] ->
+            []
+
+        x :: xs ->
+            case x of
+                Nothing ->
+                    []
+
+                Just xx ->
+                    xx :: largestPrefixWithoutNothing xs
+
+
+
+-- performMove : BoardPieces -> Move -> Maybe BoardPieces
+-- performMove boardPieces move =
+--     if movePossibleQ boardPieces move then
+--         let
+--             vec =
+--                 stepVector move.from move.to
+--         in
+--         Just
+--     else
+--         Nothing
