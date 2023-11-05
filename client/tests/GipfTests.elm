@@ -2,7 +2,7 @@ module GipfTests exposing (..)
 
 import Dict
 import Expect
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardSlice, edgeBoardPointQ, interiorBoardPointQ, neighbors)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors)
 import List exposing (sortWith)
 import Test exposing (..)
 
@@ -43,7 +43,7 @@ boardSliceTest description start end expectedSlice =
 
 board : Test
 board =
-    describe "Board Tests"
+    describe "Board tests"
         [ describe "boardPointQ function"
             [ test "checks a point within the board" <|
                 \_ ->
@@ -102,6 +102,32 @@ board =
             [ test "finds all board points" <|
                 \_ ->
                     Expect.equal 61 (List.length boardPoints)
+            ]
+        , describe "nameToCoord Tests"
+            [ test "Converts 'a1' to { x = 0, y = 0 }" <|
+                \_ ->
+                    Expect.equal (Just { x = 0, y = 0 }) (nameToCoord "a1")
+            , test "Converts 'a5' to { x = 0, y = 4 }" <|
+                \_ ->
+                    Expect.equal (Just { x = 0, y = 4 }) (nameToCoord "a5")
+            , test "Converts 'e1' to { x = 4, y = 0 }" <|
+                \_ ->
+                    Expect.equal (Just { x = 4, y = 0 }) (nameToCoord "e1")
+            , test "Converts 'e9' to { x = 4, y = 8 }" <|
+                \_ ->
+                    Expect.equal (Just { x = 4, y = 8 }) (nameToCoord "e9")
+            , test "Converts 'g6' to { x = 6, y = 7 }" <|
+                \_ ->
+                    Expect.equal (Just { x = 6, y = 7 }) (nameToCoord "g6")
+            , test "Invalid 'a0' returns Nothing" <|
+                \_ ->
+                    Expect.equal Nothing (nameToCoord "a0")
+            , test "Invalid 'a6' returns Nothing" <|
+                \_ ->
+                    Expect.equal Nothing (nameToCoord "a6")
+            , test "Invalid 'gf' returns Nothing" <|
+                \_ ->
+                    Expect.equal Nothing (nameToCoord "gf")
             ]
         ]
 
@@ -257,7 +283,7 @@ randomBoard2Moves =
 
 movesTest : Test
 movesTest =
-    describe "move tests"
+    describe "Move tests"
         [ describe "boardSlice function"
             [ boardSliceTest "checks board slice from {2,0} to {6,4}"
                 { x = 2, y = 0 }

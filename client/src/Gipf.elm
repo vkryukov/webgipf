@@ -165,3 +165,30 @@ availableMoves boardPieces =
                 (List.map coordToTuples (boardSlice move.from move.to))
         )
         allMoves
+
+
+nameToCoord : String -> Maybe Coord
+nameToCoord name =
+    let
+        x =
+            String.left 1 name
+                |> String.toList
+                |> List.head
+                |> Maybe.map Char.toCode
+                |> Maybe.map (\code -> code - Char.toCode 'a')
+                |> Maybe.withDefault -1
+
+        y =
+            String.slice 1 2 name
+                |> String.toInt
+                |> Maybe.map (\num -> num - 1 + max 0 (x - 4))
+                |> Maybe.withDefault -1
+
+        c =
+            Coord x y
+    in
+    if boardPointQ c then
+        Just c
+
+    else
+        Nothing
