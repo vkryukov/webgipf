@@ -76,8 +76,9 @@ edgeBoardPoints =
 
 
 init : () -> ( Model, Cmd msg )
-init () =
-    ( { pieces =
+init =
+    \_ ->
+        ( initFromPiecesAndMoves
             [ Piece (Coord 4 1) BlackGipf
             , Piece (Coord 7 7) BlackGipf
             , Piece (Coord 1 4) BlackGipf
@@ -85,18 +86,25 @@ init () =
             , Piece (Coord 7 4) WhiteGipf
             , Piece (Coord 1 1) WhiteGipf
             ]
-      , availableMoves =
             [ Move (Coord 0 3) (Coord 1 4)
             , Move (Coord 0 3) (Coord 1 3)
             ]
-      , currentColor = Black
-      , highlightedPiece = Nothing
-      , moveFrom = Nothing
-      , moveTo = Nothing
-      , move = Nothing
-      }
-    , Cmd.none
-    )
+        , Cmd.none
+        )
+
+
+initFromPiecesAndMoves : List Piece -> List Move -> Model
+initFromPiecesAndMoves p m =
+    { pieces =
+        p
+    , availableMoves =
+        m
+    , currentColor = Black
+    , highlightedPiece = Nothing
+    , moveFrom = Nothing
+    , moveTo = Nothing
+    , move = Nothing
+    }
 
 
 
