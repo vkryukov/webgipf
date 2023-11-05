@@ -42,7 +42,7 @@ initFromPiecesAndMoves p m =
         p
     , availableMoves =
         m
-    , currentColor = Black
+    , currentColor = White
     , highlightedPiece = Nothing
     , moveFrom = Nothing
     , moveTo = Nothing
