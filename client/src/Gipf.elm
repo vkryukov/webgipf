@@ -124,3 +124,44 @@ boardSlice p1 p2 =
     List.range 1 7
         |> List.map generatePoints
         |> List.filter interiorBoardPointQ
+
+
+anyKeyMissing : Dict comparable v -> List comparable -> Bool
+anyKeyMissing dict keys =
+    List.any
+        (\key ->
+            case Dict.get key dict of
+                Nothing ->
+                    True
+
+                Just _ ->
+                    False
+        )
+        keys
+
+
+coordToTuples : Coord -> ( Int, Int )
+coordToTuples coord =
+    ( coord.x, coord.y )
+
+
+allMoves : List Move
+allMoves =
+    List.concatMap
+        (\point ->
+            List.map
+                (\neighbor -> { from = point, to = neighbor })
+                (neighbors point)
+        )
+        edgeBoardPoints
+
+
+availableMoves : BoardPieces -> List Move
+availableMoves boardPieces =
+    List.filter
+        (\move ->
+            anyKeyMissing
+                boardPieces
+                (List.map coordToTuples (boardSlice move.from move.to))
+        )
+        allMoves
