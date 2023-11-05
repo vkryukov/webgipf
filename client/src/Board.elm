@@ -1,6 +1,7 @@
 module Board exposing (..)
 
 import Browser
+import Gipf exposing (Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, edgeBoardPoints, standardStartingBoard)
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Platform.Cmd as Cmd
@@ -14,25 +15,6 @@ import Task
 -- Model definition
 
 
-type alias Coord =
-    { x : Int, y : Int }
-
-
-type alias Piece =
-    { coord : Coord, kind : Kind }
-
-
-type Kind
-    = Black
-    | BlackGipf
-    | White
-    | WhiteGipf
-
-
-type alias Move =
-    { from : Coord, to : Coord }
-
-
 type alias Model =
     { pieces : List Piece
     , availableMoves : List Move
@@ -44,51 +26,12 @@ type alias Model =
     }
 
 
-boardPointQ : Coord -> Bool
-boardPointQ point =
-    point.x >= 0 && point.x <= 8 && Basics.max (point.x - 4) 0 <= point.y && point.y <= Basics.min (4 + point.x) 8
-
-
-interiorBoardPointQ : Coord -> Bool
-interiorBoardPointQ point =
-    point.x >= 1 && point.x <= 7 && point.y >= 1 && point.y <= 7 && abs (point.x - point.y) < 4
-
-
-edgeBoardPointQ : Coord -> Bool
-edgeBoardPointQ point =
-    point.x == 0 || point.x == 8 || point.y == 0 || point.y == 8 || abs (point.x - point.y) == 4
-
-
-boardPoints : List Coord
-boardPoints =
-    List.concatMap (\x -> List.map (\y -> { x = x, y = y }) (List.range 0 8)) (List.range 0 8)
-        |> List.filter boardPointQ
-
-
-interiorBoardPoints : List Coord
-interiorBoardPoints =
-    List.filter interiorBoardPointQ boardPoints
-
-
-edgeBoardPoints : List Coord
-edgeBoardPoints =
-    List.filter edgeBoardPointQ boardPoints
-
-
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
         ( initFromPiecesAndMoves
-            [ Piece (Coord 4 1) BlackGipf
-            , Piece (Coord 7 7) BlackGipf
-            , Piece (Coord 1 4) BlackGipf
-            , Piece (Coord 4 7) WhiteGipf
-            , Piece (Coord 7 4) WhiteGipf
-            , Piece (Coord 1 1) WhiteGipf
-            ]
-            [ Move (Coord 0 3) (Coord 1 4)
-            , Move (Coord 0 3) (Coord 1 3)
-            ]
+            (boardToPieces standardStartingBoard)
+            (availableMoves standardStartingBoard)
         , Cmd.none
         )
 
