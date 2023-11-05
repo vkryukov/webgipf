@@ -2,7 +2,7 @@ module GipfTests exposing (..)
 
 import Dict
 import Expect
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, coordinatesSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors)
 import List exposing (sortWith)
 import Test exposing (..)
 
@@ -38,7 +38,7 @@ boardSliceTest : String -> Coord -> Coord -> List Coord -> Test
 boardSliceTest description start end expectedSlice =
     test description <|
         \_ ->
-            sortedEqual expectedSlice (boardSlice start end)
+            sortedEqual expectedSlice (coordinatesSlice start end)
 
 
 board : Test

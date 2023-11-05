@@ -111,8 +111,8 @@ stepVector p1 p2 =
         { x = v.x // maxAbs, y = v.y // maxAbs }
 
 
-boardSlice : Coord -> Coord -> List Coord
-boardSlice p1 p2 =
+coordinatesSlice : Coord -> Coord -> List Coord
+coordinatesSlice p1 p2 =
     let
         generatePoints i =
             let
@@ -126,18 +126,19 @@ boardSlice p1 p2 =
         |> List.filter interiorBoardPointQ
 
 
+dictSlice : Dict comparable v -> List comparable -> List (Maybe v)
+dictSlice dict keys =
+    List.map (\key -> Dict.get key dict) keys
+
+
+anyNothing : List (Maybe a) -> Bool
+anyNothing list =
+    List.any (\item -> item == Nothing) list
+
+
 anyKeyMissing : Dict comparable v -> List comparable -> Bool
 anyKeyMissing dict keys =
-    List.any
-        (\key ->
-            case Dict.get key dict of
-                Nothing ->
-                    True
-
-                Just _ ->
-                    False
-        )
-        keys
+    anyNothing (dictSlice dict keys)
 
 
 coordToTuples : Coord -> ( Int, Int )
@@ -162,7 +163,7 @@ availableMoves boardPieces =
         (\move ->
             anyKeyMissing
                 boardPieces
-                (List.map coordToTuples (boardSlice move.from move.to))
+                (List.map coordToTuples (coordinatesSlice move.from move.to))
         )
         allMoves
 
