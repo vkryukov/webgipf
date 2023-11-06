@@ -387,3 +387,12 @@ stringToBoard str =
         )
         (Just Dict.empty)
         (String.split " " str)
+
+
+extendSublistWithJustItems : List (Maybe a) -> Int -> List a
+extendSublistWithJustItems list start =
+    let
+        prefix =
+            List.take start list
+    in
+    List.reverse (largestPrefixWithoutNothing (List.reverse prefix)) ++ largestPrefixWithoutNothing (List.drop start list)
