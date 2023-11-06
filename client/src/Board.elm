@@ -1,7 +1,7 @@
 module Board exposing (..)
 
 import Browser
-import Gipf exposing (Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, edgeBoardPoints, standardStartingBoard)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, edgeBoardPoints, performMove, standardStartingBoard)
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Platform.Cmd as Cmd
@@ -16,7 +16,7 @@ import Task
 
 
 type alias Model =
-    { pieces : List Piece
+    { board : BoardPieces
     , availableMoves : List Move
     , currentColor : Kind
     , highlightedPiece : Maybe Coord
@@ -29,19 +29,15 @@ type alias Model =
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        ( initFromPiecesAndMoves
-            (boardToPieces standardStartingBoard)
-            (availableMoves standardStartingBoard)
+        ( initFromBoard standardStartingBoard
         , Cmd.none
         )
 
 
-initFromPiecesAndMoves : List Piece -> List Move -> Model
-initFromPiecesAndMoves p m =
-    { pieces =
-        p
-    , availableMoves =
-        m
+initFromBoard : BoardPieces -> Model
+initFromBoard b =
+    { board = b
+    , availableMoves = availableMoves b
     , currentColor = White
     , highlightedPiece = Nothing
     , moveFrom = Nothing
@@ -108,7 +104,35 @@ update msg model =
                         )
 
         MoveMade move ->
-            ( { model | move = Just move }, Cmd.none )
+            let
+                b =
+                    performMove move model.currentColor model.board
+            in
+            case b of
+                Just b1 ->
+                    -- move was valid
+                    ( { model
+                        | board = b1
+                        , availableMoves = availableMoves b1
+                        , currentColor =
+                            if model.currentColor == Black then
+                                White
+
+                            else if model.currentColor == BlackGipf then
+                                WhiteGipf
+
+                            else if model.currentColor == White then
+                                Black
+
+                            else
+                                BlackGipf
+                      }
+                    , Cmd.none
+                    )
+
+                Nothing ->
+                    -- move was invalid
+                    ( model, Cmd.none )
 
 
 
@@ -362,7 +386,7 @@ viewPieceWithAction piece event msg =
 viewPieces : Model -> Svg msg
 viewPieces model =
     g []
-        (List.map viewPiece model.pieces)
+        (List.map viewPiece (boardToPieces model.board))
 
 
 viewPossibleMoves : Model -> Svg Msg
