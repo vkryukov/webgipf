@@ -165,8 +165,8 @@ scale =
 
 
 coordToXY : Coord -> ( Int, Int )
-coordToXY coord =
-    ( round (toFloat coord.x * cos30 * scale) + offsetX, offsetY - round ((toFloat coord.y - sin30 * toFloat coord.x) * scale) )
+coordToXY ( x, y ) =
+    ( round (toFloat x * cos30 * scale) + offsetX, offsetY - round ((toFloat y - sin30 * toFloat x) * scale) )
 
 
 coordsToPoints : List Coord -> String
@@ -276,13 +276,13 @@ viewEmptyBoard =
          , polygon
             [ points
                 (coordsToPoints
-                    [ Coord 1 1
-                    , Coord 4 1
-                    , Coord 7 4
-                    , Coord 7 7
-                    , Coord 4 7
-                    , Coord 1 4
-                    , Coord 1 1
+                    [ ( 1, 1 )
+                    , ( 4, 1 )
+                    , ( 7, 4 )
+                    , ( 7, 7 )
+                    , ( 4, 7 )
+                    , ( 1, 4 )
+                    , ( 1, 1 )
                     ]
                 )
             , Svg.Attributes.style "fill: white;"
@@ -290,49 +290,49 @@ viewEmptyBoard =
             []
 
          -- lines
-         , drawLine (Coord 1 0) (Coord 1 5)
-         , drawLine (Coord 2 0) (Coord 2 6)
-         , drawLine (Coord 3 0) (Coord 3 7)
-         , drawLine (Coord 4 0) (Coord 4 8)
-         , drawLine (Coord 5 1) (Coord 5 8)
-         , drawLine (Coord 6 2) (Coord 6 8)
-         , drawLine (Coord 7 3) (Coord 7 8)
-         , drawLine (Coord 0 3) (Coord 5 8)
-         , drawLine (Coord 0 2) (Coord 6 8)
-         , drawLine (Coord 0 1) (Coord 7 8)
-         , drawLine (Coord 0 0) (Coord 8 8)
-         , drawLine (Coord 1 0) (Coord 8 7)
-         , drawLine (Coord 2 0) (Coord 8 6)
-         , drawLine (Coord 3 0) (Coord 8 5)
-         , drawLine (Coord 3 7) (Coord 8 7)
-         , drawLine (Coord 2 6) (Coord 8 6)
-         , drawLine (Coord 1 5) (Coord 8 5)
-         , drawLine (Coord 0 4) (Coord 8 4)
-         , drawLine (Coord 0 3) (Coord 7 3)
-         , drawLine (Coord 0 2) (Coord 6 2)
-         , drawLine (Coord 0 1) (Coord 5 1)
+         , drawLine ( 1, 0 ) ( 1, 5 )
+         , drawLine ( 2, 0 ) ( 2, 6 )
+         , drawLine ( 3, 0 ) ( 3, 7 )
+         , drawLine ( 4, 0 ) ( 4, 8 )
+         , drawLine ( 5, 1 ) ( 5, 8 )
+         , drawLine ( 6, 2 ) ( 6, 8 )
+         , drawLine ( 7, 3 ) ( 7, 8 )
+         , drawLine ( 0, 3 ) ( 5, 8 )
+         , drawLine ( 0, 2 ) ( 6, 8 )
+         , drawLine ( 0, 1 ) ( 7, 8 )
+         , drawLine ( 0, 0 ) ( 8, 8 )
+         , drawLine ( 1, 0 ) ( 8, 7 )
+         , drawLine ( 2, 0 ) ( 8, 6 )
+         , drawLine ( 3, 0 ) ( 8, 5 )
+         , drawLine ( 3, 7 ) ( 8, 7 )
+         , drawLine ( 2, 6 ) ( 8, 6 )
+         , drawLine ( 1, 5 ) ( 8, 5 )
+         , drawLine ( 0, 4 ) ( 8, 4 )
+         , drawLine ( 0, 3 ) ( 7, 3 )
+         , drawLine ( 0, 2 ) ( 6, 2 )
+         , drawLine ( 0, 1 ) ( 5, 1 )
 
          -- bottom labels
-         , drawBottomLabel "a1" (Coord 0 0)
-         , drawBottomLabel "b1" (Coord 1 0)
-         , drawBottomLabel "c1" (Coord 2 0)
-         , drawBottomLabel "d1" (Coord 3 0)
-         , drawBottomLabel "e1" (Coord 4 0)
-         , drawBottomLabel "f1" (Coord 5 1)
-         , drawBottomLabel "g1" (Coord 6 2)
-         , drawBottomLabel "h1" (Coord 7 3)
-         , drawBottomLabel "i1" (Coord 8 4)
+         , drawBottomLabel "a1" ( 0, 0 )
+         , drawBottomLabel "b1" ( 1, 0 )
+         , drawBottomLabel "c1" ( 2, 0 )
+         , drawBottomLabel "d1" ( 3, 0 )
+         , drawBottomLabel "e1" ( 4, 0 )
+         , drawBottomLabel "f1" ( 5, 1 )
+         , drawBottomLabel "g1" ( 6, 2 )
+         , drawBottomLabel "h1" ( 7, 3 )
+         , drawBottomLabel "i1" ( 8, 4 )
 
          -- top labels
-         , drawTopLabel "a5" (Coord 0 4)
-         , drawTopLabel "b6" (Coord 1 5)
-         , drawTopLabel "c7" (Coord 2 6)
-         , drawTopLabel "d8" (Coord 3 7)
-         , drawTopLabel "e9" (Coord 4 8)
-         , drawTopLabel "f8" (Coord 5 8)
-         , drawTopLabel "g7" (Coord 6 8)
-         , drawTopLabel "h6" (Coord 7 8)
-         , drawTopLabel "i5" (Coord 8 8)
+         , drawTopLabel "a5" ( 0, 4 )
+         , drawTopLabel "b6" ( 1, 5 )
+         , drawTopLabel "c7" ( 2, 6 )
+         , drawTopLabel "d8" ( 3, 7 )
+         , drawTopLabel "e9" ( 4, 8 )
+         , drawTopLabel "f8" ( 5, 8 )
+         , drawTopLabel "g7" ( 6, 8 )
+         , drawTopLabel "h6" ( 7, 8 )
+         , drawTopLabel "i5" ( 8, 8 )
          ]
             ++ List.map (\p -> drawCircle p 0.1 "black") edgeBoardPoints
         )
@@ -502,7 +502,7 @@ view model =
         , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
         ]
         [ viewEmptyBoard
-        , viewPieceWithAction (Piece (Coord 8 10) model.currentColor) "click" ChangeColor
+        , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor) "click" ChangeColor
         , viewPieces model
         , viewPossibleMoves model
         , viewMove model

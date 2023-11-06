@@ -27,24 +27,9 @@ import List exposing (sortWith)
 import Test exposing (..)
 
 
-compareCoord : Coord -> Coord -> Order
-compareCoord coord1 coord2 =
-    case compare coord1.x coord2.x of
-        EQ ->
-            compare coord1.y coord2.y
-
-        order ->
-            order
-
-
-sortCoords : List Coord -> List Coord
-sortCoords coords =
-    sortWith compareCoord coords
-
-
 sortedEqual : List Coord -> List Coord -> Expect.Expectation
 sortedEqual a b =
-    Expect.equal (sortCoords a) (sortCoords b)
+    Expect.equal (List.sort a) (List.sort b)
 
 
 neighborsTest : String -> Coord -> List Coord -> Test
@@ -67,55 +52,55 @@ board =
         [ describe "boardPointQ function"
             [ test "checks a point within the board" <|
                 \_ ->
-                    Expect.equal True (boardPointQ { x = 4, y = 4 })
+                    Expect.equal True (boardPointQ ( 4, 4 ))
             , test "checks a point outside the board" <|
                 \_ ->
-                    Expect.equal False (boardPointQ { x = 9, y = 9 })
+                    Expect.equal False (boardPointQ ( 9, 9 ))
             ]
         , describe "interiorBoardPointQ function"
             [ test "checks an interior point" <|
                 \_ ->
-                    Expect.equal True (interiorBoardPointQ { x = 4, y = 4 })
+                    Expect.equal True (interiorBoardPointQ ( 4, 4 ))
             , test "checks a non-interior point" <|
                 \_ ->
-                    Expect.equal False (interiorBoardPointQ { x = 0, y = 0 })
+                    Expect.equal False (interiorBoardPointQ ( 0, 0 ))
             ]
         , describe "edgeBoardPointQ function"
             [ test "checks an edge point" <|
                 \_ ->
-                    Expect.equal True (edgeBoardPointQ { x = 0, y = 4 })
+                    Expect.equal True (edgeBoardPointQ ( 0, 4 ))
             , test "checks a non-edge point" <|
                 \_ ->
-                    Expect.equal False (edgeBoardPointQ { x = 4, y = 4 })
+                    Expect.equal False (edgeBoardPointQ ( 4, 4 ))
             ]
         , describe "neighbors function"
             [ neighborsTest "finds neighbors of a point at (4, 4)"
-                { x = 4, y = 4 }
-                [ { x = 4, y = 5 }
-                , { x = 4, y = 3 }
-                , { x = 5, y = 4 }
-                , { x = 3, y = 4 }
-                , { x = 5, y = 5 }
-                , { x = 3, y = 3 }
+                ( 4, 4 )
+                [ ( 4, 5 )
+                , ( 4, 3 )
+                , ( 5, 4 )
+                , ( 3, 4 )
+                , ( 5, 5 )
+                , ( 3, 3 )
                 ]
             , neighborsTest "finds neighbors of a point at (0, 0)"
-                { x = 0, y = 0 }
-                [ { x = 1, y = 1 }
+                ( 0, 0 )
+                [ ( 1, 1 )
                 ]
             , neighborsTest "finds neighbors of a point at (0, 4)"
-                { x = 0, y = 4 }
-                [ { x = 1, y = 4 }
+                ( 0, 4 )
+                [ ( 1, 4 )
                 ]
             , neighborsTest "finds neighbors of a point at (1, 0)"
-                { x = 1, y = 0 }
-                [ { x = 1, y = 1 }
-                , { x = 2, y = 1 }
+                ( 1, 0 )
+                [ ( 1, 1 )
+                , ( 2, 1 )
                 ]
             , neighborsTest "finds neighbors of a point at (7, 7)"
-                { x = 7, y = 7 }
-                [ { x = 6, y = 7 }
-                , { x = 7, y = 6 }
-                , { x = 6, y = 6 }
+                ( 7, 7 )
+                [ ( 6, 7 )
+                , ( 7, 6 )
+                , ( 6, 6 )
                 ]
             ]
         , describe "boardPoints function"
@@ -124,21 +109,21 @@ board =
                     Expect.equal 61 (List.length boardPoints)
             ]
         , describe "nameToCoord Tests"
-            [ test "Converts 'a1' to { x = 0, y = 0 }" <|
+            [ test "Converts 'a1' to ( 0,  0 )" <|
                 \_ ->
-                    Expect.equal (Just { x = 0, y = 0 }) (nameToCoord "a1")
-            , test "Converts 'a5' to { x = 0, y = 4 }" <|
+                    Expect.equal (Just ( 0, 0 )) (nameToCoord "a1")
+            , test "Converts 'a5' to ( 0,  4 )" <|
                 \_ ->
-                    Expect.equal (Just { x = 0, y = 4 }) (nameToCoord "a5")
-            , test "Converts 'e1' to { x = 4, y = 0 }" <|
+                    Expect.equal (Just ( 0, 4 )) (nameToCoord "a5")
+            , test "Converts 'e1' to ( 4,  0 )" <|
                 \_ ->
-                    Expect.equal (Just { x = 4, y = 0 }) (nameToCoord "e1")
-            , test "Converts 'e9' to { x = 4, y = 8 }" <|
+                    Expect.equal (Just ( 4, 0 )) (nameToCoord "e1")
+            , test "Converts 'e9' to ( 4,  8 )" <|
                 \_ ->
-                    Expect.equal (Just { x = 4, y = 8 }) (nameToCoord "e9")
-            , test "Converts 'g6' to { x = 6, y = 7 }" <|
+                    Expect.equal (Just ( 4, 8 )) (nameToCoord "e9")
+            , test "Converts 'g6' to ( 6,  7 )" <|
                 \_ ->
-                    Expect.equal (Just { x = 6, y = 7 }) (nameToCoord "g6")
+                    Expect.equal (Just ( 6, 7 )) (nameToCoord "g6")
             , test "Invalid 'a0' returns Nothing" <|
                 \_ ->
                     Expect.equal Nothing (nameToCoord "a0")
@@ -173,9 +158,9 @@ board =
 
 compareMoves : Move -> Move -> Order
 compareMoves move1 move2 =
-    case compareCoord move1.from move2.from of
+    case compare move1.from move2.from of
         EQ ->
-            compareCoord move1.to move2.to
+            compare move1.to move2.to
 
         order ->
             order
@@ -226,30 +211,30 @@ randomBoard1 =
 
 randomBoard1Moves : List Move
 randomBoard1Moves =
-    [ { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } }
-    , { from = { x = 0, y = 2 }, to = { x = 1, y = 3 } }
-    , { from = { x = 0, y = 3 }, to = { x = 1, y = 3 } }
-    , { from = { x = 0, y = 3 }, to = { x = 1, y = 4 } }
-    , { from = { x = 0, y = 4 }, to = { x = 1, y = 4 } }
-    , { from = { x = 1, y = 5 }, to = { x = 2, y = 5 } }
-    , { from = { x = 2, y = 0 }, to = { x = 3, y = 1 } }
-    , { from = { x = 3, y = 0 }, to = { x = 3, y = 1 } }
-    , { from = { x = 3, y = 7 }, to = { x = 3, y = 6 } }
-    , { from = { x = 3, y = 7 }, to = { x = 4, y = 7 } }
-    , { from = { x = 4, y = 0 }, to = { x = 4, y = 1 } }
-    , { from = { x = 4, y = 8 }, to = { x = 4, y = 7 } }
-    , { from = { x = 5, y = 1 }, to = { x = 5, y = 2 } }
-    , { from = { x = 5, y = 8 }, to = { x = 5, y = 7 } }
-    , { from = { x = 5, y = 8 }, to = { x = 4, y = 7 } }
-    , { from = { x = 6, y = 2 }, to = { x = 6, y = 3 } }
-    , { from = { x = 6, y = 8 }, to = { x = 6, y = 7 } }
-    , { from = { x = 6, y = 8 }, to = { x = 5, y = 7 } }
-    , { from = { x = 7, y = 3 }, to = { x = 6, y = 3 } }
-    , { from = { x = 8, y = 4 }, to = { x = 7, y = 4 } }
-    , { from = { x = 8, y = 5 }, to = { x = 7, y = 5 } }
-    , { from = { x = 8, y = 6 }, to = { x = 7, y = 5 } }
-    , { from = { x = 8, y = 7 }, to = { x = 7, y = 7 } }
-    , { from = { x = 8, y = 8 }, to = { x = 7, y = 7 } }
+    [ { from = ( 0, 0 ), to = ( 1, 1 ) }
+    , { from = ( 0, 2 ), to = ( 1, 3 ) }
+    , { from = ( 0, 3 ), to = ( 1, 3 ) }
+    , { from = ( 0, 3 ), to = ( 1, 4 ) }
+    , { from = ( 0, 4 ), to = ( 1, 4 ) }
+    , { from = ( 1, 5 ), to = ( 2, 5 ) }
+    , { from = ( 2, 0 ), to = ( 3, 1 ) }
+    , { from = ( 3, 0 ), to = ( 3, 1 ) }
+    , { from = ( 3, 7 ), to = ( 3, 6 ) }
+    , { from = ( 3, 7 ), to = ( 4, 7 ) }
+    , { from = ( 4, 0 ), to = ( 4, 1 ) }
+    , { from = ( 4, 8 ), to = ( 4, 7 ) }
+    , { from = ( 5, 1 ), to = ( 5, 2 ) }
+    , { from = ( 5, 8 ), to = ( 5, 7 ) }
+    , { from = ( 5, 8 ), to = ( 4, 7 ) }
+    , { from = ( 6, 2 ), to = ( 6, 3 ) }
+    , { from = ( 6, 8 ), to = ( 6, 7 ) }
+    , { from = ( 6, 8 ), to = ( 5, 7 ) }
+    , { from = ( 7, 3 ), to = ( 6, 3 ) }
+    , { from = ( 8, 4 ), to = ( 7, 4 ) }
+    , { from = ( 8, 5 ), to = ( 7, 5 ) }
+    , { from = ( 8, 6 ), to = ( 7, 5 ) }
+    , { from = ( 8, 7 ), to = ( 7, 7 ) }
+    , { from = ( 8, 8 ), to = ( 7, 7 ) }
     ]
 
 
@@ -293,30 +278,30 @@ randomBoard2 =
 
 randomBoard2Moves : List Move
 randomBoard2Moves =
-    [ { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } }
-    , { from = { x = 0, y = 1 }, to = { x = 1, y = 2 } }
-    , { from = { x = 0, y = 2 }, to = { x = 1, y = 3 } }
-    , { from = { x = 0, y = 3 }, to = { x = 1, y = 3 } }
-    , { from = { x = 0, y = 4 }, to = { x = 1, y = 4 } }
-    , { from = { x = 1, y = 0 }, to = { x = 2, y = 1 } }
-    , { from = { x = 2, y = 0 }, to = { x = 2, y = 1 } }
-    , { from = { x = 2, y = 6 }, to = { x = 2, y = 5 } }
-    , { from = { x = 3, y = 0 }, to = { x = 4, y = 1 } }
-    , { from = { x = 3, y = 7 }, to = { x = 4, y = 7 } }
-    , { from = { x = 4, y = 0 }, to = { x = 4, y = 1 } }
-    , { from = { x = 4, y = 8 }, to = { x = 4, y = 7 } }
-    , { from = { x = 6, y = 2 }, to = { x = 6, y = 3 } }
-    , { from = { x = 6, y = 8 }, to = { x = 6, y = 7 } }
-    , { from = { x = 6, y = 8 }, to = { x = 5, y = 7 } }
-    , { from = { x = 7, y = 3 }, to = { x = 7, y = 4 } }
-    , { from = { x = 7, y = 3 }, to = { x = 6, y = 3 } }
-    , { from = { x = 7, y = 8 }, to = { x = 7, y = 7 } }
-    , { from = { x = 7, y = 8 }, to = { x = 6, y = 7 } }
-    , { from = { x = 8, y = 4 }, to = { x = 7, y = 4 } }
-    , { from = { x = 8, y = 5 }, to = { x = 7, y = 4 } }
-    , { from = { x = 8, y = 7 }, to = { x = 7, y = 7 } }
-    , { from = { x = 8, y = 7 }, to = { x = 7, y = 6 } }
-    , { from = { x = 8, y = 8 }, to = { x = 7, y = 7 } }
+    [ { from = ( 0, 0 ), to = ( 1, 1 ) }
+    , { from = ( 0, 1 ), to = ( 1, 2 ) }
+    , { from = ( 0, 2 ), to = ( 1, 3 ) }
+    , { from = ( 0, 3 ), to = ( 1, 3 ) }
+    , { from = ( 0, 4 ), to = ( 1, 4 ) }
+    , { from = ( 1, 0 ), to = ( 2, 1 ) }
+    , { from = ( 2, 0 ), to = ( 2, 1 ) }
+    , { from = ( 2, 6 ), to = ( 2, 5 ) }
+    , { from = ( 3, 0 ), to = ( 4, 1 ) }
+    , { from = ( 3, 7 ), to = ( 4, 7 ) }
+    , { from = ( 4, 0 ), to = ( 4, 1 ) }
+    , { from = ( 4, 8 ), to = ( 4, 7 ) }
+    , { from = ( 6, 2 ), to = ( 6, 3 ) }
+    , { from = ( 6, 8 ), to = ( 6, 7 ) }
+    , { from = ( 6, 8 ), to = ( 5, 7 ) }
+    , { from = ( 7, 3 ), to = ( 7, 4 ) }
+    , { from = ( 7, 3 ), to = ( 6, 3 ) }
+    , { from = ( 7, 8 ), to = ( 7, 7 ) }
+    , { from = ( 7, 8 ), to = ( 6, 7 ) }
+    , { from = ( 8, 4 ), to = ( 7, 4 ) }
+    , { from = ( 8, 5 ), to = ( 7, 4 ) }
+    , { from = ( 8, 7 ), to = ( 7, 7 ) }
+    , { from = ( 8, 7 ), to = ( 7, 6 ) }
+    , { from = ( 8, 8 ), to = ( 7, 7 ) }
     ]
 
 
@@ -346,24 +331,24 @@ movesTest =
     describe "Move tests"
         [ describe "boardSlice function"
             [ boardSliceTest "checks board slice from {2,0} to {6,4}"
-                { x = 2, y = 0 }
-                { x = 6, y = 4 }
-                [ { x = 3, y = 1 }
-                , { x = 4, y = 2 }
-                , { x = 5, y = 3 }
-                , { x = 6, y = 4 }
-                , { x = 7, y = 5 }
+                ( 2, 0 )
+                ( 6, 4 )
+                [ ( 3, 1 )
+                , ( 4, 2 )
+                , ( 5, 3 )
+                , ( 6, 4 )
+                , ( 7, 5 )
                 ]
             , boardSliceTest "checks board slice from {4,8} to {4,5}"
-                { x = 4, y = 8 }
-                { x = 4, y = 5 }
-                [ { x = 4, y = 1 }
-                , { x = 4, y = 2 }
-                , { x = 4, y = 3 }
-                , { x = 4, y = 4 }
-                , { x = 4, y = 5 }
-                , { x = 4, y = 6 }
-                , { x = 4, y = 7 }
+                ( 4, 8 )
+                ( 4, 5 )
+                [ ( 4, 1 )
+                , ( 4, 2 )
+                , ( 4, 3 )
+                , ( 4, 4 )
+                , ( 4, 5 )
+                , ( 4, 6 )
+                , ( 4, 7 )
                 ]
             ]
         , describe "available moves"
@@ -378,7 +363,11 @@ movesTest =
                     Expect.equal (sortMoves randomBoard2Moves) (sortMoves (availableMoves randomBoard2))
             ]
         , describe "performing moves"
-            [ testPerformMove "making one move" "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2" { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } } White "GKb5 GKe2 GKh5 GWc3 GWe8 GWh2 Wb2"
+            [ testPerformMove "making one move"
+                "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2"
+                { from = ( 0, 0 ), to = ( 1, 1 ) }
+                White
+                "GKb5 GKe2 GKh5 GWc3 GWe8 GWh2 Wb2"
             ]
         ]
 
@@ -389,7 +378,7 @@ toolsTest =
         [ describe "sortCoords function"
             [ test "sorts a list of coordinates" <|
                 \_ ->
-                    sortedEqual [ { x = 1, y = 1 }, { x = 2, y = 2 }, { x = 3, y = 3 } ] [ { x = 3, y = 3 }, { x = 1, y = 1 }, { x = 2, y = 2 } ]
+                    sortedEqual [ ( 1, 1 ), ( 2, 2 ), ( 3, 3 ) ] [ ( 3, 3 ), ( 1, 1 ), ( 2, 2 ) ]
             ]
         , describe "largestPrefixWithoutNothihg function"
             [ test "finds the largest prefix without Nothing, starting with a Just item" <|

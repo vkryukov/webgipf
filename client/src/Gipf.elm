@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 
 
 type alias Coord =
-    { x : Int, y : Int }
+    ( Int, Int )
 
 
 type alias Piece =
@@ -40,27 +40,27 @@ standardStartingBoard =
 
 boardToPieces : BoardPieces -> List Piece
 boardToPieces board =
-    Dict.toList board |> List.map (\( ( x, y ), kind ) -> Piece { x = x, y = y } kind)
+    Dict.toList board |> List.map (\( ( x, y ), kind ) -> Piece ( x, y ) kind)
 
 
 boardPointQ : Coord -> Bool
-boardPointQ point =
-    point.x >= 0 && point.x <= 8 && Basics.max (point.x - 4) 0 <= point.y && point.y <= Basics.min (4 + point.x) 8
+boardPointQ ( x, y ) =
+    x >= 0 && x <= 8 && Basics.max (x - 4) 0 <= y && y <= Basics.min (4 + x) 8
 
 
 interiorBoardPointQ : Coord -> Bool
-interiorBoardPointQ point =
-    point.x >= 1 && point.x <= 7 && point.y >= 1 && point.y <= 7 && abs (point.x - point.y) < 4
+interiorBoardPointQ ( x, y ) =
+    x >= 1 && x <= 7 && y >= 1 && y <= 7 && abs (x - y) < 4
 
 
 edgeBoardPointQ : Coord -> Bool
-edgeBoardPointQ point =
-    point.x == 0 || point.x == 8 || point.y == 0 || point.y == 8 || abs (point.x - point.y) == 4
+edgeBoardPointQ ( x, y ) =
+    x == 0 || x == 8 || y == 0 || y == 8 || abs (x - y) == 4
 
 
 boardPoints : List Coord
 boardPoints =
-    List.concatMap (\x -> List.map (\y -> { x = x, y = y }) (List.range 0 8)) (List.range 0 8)
+    List.concatMap (\x -> List.map (\y -> ( x, y )) (List.range 0 8)) (List.range 0 8)
         |> List.filter boardPointQ
 
 
@@ -78,16 +78,16 @@ neighbors : Coord -> List Coord
 neighbors point =
     let
         adjustments =
-            [ { x = 0, y = 1 }
-            , { x = 0, y = -1 }
-            , { x = 1, y = 0 }
-            , { x = -1, y = 0 }
-            , { x = 1, y = 1 }
-            , { x = -1, y = -1 }
+            [ ( 0, 1 )
+            , ( 0, -1 )
+            , ( 1, 0 )
+            , ( -1, 0 )
+            , ( 1, 1 )
+            , ( -1, -1 )
             ]
 
-        addPoints p adjustment =
-            { x = p.x + adjustment.x, y = p.y + adjustment.y }
+        addPoints ( x, y ) ( ax, ay ) =
+            ( x + ax, y + ay )
 
         allNeighbors =
             List.map (addPoints point) adjustments
@@ -96,30 +96,30 @@ neighbors point =
 
 
 stepVector : Coord -> Coord -> Coord
-stepVector p1 p2 =
+stepVector ( x1, y1 ) ( x2, y2 ) =
     let
-        v =
-            { x = p2.x - p1.x, y = p2.y - p1.y }
+        ( vx, vy ) =
+            ( x2 - x1, y2 - y1 )
 
         maxAbs =
-            max (abs v.x) (abs v.y)
+            max (abs vx) (abs vy)
     in
     if maxAbs == 0 then
-        { x = 0, y = 0 }
+        ( 0, 0 )
 
     else
-        { x = v.x // maxAbs, y = v.y // maxAbs }
+        ( vx // maxAbs, vy // maxAbs )
 
 
 coordinatesSlice : Coord -> Coord -> List Coord
-coordinatesSlice p1 p2 =
+coordinatesSlice ( x1, y1 ) ( x2, y2 ) =
     let
         generatePoints i =
             let
-                step =
-                    stepVector p1 p2
+                ( sx, sy ) =
+                    stepVector ( x1, y1 ) ( x2, y2 )
             in
-            { x = p1.x + step.x * i, y = p1.y + step.y * i }
+            ( x1 + sx * i, y1 + sy * i )
     in
     List.range 1 7
         |> List.map generatePoints
@@ -135,12 +135,12 @@ boardSlice : BoardPieces -> Move -> List (Maybe Piece)
 boardSlice boardPieces move =
     let
         cs =
-            List.map coordToTuples (coordinatesSlice move.from move.to)
+            coordinatesSlice move.from move.to
 
         k =
             dictSlice boardPieces cs
     in
-    List.map2 (\key value -> Maybe.map (\k2 -> { coord = { x = fst key, y = snd key }, kind = k2 }) value)
+    List.map2 (\key value -> Maybe.map (\k2 -> { coord = key, kind = k2 }) value)
         cs
         k
 
@@ -153,11 +153,6 @@ anyNothing list =
 anyKeyMissing : Dict comparable v -> List comparable -> Bool
 anyKeyMissing dict keys =
     anyNothing (dictSlice dict keys)
-
-
-coordToTuples : Coord -> ( Int, Int )
-coordToTuples coord =
-    ( coord.x, coord.y )
 
 
 allMoves : List Move
@@ -175,7 +170,7 @@ movePossibleQ : BoardPieces -> Move -> Bool
 movePossibleQ boardPieces move =
     anyKeyMissing
         boardPieces
-        (List.map coordToTuples (coordinatesSlice move.from move.to))
+        (coordinatesSlice move.from move.to)
 
 
 availableMoves : BoardPieces -> List Move
@@ -203,7 +198,7 @@ nameToCoord name =
                 |> Maybe.withDefault -1
 
         c =
-            Coord x y
+            ( x, y )
     in
     if boardPointQ c then
         Just c
@@ -213,13 +208,13 @@ nameToCoord name =
 
 
 coordToName : Coord -> String
-coordToName coord =
+coordToName ( x, y ) =
     let
         xChar =
-            Char.fromCode (coord.x + Char.toCode 'a')
+            Char.fromCode (x + Char.toCode 'a')
 
         adjustedY =
-            coord.y + 1 - max 0 (coord.x - 4)
+            y + 1 - max 0 (x - 4)
     in
     String.fromChar xChar ++ String.fromInt adjustedY
 
@@ -258,16 +253,16 @@ snd ( _, y ) =
 
 
 insertWithVector : List ( Int, Int ) -> List Kind -> Coord -> BoardPieces -> BoardPieces
-insertWithVector coords kinds vector boardPieces =
+insertWithVector coords kinds ( vx, vy ) boardPieces =
     let
         zippedList =
             List.map2 (\coord kind -> ( coord, kind )) coords kinds
     in
     List.foldl
-        (\( coord, kind ) board ->
+        (\( ( x, y ), kind ) board ->
             let
                 newCoord =
-                    ( fst coord + vector.x, snd coord + vector.y )
+                    ( x + vx, y + vy )
             in
             Dict.insert newCoord kind board
         )
@@ -279,11 +274,14 @@ performMove : Move -> Kind -> BoardPieces -> Maybe BoardPieces
 performMove move kind boardPieces =
     if movePossibleQ boardPieces move then
         let
-            vec =
+            ( x1, y1 ) =
+                move.from
+
+            ( vx, vy ) =
                 stepVector move.from move.to
 
             coordSlice =
-                List.map coordToTuples (coordinatesSlice move.from move.to)
+                coordinatesSlice move.from move.to
 
             slice =
                 dictSlice boardPieces coordSlice
@@ -297,8 +295,8 @@ performMove move kind boardPieces =
         Just
             (boardPieces
                 |> removeCoords coordsSliceWithoutNothing
-                |> insertWithVector coordsSliceWithoutNothing sliceWithoutNothing vec
-                |> Dict.insert ( move.from.x + vec.x, move.from.y + vec.y ) kind
+                |> insertWithVector coordsSliceWithoutNothing sliceWithoutNothing ( vx, vy )
+                |> Dict.insert ( x1 + vx, y1 + vy ) kind
             )
 
     else
@@ -323,7 +321,7 @@ boardToString boardPieces =
                     WhiteGipf ->
                         "GW"
                 )
-                    ++ coordToName { x = x, y = y }
+                    ++ coordToName ( x, y )
             )
         |> List.sort
         |> String.join " "
@@ -384,7 +382,7 @@ addStringToBoard : String -> BoardPieces -> Maybe BoardPieces
 addStringToBoard s b =
     Maybe.map
         (\p ->
-            Dict.insert (coordToTuples p.coord) p.kind b
+            Dict.insert p.coord p.kind b
         )
         (stringToPiece s)
 
@@ -468,27 +466,27 @@ extendSublistWithJustItems list start =
 
 allLines : List Move
 allLines =
-    [ { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } }
-    , { from = { x = 1, y = 0 }, to = { x = 1, y = 1 } }
-    , { from = { x = 1, y = 0 }, to = { x = 2, y = 1 } }
-    , { from = { x = 2, y = 0 }, to = { x = 2, y = 1 } }
-    , { from = { x = 2, y = 0 }, to = { x = 3, y = 1 } }
-    , { from = { x = 3, y = 0 }, to = { x = 3, y = 1 } }
-    , { from = { x = 3, y = 0 }, to = { x = 4, y = 1 } }
-    , { from = { x = 4, y = 0 }, to = { x = 4, y = 1 } }
-    , { from = { x = 0, y = 1 }, to = { x = 1, y = 2 } }
-    , { from = { x = 0, y = 1 }, to = { x = 1, y = 1 } }
-    , { from = { x = 0, y = 2 }, to = { x = 1, y = 3 } }
-    , { from = { x = 0, y = 2 }, to = { x = 1, y = 2 } }
-    , { from = { x = 0, y = 3 }, to = { x = 1, y = 4 } }
-    , { from = { x = 0, y = 3 }, to = { x = 1, y = 3 } }
-    , { from = { x = 0, y = 4 }, to = { x = 1, y = 4 } }
-    , { from = { x = 1, y = 5 }, to = { x = 2, y = 5 } }
-    , { from = { x = 1, y = 5 }, to = { x = 1, y = 4 } }
-    , { from = { x = 2, y = 6 }, to = { x = 3, y = 6 } }
-    , { from = { x = 2, y = 6 }, to = { x = 2, y = 5 } }
-    , { from = { x = 3, y = 7 }, to = { x = 4, y = 7 } }
-    , { from = { x = 3, y = 7 }, to = { x = 3, y = 6 } }
+    [ { from = ( 0, 0 ), to = ( 1, 1 ) }
+    , { from = ( 1, 0 ), to = ( 1, 1 ) }
+    , { from = ( 1, 0 ), to = ( 2, 1 ) }
+    , { from = ( 2, 0 ), to = ( 2, 1 ) }
+    , { from = ( 2, 0 ), to = ( 3, 1 ) }
+    , { from = ( 3, 0 ), to = ( 3, 1 ) }
+    , { from = ( 3, 0 ), to = ( 4, 1 ) }
+    , { from = ( 4, 0 ), to = ( 4, 1 ) }
+    , { from = ( 0, 1 ), to = ( 1, 2 ) }
+    , { from = ( 0, 1 ), to = ( 1, 1 ) }
+    , { from = ( 0, 2 ), to = ( 1, 3 ) }
+    , { from = ( 0, 2 ), to = ( 1, 2 ) }
+    , { from = ( 0, 3 ), to = ( 1, 4 ) }
+    , { from = ( 0, 3 ), to = ( 1, 3 ) }
+    , { from = ( 0, 4 ), to = ( 1, 4 ) }
+    , { from = ( 1, 5 ), to = ( 2, 5 ) }
+    , { from = ( 1, 5 ), to = ( 1, 4 ) }
+    , { from = ( 2, 6 ), to = ( 3, 6 ) }
+    , { from = ( 2, 6 ), to = ( 2, 5 ) }
+    , { from = ( 3, 7 ), to = ( 4, 7 ) }
+    , { from = ( 3, 7 ), to = ( 3, 6 ) }
     ]
 
 
