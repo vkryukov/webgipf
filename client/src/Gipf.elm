@@ -131,6 +131,20 @@ dictSlice dict keys =
     List.map (\key -> Dict.get key dict) keys
 
 
+boardSlice : BoardPieces -> Move -> List (Maybe Piece)
+boardSlice boardPieces move =
+    let
+        cs =
+            List.map coordToTuples (coordinatesSlice move.from move.to)
+
+        k =
+            dictSlice boardPieces cs
+    in
+    List.map2 (\key value -> Maybe.map (\k2 -> { coord = { x = fst key, y = snd key }, kind = k2 }) value)
+        cs
+        k
+
+
 anyNothing : List (Maybe a) -> Bool
 anyNothing list =
     List.any (\item -> item == Nothing) list
@@ -389,6 +403,60 @@ stringToBoard str =
         (String.split " " str)
 
 
+
+-- Detecting 4 in a row
+
+
+sublistsOfFour : List a -> List ( Int, List a )
+sublistsOfFour list =
+    List.map
+        (\i ->
+            ( i, List.take 4 (List.drop i list) )
+        )
+        (List.range 0 (List.length list - 4))
+
+
+sameColorQ : Kind -> Kind -> Bool
+sameColorQ k1 k2 =
+    case ( k1, k2 ) of
+        ( Black, BlackGipf ) ->
+            True
+
+        ( BlackGipf, Black ) ->
+            True
+
+        ( WhiteGipf, White ) ->
+            True
+
+        ( White, WhiteGipf ) ->
+            True
+
+        _ ->
+            k1 == k2
+
+
+sameColorListQ : List (Maybe Piece) -> Bool
+sameColorListQ list =
+    case list of
+        [] ->
+            True
+
+        Nothing :: _ ->
+            False
+
+        (Just p) :: xs ->
+            List.all
+                (\x ->
+                    case x of
+                        Nothing ->
+                            False
+
+                        Just pp ->
+                            sameColorQ p.kind pp.kind
+                )
+                xs
+
+
 extendSublistWithJustItems : List (Maybe a) -> Int -> List a
 extendSublistWithJustItems list start =
     let
@@ -396,3 +464,41 @@ extendSublistWithJustItems list start =
             List.take start list
     in
     List.reverse (largestPrefixWithoutNothing (List.reverse prefix)) ++ largestPrefixWithoutNothing (List.drop start list)
+
+
+allLines : List Move
+allLines =
+    [ { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } }
+    , { from = { x = 1, y = 0 }, to = { x = 1, y = 1 } }
+    , { from = { x = 1, y = 0 }, to = { x = 2, y = 1 } }
+    , { from = { x = 2, y = 0 }, to = { x = 2, y = 1 } }
+    , { from = { x = 2, y = 0 }, to = { x = 3, y = 1 } }
+    , { from = { x = 3, y = 0 }, to = { x = 3, y = 1 } }
+    , { from = { x = 3, y = 0 }, to = { x = 4, y = 1 } }
+    , { from = { x = 4, y = 0 }, to = { x = 4, y = 1 } }
+    , { from = { x = 0, y = 1 }, to = { x = 1, y = 2 } }
+    , { from = { x = 0, y = 1 }, to = { x = 1, y = 1 } }
+    , { from = { x = 0, y = 2 }, to = { x = 1, y = 3 } }
+    , { from = { x = 0, y = 2 }, to = { x = 1, y = 2 } }
+    , { from = { x = 0, y = 3 }, to = { x = 1, y = 4 } }
+    , { from = { x = 0, y = 3 }, to = { x = 1, y = 3 } }
+    , { from = { x = 0, y = 4 }, to = { x = 1, y = 4 } }
+    , { from = { x = 1, y = 5 }, to = { x = 2, y = 5 } }
+    , { from = { x = 1, y = 5 }, to = { x = 1, y = 4 } }
+    , { from = { x = 2, y = 6 }, to = { x = 3, y = 6 } }
+    , { from = { x = 2, y = 6 }, to = { x = 2, y = 5 } }
+    , { from = { x = 3, y = 7 }, to = { x = 4, y = 7 } }
+    , { from = { x = 3, y = 7 }, to = { x = 3, y = 6 } }
+    ]
+
+
+
+-- connectedGroupsOfFour : BoardPieces -> List (List Piece)
+-- connectedGroupsOfFour b =
+--     let
+--         allSlices =
+--             List.map (\line -> boardSlice b line) allLines
+--     in
+--     List.map (\slice -> List.filterMap (\p -> p) slice) allSlices
+--         |> List.filter (\slice -> List.length slice == 4)
+--         |> List.filter sameColorListQ
