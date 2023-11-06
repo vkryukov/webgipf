@@ -23,7 +23,7 @@ type alias Move =
 
 
 type alias BoardPieces =
-    Dict ( Int, Int ) Kind
+    Dict Coord Kind
 
 
 standardStartingBoard : BoardPieces
