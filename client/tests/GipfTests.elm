@@ -300,6 +300,27 @@ randomBoard2Moves =
     ]
 
 
+testPerformMove : String -> String -> Move -> Kind -> String -> Test
+testPerformMove description startingBoardString move kind expectedBoardString =
+    test description <|
+        \_ ->
+            let
+                b =
+                    stringToBoard startingBoardString
+            in
+            case b of
+                Just b2 ->
+                    case performMove move kind b2 of
+                        Just b3 ->
+                            Expect.equal expectedBoardString (boardToString b3)
+
+                        Nothing ->
+                            Expect.fail "performMove returned Nothing"
+
+                Nothing ->
+                    Expect.fail "stringToBoard returned Nothing"
+
+
 movesTest : Test
 movesTest =
     describe "Move tests"
@@ -336,28 +357,10 @@ movesTest =
                 \_ ->
                     Expect.equal (sortMoves randomBoard2Moves) (sortMoves (availableMoves randomBoard2))
             ]
+        , describe "performing moves"
+            [ testPerformMove "making one move" "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2" { from = { x = 0, y = 0 }, to = { x = 1, y = 1 } } White "GKb5 GKe2 GKh5 GWc3 GWe8 GWh2 Wb2"
+            ]
         ]
-
-
-testPerformMove : String -> String -> Move -> Kind -> String -> Test
-testPerformMove description startingBoardString move kind expectedBoardString =
-    test description <|
-        \_ ->
-            let
-                b =
-                    stringToBoard startingBoardString
-            in
-            case b of
-                Just b2 ->
-                    case performMove move kind b2 of
-                        Just b3 ->
-                            Expect.equal expectedBoardString (boardToString b3)
-
-                        Nothing ->
-                            Expect.fail "performMove returned Nothing"
-
-                Nothing ->
-                    Expect.fail "stringToBoard returned Nothing"
 
 
 toolsTest : Test
