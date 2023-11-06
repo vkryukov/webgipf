@@ -242,16 +242,6 @@ removeCoords coords boardPieces =
         coords
 
 
-fst : ( Int, Int ) -> Int
-fst ( x, _ ) =
-    x
-
-
-snd : ( Int, Int ) -> Int
-snd ( _, y ) =
-    y
-
-
 insertWithVector : List ( Int, Int ) -> List Kind -> Coord -> BoardPieces -> BoardPieces
 insertWithVector coords kinds ( vx, vy ) boardPieces =
     let
