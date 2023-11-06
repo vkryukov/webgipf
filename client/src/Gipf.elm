@@ -1,6 +1,7 @@
 module Gipf exposing (..)
 
 import Dict exposing (Dict)
+import Tools exposing (..)
 
 
 type alias Coord =
@@ -126,11 +127,6 @@ coordinatesSlice ( x1, y1 ) ( x2, y2 ) =
         |> List.filter interiorBoardPointQ
 
 
-dictSlice : Dict comparable v -> List comparable -> List (Maybe v)
-dictSlice dict keys =
-    List.map (\key -> Dict.get key dict) keys
-
-
 boardSlice : BoardPieces -> Move -> List (Maybe Piece)
 boardSlice boardPieces move =
     let
@@ -143,16 +139,6 @@ boardSlice boardPieces move =
     List.map2 (\key value -> Maybe.map (\k2 -> { coord = key, kind = k2 }) value)
         cs
         k
-
-
-anyNothing : List (Maybe a) -> Bool
-anyNothing list =
-    List.any (\item -> item == Nothing) list
-
-
-anyKeyMissing : Dict comparable v -> List comparable -> Bool
-anyKeyMissing dict keys =
-    anyNothing (dictSlice dict keys)
 
 
 allMoves : List Move
@@ -217,21 +203,6 @@ coordToName ( x, y ) =
             y + 1 - max 0 (x - 4)
     in
     String.fromChar xChar ++ String.fromInt adjustedY
-
-
-largestPrefixWithoutNothing : List (Maybe a) -> List a
-largestPrefixWithoutNothing list =
-    case list of
-        [] ->
-            []
-
-        x :: xs ->
-            case x of
-                Nothing ->
-                    []
-
-                Just xx ->
-                    xx :: largestPrefixWithoutNothing xs
 
 
 removeCoords : List ( Int, Int ) -> BoardPieces -> BoardPieces
@@ -395,15 +366,6 @@ stringToBoard str =
 -- Detecting 4 in a row
 
 
-sublistsOfFour : List a -> List ( Int, List a )
-sublistsOfFour list =
-    List.map
-        (\i ->
-            ( i, List.take 4 (List.drop i list) )
-        )
-        (List.range 0 (List.length list - 4))
-
-
 sameColorQ : Kind -> Kind -> Bool
 sameColorQ k1 k2 =
     case ( k1, k2 ) of
@@ -443,15 +405,6 @@ sameColorListQ list =
                             sameColorQ p.kind pp.kind
                 )
                 xs
-
-
-extendSublistWithJustItems : List (Maybe a) -> Int -> List a
-extendSublistWithJustItems list start =
-    let
-        prefix =
-            List.take start list
-    in
-    List.reverse (largestPrefixWithoutNothing (List.reverse prefix)) ++ largestPrefixWithoutNothing (List.drop start list)
 
 
 allLines : List Move

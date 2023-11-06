@@ -15,7 +15,6 @@ import Gipf
         , boardToString
         , coordinatesSlice
         , edgeBoardPointQ
-        , extendSublistWithJustItems
         , interiorBoardPointQ
         , nameToCoord
         , neighbors
@@ -25,6 +24,7 @@ import Gipf
         )
 import List exposing (sortWith)
 import Test exposing (..)
+import Tools exposing (extendSublistWithJustItems, largestPrefixWithoutNothing)
 
 
 sortedEqual : List Coord -> List Coord -> Expect.Expectation
@@ -383,13 +383,13 @@ toolsTest =
         , describe "largestPrefixWithoutNothihg function"
             [ test "finds the largest prefix without Nothing, starting with a Just item" <|
                 \_ ->
-                    Expect.equal [ 1, 2, 3 ] (Gipf.largestPrefixWithoutNothing [ Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
+                    Expect.equal [ 1, 2, 3 ] (largestPrefixWithoutNothing [ Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
             , test "finds the largest prefix without Nothing, starting with a Nothing item" <|
                 \_ ->
-                    Expect.equal [] (Gipf.largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
+                    Expect.equal [] (largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
             , test "finds the largest prefix without Nothing when it's emmpty" <|
                 \_ ->
-                    Expect.equal [] (Gipf.largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
+                    Expect.equal [] (largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
             ]
         , describe "extendSublistWithJustItems function" <|
             [ test "extends a sublist starting with 0" <|
