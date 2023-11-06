@@ -2,7 +2,27 @@ module GipfTests exposing (..)
 
 import Dict
 import Expect
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardToString, coordinatesSlice, edgeBoardPointQ, extendSublistWithJustItems, interiorBoardPointQ, nameToCoord, neighbors, performMove, standardStartingBoard, stringToBoard)
+import Gipf
+    exposing
+        ( BoardPieces
+        , Coord
+        , Kind(..)
+        , Move
+        , allMoves
+        , availableMoves
+        , boardPointQ
+        , boardPoints
+        , boardToString
+        , coordinatesSlice
+        , edgeBoardPointQ
+        , extendSublistWithJustItems
+        , interiorBoardPointQ
+        , nameToCoord
+        , neighbors
+        , performMove
+        , standardStartingBoard
+        , stringToBoard
+        )
 import List exposing (sortWith)
 import Test exposing (..)
 
