@@ -313,3 +313,77 @@ boardToString boardPieces =
             )
         |> List.sort
         |> String.join " "
+
+
+stringToPiece : String -> Maybe Piece
+stringToPiece s =
+    let
+        g =
+            String.left 1 s
+    in
+    if g == "" then
+        Nothing
+
+    else if g == "G" then
+        Maybe.map
+            (\p ->
+                { p
+                    | kind =
+                        if p.kind == Black then
+                            BlackGipf
+
+                        else
+                            WhiteGipf
+                }
+            )
+            (stringToPiece
+                (String.dropLeft 1 s)
+            )
+
+    else
+        let
+            k =
+                String.left 1 s
+
+            c =
+                nameToCoord (String.dropLeft 1 s)
+        in
+        if k == "K" || k == "W" then
+            Maybe.map
+                (\cc ->
+                    { coord = cc
+                    , kind =
+                        if k == "K" then
+                            Black
+
+                        else
+                            White
+                    }
+                )
+                c
+
+        else
+            Nothing
+
+
+addStringToBoard : String -> BoardPieces -> Maybe BoardPieces
+addStringToBoard s b =
+    Maybe.map
+        (\p ->
+            Dict.insert (coordToTuples p.coord) p.kind b
+        )
+        (stringToPiece s)
+
+
+stringToBoard : String -> Maybe BoardPieces
+stringToBoard str =
+    List.foldl
+        (\s b ->
+            Maybe.andThen
+                (\bb ->
+                    addStringToBoard s bb
+                )
+                b
+        )
+        (Just Dict.empty)
+        (String.split " " str)

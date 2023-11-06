@@ -2,7 +2,7 @@ module GipfTests exposing (..)
 
 import Dict
 import Expect
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardToString, coordinatesSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors, standardStartingBoard)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, allMoves, availableMoves, boardPointQ, boardPoints, boardToString, coordinatesSlice, edgeBoardPointQ, interiorBoardPointQ, nameToCoord, neighbors, performMove, standardStartingBoard, stringToBoard)
 import List exposing (sortWith)
 import Test exposing (..)
 
@@ -135,6 +135,18 @@ board =
                     Expect.equal "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2" (boardToString standardStartingBoard)
             , test "converts random board 2 to string" <|
                 \_ -> Expect.equal "GKb2 GKd3 GKd4 GKd7 GKe7 GKe8 GKf3 GKf4 GKh2 GWb4 GWb5 GWc2 GWc6 GWd2 GWd5 GWe6 GWf7 GWg4 GWh3 GWh4 Kc3 Ke2 Kf6 Kg5 Kg6 Wb3 Wd6 We3 We5 Wf2 Wf5 Wg3" (boardToString randomBoard2)
+            , test "converts random board 2 to string and back" <|
+                \_ ->
+                    let
+                        b =
+                            stringToBoard (boardToString randomBoard2)
+                    in
+                    case b of
+                        Just b2 ->
+                            Expect.equal (boardToString randomBoard2) (boardToString b2)
+
+                        Nothing ->
+                            Expect.fail "stringToBoard returned Nothing"
             ]
         ]
 
@@ -325,6 +337,27 @@ movesTest =
                     Expect.equal (sortMoves randomBoard2Moves) (sortMoves (availableMoves randomBoard2))
             ]
         ]
+
+
+testPerformMove : String -> String -> Move -> Kind -> String -> Test
+testPerformMove description startingBoardString move kind expectedBoardString =
+    test description <|
+        \_ ->
+            let
+                b =
+                    stringToBoard startingBoardString
+            in
+            case b of
+                Just b2 ->
+                    case performMove move kind b2 of
+                        Just b3 ->
+                            Expect.equal expectedBoardString (boardToString b3)
+
+                        Nothing ->
+                            Expect.fail "performMove returned Nothing"
+
+                Nothing ->
+                    Expect.fail "stringToBoard returned Nothing"
 
 
 toolsTest : Test
