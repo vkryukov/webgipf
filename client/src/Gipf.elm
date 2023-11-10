@@ -433,13 +433,16 @@ allLines =
     ]
 
 
+connectedGroupOfFour : List (Maybe Piece) -> Maybe (List Piece)
+connectedGroupOfFour slice =
+    sublistsOfFour slice
+        |> List.filter (\( _, list ) -> sameColorListQ list)
+        |> List.head
+        |> Maybe.map (\( i, list ) -> extendSublistWithJustItems list i)
 
--- connectedGroupsOfFour : BoardPieces -> List (List Piece)
--- connectedGroupsOfFour b =
---     let
---         allSlices =
---             List.map (\line -> boardSlice b line) allLines
---     in
---     List.map (\slice -> List.filterMap (\p -> p) slice) allSlices
---         |> List.filter (\slice -> List.length slice == 4)
---         |> List.filter sameColorListQ
+
+connectedGroupsOfFour : BoardPieces -> List (List Piece)
+connectedGroupsOfFour b =
+    List.map (\line -> boardSlice b line) allLines
+        |> List.map connectedGroupOfFour
+        |> List.filterMap identity
