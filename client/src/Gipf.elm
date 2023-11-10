@@ -353,15 +353,6 @@ stringToPieces str =
         (String.split " " str)
 
 
-addStringToBoard : String -> BoardPieces -> Maybe BoardPieces
-addStringToBoard s b =
-    Maybe.map
-        (\p ->
-            Dict.insert p.coord p b
-        )
-        (stringToPiece s)
-
-
 stringToBoard : String -> Maybe BoardPieces
 stringToBoard str =
     Maybe.map piecesToBoard (stringToPieces str)
