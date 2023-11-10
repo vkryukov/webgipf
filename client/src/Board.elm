@@ -2,9 +2,9 @@ module Board exposing (..)
 
 import Browser
 import Gipf exposing (..)
-import Html exposing (Html, div, p, text)
-import Html.Attributes exposing (style)
-import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
+import Html exposing (Html, button, div, form, input, p, text)
+import Html.Attributes exposing (disabled, placeholder, style, type_, value)
+import Html.Events exposing (onInput, onMouseEnter, onMouseLeave, onMouseOver, onSubmit)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
 import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
@@ -26,13 +26,14 @@ type alias Model =
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
     , move : Maybe Move
+    , boardInput : String
     }
 
 
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        initFromString "GKb5 GKe2 GKh5 GWb2 GWe5 GWe8 Kd4 Ke4 Kf3 Kg3 Wf4 Wg2 Wg4 Wh2 Wh3"
+        initFromString "GKb5 GKe2 GKh5 GWb2 GWe5 GWe8 Kc4 Kd4 Ke4 Kf3 Kh3 We3 Wf4 Wg2 Wg3 Wg4 Wh2"
 
 
 initFromString : String -> ( Model, Cmd msg )
@@ -53,6 +54,7 @@ initFromBoard b =
     , moveFrom = Nothing
     , moveTo = Nothing
     , move = Nothing
+    , boardInput = ""
     }
 
 
@@ -66,6 +68,8 @@ type Msg
     | MouseLeave Coord
     | PointClicked Coord
     | MoveMade Move
+    | SaveBoardInput String
+    | UpdateBoard
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -132,6 +136,16 @@ update msg model =
                 Nothing ->
                     -- move was invalid
                     ( model, Cmd.none )
+
+        SaveBoardInput str ->
+            ( { model | boardInput = str }, Cmd.none )
+
+        UpdateBoard ->
+            let
+                ( m, _ ) =
+                    initFromString model.boardInput
+            in
+            ( { m | boardInput = "" }, Cmd.none )
 
 
 
@@ -530,7 +544,23 @@ view model =
             , style "width" "610px" -- adjust this value to match the width of the interior polygon
             , style "word-wrap" "break-word"
             ]
-            [ p [] [ text (boardToString model.board) ] ]
+            [ p [] [ text (boardToString model.board) ]
+            , p
+                []
+                [ form
+                    [ onSubmit UpdateBoard
+                    ]
+                    [ input
+                        [ type_ "text"
+                        , placeholder "Enter new board..."
+                        , value model.boardInput
+                        , onInput SaveBoardInput
+                        ]
+                        []
+                    , button [ disabled (String.isEmpty model.boardInput) ] [ text "Update" ]
+                    ]
+                ]
+            ]
         ]
 
 
