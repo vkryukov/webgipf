@@ -1,15 +1,14 @@
 module GipfTests exposing (..)
 
-import Dict
 import Expect
 import Gipf
     exposing
         ( BoardPieces
         , Color(..)
         , Coord
-        , Kind
+        , Kind(..)
         , Move
-        , PieceKind(..)
+        , Piece
         , allMoves
         , availableMoves
         , boardPointQ
@@ -22,6 +21,7 @@ import Gipf
         , nameToCoord
         , neighbors
         , performMove
+        , piecesToBoard
         , standardStartingBoard
         , stringToBoard
         , stringToBoardWithDefault
@@ -177,39 +177,39 @@ sortMoves moves =
 
 randomBoard1 : BoardPieces
 randomBoard1 =
-    Dict.fromList
-        [ ( ( 2, 2 ), Kind White Regular )
-        , ( ( 4, 1 ), Kind White Gipf )
-        , ( ( 1, 4 ), Kind White Regular )
-        , ( ( 2, 3 ), Kind White Gipf )
-        , ( ( 1, 2 ), Kind White Regular )
-        , ( ( 7, 4 ), Kind White Gipf )
-        , ( ( 6, 7 ), Kind Black Regular )
-        , ( ( 2, 4 ), Kind White Regular )
-        , ( ( 5, 7 ), Kind White Gipf )
-        , ( ( 4, 3 ), Kind White Gipf )
-        , ( ( 3, 1 ), Kind White Gipf )
-        , ( ( 3, 4 ), Kind White Regular )
-        , ( ( 4, 4 ), Kind Black Regular )
-        , ( ( 4, 5 ), Kind White Gipf )
-        , ( ( 7, 5 ), Kind White Gipf )
-        , ( ( 4, 6 ), Kind White Gipf )
-        , ( ( 7, 7 ), Kind Black Regular )
-        , ( ( 2, 5 ), Kind White Gipf )
-        , ( ( 5, 6 ), Kind White Regular )
-        , ( ( 5, 2 ), Kind White Gipf )
-        , ( ( 3, 3 ), Kind White Regular )
-        , ( ( 5, 4 ), Kind White Gipf )
-        , ( ( 7, 6 ), Kind White Gipf )
-        , ( ( 2, 1 ), Kind Black Regular )
-        , ( ( 6, 5 ), Kind White Gipf )
-        , ( ( 1, 3 ), Kind White Regular )
-        , ( ( 3, 6 ), Kind Black Regular )
-        , ( ( 6, 3 ), Kind White Regular )
-        , ( ( 3, 2 ), Kind White Gipf )
-        , ( ( 1, 1 ), Kind White Gipf )
-        , ( ( 6, 6 ), Kind Black Regular )
-        , ( ( 4, 2 ), Kind White Gipf )
+    piecesToBoard
+        [ Piece ( 2, 2 ) White Regular
+        , Piece ( 4, 1 ) White Gipf
+        , Piece ( 1, 4 ) White Regular
+        , Piece ( 2, 3 ) White Gipf
+        , Piece ( 1, 2 ) White Regular
+        , Piece ( 7, 4 ) White Gipf
+        , Piece ( 6, 7 ) Black Regular
+        , Piece ( 2, 4 ) White Regular
+        , Piece ( 5, 7 ) White Gipf
+        , Piece ( 4, 3 ) White Gipf
+        , Piece ( 3, 1 ) White Gipf
+        , Piece ( 3, 4 ) White Regular
+        , Piece ( 4, 4 ) Black Regular
+        , Piece ( 4, 5 ) White Gipf
+        , Piece ( 7, 5 ) White Gipf
+        , Piece ( 4, 6 ) White Gipf
+        , Piece ( 7, 7 ) Black Regular
+        , Piece ( 2, 5 ) White Gipf
+        , Piece ( 5, 6 ) White Regular
+        , Piece ( 5, 2 ) White Gipf
+        , Piece ( 3, 3 ) White Regular
+        , Piece ( 5, 4 ) White Gipf
+        , Piece ( 7, 6 ) White Gipf
+        , Piece ( 2, 1 ) Black Regular
+        , Piece ( 6, 5 ) White Gipf
+        , Piece ( 1, 3 ) White Regular
+        , Piece ( 3, 6 ) Black Regular
+        , Piece ( 6, 3 ) White Regular
+        , Piece ( 3, 2 ) White Gipf
+        , Piece ( 1, 1 ) White Gipf
+        , Piece ( 6, 6 ) Black Regular
+        , Piece ( 4, 2 ) White Gipf
         ]
 
 
@@ -244,39 +244,39 @@ randomBoard1Moves =
 
 randomBoard2 : BoardPieces
 randomBoard2 =
-    Dict.fromList
-        [ ( ( 4, 7 ), Kind Black Gipf )
-        , ( ( 4, 4 ), Kind White Regular )
-        , ( ( 2, 5 ), Kind White Gipf )
-        , ( ( 1, 3 ), Kind White Gipf )
-        , ( ( 2, 2 ), Kind Black Regular )
-        , ( ( 7, 5 ), Kind White Gipf )
-        , ( ( 5, 4 ), Kind Black Gipf )
-        , ( ( 4, 6 ), Kind Black Gipf )
-        , ( ( 5, 7 ), Kind White Gipf )
-        , ( ( 5, 2 ), Kind White Regular )
-        , ( ( 4, 5 ), Kind White Gipf )
-        , ( ( 5, 3 ), Kind Black Gipf )
-        , ( ( 3, 6 ), Kind Black Gipf )
-        , ( ( 3, 2 ), Kind Black Gipf )
-        , ( ( 7, 6 ), Kind White Gipf )
-        , ( ( 3, 4 ), Kind White Gipf )
-        , ( ( 3, 3 ), Kind Black Gipf )
-        , ( ( 3, 5 ), Kind White Regular )
-        , ( ( 4, 2 ), Kind White Regular )
-        , ( ( 6, 7 ), Kind Black Regular )
-        , ( ( 3, 1 ), Kind White Gipf )
-        , ( ( 1, 1 ), Kind Black Gipf )
-        , ( ( 6, 4 ), Kind White Regular )
-        , ( ( 6, 5 ), Kind White Gipf )
-        , ( ( 5, 5 ), Kind White Regular )
-        , ( ( 5, 6 ), Kind Black Regular )
-        , ( ( 7, 4 ), Kind Black Gipf )
-        , ( ( 2, 1 ), Kind White Gipf )
-        , ( ( 4, 1 ), Kind Black Regular )
-        , ( ( 1, 2 ), Kind White Regular )
-        , ( ( 1, 4 ), Kind White Gipf )
-        , ( ( 6, 6 ), Kind Black Regular )
+    piecesToBoard
+        [ Piece ( 4, 7 ) Black Gipf
+        , Piece ( 4, 4 ) White Regular
+        , Piece ( 2, 5 ) White Gipf
+        , Piece ( 1, 3 ) White Gipf
+        , Piece ( 2, 2 ) Black Regular
+        , Piece ( 7, 5 ) White Gipf
+        , Piece ( 5, 4 ) Black Gipf
+        , Piece ( 4, 6 ) Black Gipf
+        , Piece ( 5, 7 ) White Gipf
+        , Piece ( 5, 2 ) White Regular
+        , Piece ( 4, 5 ) White Gipf
+        , Piece ( 5, 3 ) Black Gipf
+        , Piece ( 3, 6 ) Black Gipf
+        , Piece ( 3, 2 ) Black Gipf
+        , Piece ( 7, 6 ) White Gipf
+        , Piece ( 3, 4 ) White Gipf
+        , Piece ( 3, 3 ) Black Gipf
+        , Piece ( 3, 5 ) White Regular
+        , Piece ( 4, 2 ) White Regular
+        , Piece ( 6, 7 ) Black Regular
+        , Piece ( 3, 1 ) White Gipf
+        , Piece ( 1, 1 ) Black Gipf
+        , Piece ( 6, 4 ) White Regular
+        , Piece ( 6, 5 ) White Gipf
+        , Piece ( 5, 5 ) White Regular
+        , Piece ( 5, 6 ) Black Regular
+        , Piece ( 7, 4 ) Black Gipf
+        , Piece ( 2, 1 ) White Gipf
+        , Piece ( 4, 1 ) Black Regular
+        , Piece ( 1, 2 ) White Regular
+        , Piece ( 1, 4 ) White Gipf
+        , Piece ( 6, 6 ) Black Regular
         ]
 
 
@@ -309,8 +309,8 @@ randomBoard2Moves =
     ]
 
 
-testPerformMove : String -> String -> Move -> Kind -> String -> Test
-testPerformMove description startingBoardString move kind expectedBoardString =
+testPerformMove : String -> String -> Move -> Color -> Kind -> String -> Test
+testPerformMove description startingBoardString move color kind expectedBoardString =
     test description <|
         \_ ->
             let
@@ -319,7 +319,7 @@ testPerformMove description startingBoardString move kind expectedBoardString =
             in
             case b of
                 Just b2 ->
-                    case performMove move kind b2 of
+                    case performMove move color kind b2 of
                         Just b3 ->
                             Expect.equal expectedBoardString (boardToString b3)
 
@@ -370,7 +370,8 @@ movesTest =
             [ testPerformMove "making one move"
                 "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2"
                 { from = ( 0, 0 ), to = ( 1, 1 ) }
-                (Kind White Regular)
+                White
+                Regular
                 "GKb5 GKe2 GKh5 GWc3 GWe8 GWh2 Wb2"
             ]
         ]
