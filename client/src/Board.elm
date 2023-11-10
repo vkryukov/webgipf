@@ -513,7 +513,7 @@ viewConnectedPieces model =
                 g []
                     (List.map
                         (\piece ->
-                            drawCircle piece.coord 0.1 "LightCoral"
+                            drawCircle piece.coord 0.09 "LightCoral"
                         )
                         group
                     )
