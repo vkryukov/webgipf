@@ -2,7 +2,7 @@ module Board exposing (..)
 
 import Browser
 import Gipf exposing (..)
-import Html exposing (Html, button, div, form, input, p, text)
+import Html exposing (Html, button, div, form, input, p, span, text)
 import Html.Attributes exposing (disabled, placeholder, style, type_, value)
 import Html.Events exposing (onInput, onMouseEnter, onMouseLeave, onMouseOver, onSubmit)
 import Platform.Cmd as Cmd
@@ -541,7 +541,7 @@ view model =
         , div
             [ style "text-align" "left"
             , style "padding-left" "25px"
-            , style "width" "610px" -- adjust this value to match the width of the interior polygon
+            , style "width" "610px"
             , style "word-wrap" "break-word"
             ]
             [ p [] [ text (boardToString model.board) ]
@@ -550,14 +550,17 @@ view model =
                 [ form
                     [ onSubmit UpdateBoard
                     ]
-                    [ input
-                        [ type_ "text"
-                        , placeholder "Enter new board..."
-                        , value model.boardInput
-                        , onInput SaveBoardInput
+                    [ div []
+                        [ input
+                            [ type_ "text"
+                            , placeholder "Enter new board..."
+                            , value model.boardInput
+                            , onInput SaveBoardInput
+                            , style "width" "520px"
+                            ]
+                            []
+                        , button [ disabled (String.isEmpty model.boardInput) ] [ text "Update" ]
                         ]
-                        []
-                    , button [ disabled (String.isEmpty model.boardInput) ] [ text "Update" ]
                     ]
                 ]
             ]
