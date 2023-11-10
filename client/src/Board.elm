@@ -33,7 +33,7 @@ type alias Model =
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        initFromString "GKb5 GKe2 GKh5 GWb2 GWe5 GWe8 Kc4 Kd4 Ke4 Kf3 Kh3 We3 Wf4 Wg2 Wg3 Wg4 Wh2"
+        initFromString ""
 
 
 initFromString : String -> ( Model, Cmd msg )
