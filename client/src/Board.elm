@@ -36,7 +36,7 @@ init =
 
 initFromString : String -> ( Model, Cmd msg )
 initFromString s =
-    ( initFromBoard (Maybe.withDefault standardStartingBoard (stringToBoard s))
+    ( initFromBoard (stringToBoardWithDefault s)
     , Cmd.none
     )
 

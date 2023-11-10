@@ -371,6 +371,11 @@ stringToBoard str =
         (String.split " " str)
 
 
+stringToBoardWithDefault : String -> BoardPieces
+stringToBoardWithDefault str =
+    Maybe.withDefault standardStartingBoard (stringToBoard str)
+
+
 
 -- Detecting 4 in a row
 
