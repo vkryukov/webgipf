@@ -1,8 +1,9 @@
 module Board exposing (..)
 
 import Browser
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, connectedGroupsOfFour, edgeBoardPoints, performMove, standardStartingBoard)
-import Html exposing (Html)
+import Gipf exposing (..)
+import Html exposing (Html, div, p, text)
+import Html.Attributes exposing (style)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
@@ -30,9 +31,14 @@ type alias Model =
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        ( initFromBoard standardStartingBoard
-        , Cmd.none
-        )
+        initFromString "GKb5 GKe2 GKh5 GWb2 GWe5 GWe8 Kd4 Ke4 Kf3 Kg3 Wf4 Wg2 Wg4 Wh2 Wh3"
+
+
+initFromString : String -> ( Model, Cmd msg )
+initFromString s =
+    ( initFromBoard (Maybe.withDefault standardStartingBoard (stringToBoard s))
+    , Cmd.none
+    )
 
 
 initFromBoard : BoardPieces -> Model
@@ -515,18 +521,27 @@ viewConnectedPieces model =
 
 view : Model -> Html Msg
 view model =
-    svg
-        [ width "660"
-        , height "780"
-        , viewBox "0 0 660 780"
-        , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
-        ]
-        [ viewEmptyBoard
-        , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor) "click" ChangeColor
-        , viewPieces model
-        , viewConnectedPieces model
-        , viewPossibleMoves model
-        , viewMove model
+    div []
+        [ svg
+            [ width "660"
+            , height "780"
+            , viewBox "0 0 660 780"
+            , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
+            ]
+            [ viewEmptyBoard
+            , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor) "click" ChangeColor
+            , viewPieces model
+            , viewConnectedPieces model
+            , viewPossibleMoves model
+            , viewMove model
+            ]
+        , div
+            [ style "text-align" "left"
+            , style "padding-left" "25px"
+            , style "width" "610px" -- adjust this value to match the width of the interior polygon
+            , style "word-wrap" "break-word"
+            ]
+            [ p [] [ text (boardToString model.board) ] ]
         ]
 
 
