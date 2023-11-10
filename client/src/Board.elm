@@ -2,7 +2,7 @@ module Board exposing (..)
 
 import Browser
 import Gipf exposing (..)
-import Html exposing (Html, button, div, form, input, p, span, text)
+import Html exposing (Html, button, div, form, input, p, text)
 import Html.Attributes exposing (disabled, placeholder, style, type_, value)
 import Html.Events exposing (onInput, onMouseEnter, onMouseLeave, onMouseOver, onSubmit)
 import Platform.Cmd as Cmd
