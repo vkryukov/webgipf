@@ -218,13 +218,12 @@ insertPieces pieces board =
     List.foldl (\p b -> Dict.insert p.coord p b) board pieces
 
 
-addCoords : Coord -> Coord -> Coord
-addCoords ( x, y ) ( vx, vy ) =
-    ( x + vx, y + vy )
-
-
 insertWithVector : List Piece -> Coord -> BoardPieces -> BoardPieces
 insertWithVector pieces vec board =
+    let
+        addCoords ( x, y ) ( vx, vy ) =
+            ( x + vx, y + vy )
+    in
     insertPieces
         (List.map (\p -> Piece (addCoords p.coord vec) p.color p.kind) pieces)
         board
