@@ -362,11 +362,6 @@ stringToBoardWithDefault str =
 -- Detecting 4 in a row
 
 
-sameColorQ : Piece -> Piece -> Bool
-sameColorQ p1 p2 =
-    p1.color == p2.color
-
-
 sameColorListQ : List (Maybe Piece) -> Bool
 sameColorListQ list =
     case list of
@@ -384,7 +379,7 @@ sameColorListQ list =
                             False
 
                         Just pp ->
-                            sameColorQ p pp
+                            p.color == pp.color
                 )
                 xs
 
