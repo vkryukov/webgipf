@@ -20,7 +20,7 @@ type alias Model =
     { board : BoardPieces
     , availableMoves : List Move
     , groupsOfFour : List (List Piece)
-    , currentColor : Kind
+    , currentKind : Kind
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
@@ -46,7 +46,7 @@ initFromBoard b =
     { board = b
     , availableMoves = availableMoves b
     , groupsOfFour = connectedGroupsOfFour b
-    , currentColor = White
+    , currentKind = Kind White Regular
     , highlightedPiece = Nothing
     , moveFrom = Nothing
     , moveTo = Nothing
@@ -71,18 +71,18 @@ update msg model =
     case msg of
         ChangeColor ->
             ( { model
-                | currentColor =
-                    if model.currentColor == Black then
-                        BlackGipf
+                | currentKind =
+                    if model.currentKind == Kind Black Regular then
+                        Kind Black Gipf
 
-                    else if model.currentColor == BlackGipf then
-                        White
+                    else if model.currentKind == Kind Black Gipf then
+                        Kind White Regular
 
-                    else if model.currentColor == White then
-                        WhiteGipf
+                    else if model.currentKind == Kind White Regular then
+                        Kind White Gipf
 
                     else
-                        Black
+                        Kind Black Regular
               }
             , Cmd.none
             )
@@ -114,7 +114,7 @@ update msg model =
         MoveMade move ->
             let
                 b =
-                    performMove move model.currentColor model.board
+                    performMove move model.currentKind model.board
             in
             case b of
                 Just b1 ->
@@ -123,18 +123,15 @@ update msg model =
                         | board = b1
                         , availableMoves = availableMoves b1
                         , groupsOfFour = connectedGroupsOfFour b1
-                        , currentColor =
-                            if model.currentColor == Black then
-                                White
+                        , currentKind =
+                            Kind
+                                (if model.currentKind.color == White then
+                                    Black
 
-                            else if model.currentColor == BlackGipf then
-                                WhiteGipf
-
-                            else if model.currentColor == White then
-                                Black
-
-                            else
-                                BlackGipf
+                                 else
+                                    White
+                                )
+                                model.currentKind.kind
                       }
                     , Cmd.none
                     )
@@ -349,24 +346,23 @@ viewEmptyBoard =
 
 viewPiece : Piece -> Svg msg
 viewPiece { coord, kind } =
-    case kind of
-        Black ->
-            drawCircle coord 0.25 "black"
+    if kind == Kind Black Regular then
+        drawCircle coord 0.25 "black"
 
-        BlackGipf ->
-            g []
-                [ drawCircle coord 0.25 "black"
-                , drawCircleWithStroke coord 0.125 "none" "white" "2"
-                ]
+    else if kind == Kind Black Gipf then
+        g []
+            [ drawCircle coord 0.25 "black"
+            , drawCircleWithStroke coord 0.125 "none" "white" "2"
+            ]
 
-        White ->
-            drawCircle coord 0.25 "lightyellow"
+    else if kind == Kind White Regular then
+        drawCircle coord 0.25 "lightyellow"
 
-        WhiteGipf ->
-            g []
-                [ drawCircle coord 0.25 "lightyellow"
-                , drawCircleWithStroke coord 0.125 "none" "black" "2"
-                ]
+    else
+        g []
+            [ drawCircle coord 0.25 "lightyellow"
+            , drawCircleWithStroke coord 0.125 "none" "black" "2"
+            ]
 
 
 addSvgAction : Svg msg -> String -> msg -> Svg msg
@@ -422,12 +418,12 @@ viewPossibleMoves model =
 drawHighlights : Model -> Svg msg
 drawHighlights model =
     if model.moveFrom == Nothing then
-        drawHighlightedPiece model.highlightedPiece model.currentColor
+        drawHighlightedPiece model.highlightedPiece model.currentKind
 
     else
         g []
-            [ drawHighlightedPiece model.moveFrom model.currentColor
-            , drawHighlightedPiece model.highlightedPiece model.currentColor
+            [ drawHighlightedPiece model.moveFrom model.currentKind
+            , drawHighlightedPiece model.highlightedPiece model.currentKind
             ]
 
 
@@ -529,7 +525,7 @@ view model =
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
-            , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor) "click" ChangeColor
+            , viewPieceWithAction (Piece ( 8, 10 ) model.currentKind) "click" ChangeColor
             , viewPieces model
             , viewConnectedPieces model
             , viewPossibleMoves model

@@ -8,15 +8,24 @@ type alias Coord =
     ( Int, Int )
 
 
+type Color
+    = Black
+    | White
+
+
+type PieceKind
+    = Regular
+    | Gipf
+
+
+type alias Kind =
+    { color : Color
+    , kind : PieceKind
+    }
+
+
 type alias Piece =
     { coord : Coord, kind : Kind }
-
-
-type Kind
-    = Black
-    | BlackGipf
-    | White
-    | WhiteGipf
 
 
 type alias Move =
@@ -30,12 +39,12 @@ type alias BoardPieces =
 standardStartingBoard : BoardPieces
 standardStartingBoard =
     Dict.fromList
-        [ ( ( 4, 1 ), BlackGipf )
-        , ( ( 7, 7 ), BlackGipf )
-        , ( ( 1, 4 ), BlackGipf )
-        , ( ( 4, 7 ), WhiteGipf )
-        , ( ( 7, 4 ), WhiteGipf )
-        , ( ( 1, 1 ), WhiteGipf )
+        [ ( ( 4, 1 ), Kind Black Gipf )
+        , ( ( 7, 7 ), Kind Black Gipf )
+        , ( ( 1, 4 ), Kind Black Gipf )
+        , ( ( 4, 7 ), Kind White Gipf )
+        , ( ( 7, 4 ), Kind White Gipf )
+        , ( ( 1, 1 ), Kind White Gipf )
         ]
 
 
@@ -268,19 +277,19 @@ boardToString : BoardPieces -> String
 boardToString boardPieces =
     Dict.toList boardPieces
         |> List.map
-            (\( ( x, y ), kind ) ->
-                (case kind of
-                    Black ->
+            (\( ( x, y ), { color, kind } ) ->
+                (if color == Black then
+                    if kind == Regular then
                         "K"
 
-                    BlackGipf ->
+                    else
                         "GK"
 
-                    White ->
-                        "W"
+                 else if kind == Regular then
+                    "W"
 
-                    WhiteGipf ->
-                        "GW"
+                 else
+                    "GW"
                 )
                     ++ coordToName ( x, y )
             )
@@ -302,11 +311,11 @@ stringToPiece s =
             (\p ->
                 { p
                     | kind =
-                        if p.kind == Black then
-                            BlackGipf
+                        if p.kind.color == Black then
+                            Kind Black Gipf
 
                         else
-                            WhiteGipf
+                            Kind White Gipf
                 }
             )
             (stringToPiece
@@ -327,10 +336,10 @@ stringToPiece s =
                     { coord = cc
                     , kind =
                         if k == "K" then
-                            Black
+                            Kind Black Regular
 
                         else
-                            White
+                            Kind White Regular
                     }
                 )
                 c
@@ -368,21 +377,7 @@ stringToBoard str =
 
 sameColorQ : Kind -> Kind -> Bool
 sameColorQ k1 k2 =
-    case ( k1, k2 ) of
-        ( Black, BlackGipf ) ->
-            True
-
-        ( BlackGipf, Black ) ->
-            True
-
-        ( WhiteGipf, White ) ->
-            True
-
-        ( White, WhiteGipf ) ->
-            True
-
-        _ ->
-            k1 == k2
+    k1.color == k2.color
 
 
 sameColorListQ : List (Maybe Piece) -> Bool

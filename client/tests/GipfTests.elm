@@ -5,9 +5,11 @@ import Expect
 import Gipf
     exposing
         ( BoardPieces
+        , Color(..)
         , Coord
-        , Kind(..)
+        , Kind
         , Move
+        , PieceKind(..)
         , allMoves
         , availableMoves
         , boardPointQ
@@ -174,38 +176,38 @@ sortMoves moves =
 randomBoard1 : BoardPieces
 randomBoard1 =
     Dict.fromList
-        [ ( ( 2, 2 ), White )
-        , ( ( 4, 1 ), WhiteGipf )
-        , ( ( 1, 4 ), White )
-        , ( ( 2, 3 ), BlackGipf )
-        , ( ( 1, 2 ), White )
-        , ( ( 7, 4 ), BlackGipf )
-        , ( ( 6, 7 ), Black )
-        , ( ( 2, 4 ), White )
-        , ( ( 5, 7 ), BlackGipf )
-        , ( ( 4, 3 ), BlackGipf )
-        , ( ( 3, 1 ), WhiteGipf )
-        , ( ( 3, 4 ), White )
-        , ( ( 4, 4 ), Black )
-        , ( ( 4, 5 ), WhiteGipf )
-        , ( ( 7, 5 ), BlackGipf )
-        , ( ( 4, 6 ), BlackGipf )
-        , ( ( 7, 7 ), Black )
-        , ( ( 2, 5 ), WhiteGipf )
-        , ( ( 5, 6 ), White )
-        , ( ( 5, 2 ), BlackGipf )
-        , ( ( 3, 3 ), White )
-        , ( ( 5, 4 ), BlackGipf )
-        , ( ( 7, 6 ), WhiteGipf )
-        , ( ( 2, 1 ), Black )
-        , ( ( 6, 5 ), WhiteGipf )
-        , ( ( 1, 3 ), White )
-        , ( ( 3, 6 ), Black )
-        , ( ( 6, 3 ), White )
-        , ( ( 3, 2 ), WhiteGipf )
-        , ( ( 1, 1 ), WhiteGipf )
-        , ( ( 6, 6 ), Black )
-        , ( ( 4, 2 ), BlackGipf )
+        [ ( ( 2, 2 ), Kind White Regular )
+        , ( ( 4, 1 ), Kind White Gipf )
+        , ( ( 1, 4 ), Kind White Regular )
+        , ( ( 2, 3 ), Kind White Gipf )
+        , ( ( 1, 2 ), Kind White Regular )
+        , ( ( 7, 4 ), Kind White Gipf )
+        , ( ( 6, 7 ), Kind Black Regular )
+        , ( ( 2, 4 ), Kind White Regular )
+        , ( ( 5, 7 ), Kind White Gipf )
+        , ( ( 4, 3 ), Kind White Gipf )
+        , ( ( 3, 1 ), Kind White Gipf )
+        , ( ( 3, 4 ), Kind White Regular )
+        , ( ( 4, 4 ), Kind Black Regular )
+        , ( ( 4, 5 ), Kind White Gipf )
+        , ( ( 7, 5 ), Kind White Gipf )
+        , ( ( 4, 6 ), Kind White Gipf )
+        , ( ( 7, 7 ), Kind Black Regular )
+        , ( ( 2, 5 ), Kind White Gipf )
+        , ( ( 5, 6 ), Kind White Regular )
+        , ( ( 5, 2 ), Kind White Gipf )
+        , ( ( 3, 3 ), Kind White Regular )
+        , ( ( 5, 4 ), Kind White Gipf )
+        , ( ( 7, 6 ), Kind White Gipf )
+        , ( ( 2, 1 ), Kind Black Regular )
+        , ( ( 6, 5 ), Kind White Gipf )
+        , ( ( 1, 3 ), Kind White Regular )
+        , ( ( 3, 6 ), Kind Black Regular )
+        , ( ( 6, 3 ), Kind White Regular )
+        , ( ( 3, 2 ), Kind White Gipf )
+        , ( ( 1, 1 ), Kind White Gipf )
+        , ( ( 6, 6 ), Kind Black Regular )
+        , ( ( 4, 2 ), Kind White Gipf )
         ]
 
 
@@ -241,38 +243,38 @@ randomBoard1Moves =
 randomBoard2 : BoardPieces
 randomBoard2 =
     Dict.fromList
-        [ ( ( 4, 7 ), BlackGipf )
-        , ( ( 4, 4 ), White )
-        , ( ( 2, 5 ), WhiteGipf )
-        , ( ( 1, 3 ), WhiteGipf )
-        , ( ( 2, 2 ), Black )
-        , ( ( 7, 5 ), WhiteGipf )
-        , ( ( 5, 4 ), BlackGipf )
-        , ( ( 4, 6 ), BlackGipf )
-        , ( ( 5, 7 ), WhiteGipf )
-        , ( ( 5, 2 ), White )
-        , ( ( 4, 5 ), WhiteGipf )
-        , ( ( 5, 3 ), BlackGipf )
-        , ( ( 3, 6 ), BlackGipf )
-        , ( ( 3, 2 ), BlackGipf )
-        , ( ( 7, 6 ), WhiteGipf )
-        , ( ( 3, 4 ), WhiteGipf )
-        , ( ( 3, 3 ), BlackGipf )
-        , ( ( 3, 5 ), White )
-        , ( ( 4, 2 ), White )
-        , ( ( 6, 7 ), Black )
-        , ( ( 3, 1 ), WhiteGipf )
-        , ( ( 1, 1 ), BlackGipf )
-        , ( ( 6, 4 ), White )
-        , ( ( 6, 5 ), WhiteGipf )
-        , ( ( 5, 5 ), White )
-        , ( ( 5, 6 ), Black )
-        , ( ( 7, 4 ), BlackGipf )
-        , ( ( 2, 1 ), WhiteGipf )
-        , ( ( 4, 1 ), Black )
-        , ( ( 1, 2 ), White )
-        , ( ( 1, 4 ), WhiteGipf )
-        , ( ( 6, 6 ), Black )
+        [ ( ( 4, 7 ), Kind Black Gipf )
+        , ( ( 4, 4 ), Kind White Regular )
+        , ( ( 2, 5 ), Kind White Gipf )
+        , ( ( 1, 3 ), Kind White Gipf )
+        , ( ( 2, 2 ), Kind Black Regular )
+        , ( ( 7, 5 ), Kind White Gipf )
+        , ( ( 5, 4 ), Kind Black Gipf )
+        , ( ( 4, 6 ), Kind Black Gipf )
+        , ( ( 5, 7 ), Kind White Gipf )
+        , ( ( 5, 2 ), Kind White Regular )
+        , ( ( 4, 5 ), Kind White Gipf )
+        , ( ( 5, 3 ), Kind Black Gipf )
+        , ( ( 3, 6 ), Kind Black Gipf )
+        , ( ( 3, 2 ), Kind Black Gipf )
+        , ( ( 7, 6 ), Kind White Gipf )
+        , ( ( 3, 4 ), Kind White Gipf )
+        , ( ( 3, 3 ), Kind Black Gipf )
+        , ( ( 3, 5 ), Kind White Regular )
+        , ( ( 4, 2 ), Kind White Regular )
+        , ( ( 6, 7 ), Kind Black Regular )
+        , ( ( 3, 1 ), Kind White Gipf )
+        , ( ( 1, 1 ), Kind Black Gipf )
+        , ( ( 6, 4 ), Kind White Regular )
+        , ( ( 6, 5 ), Kind White Gipf )
+        , ( ( 5, 5 ), Kind White Regular )
+        , ( ( 5, 6 ), Kind Black Regular )
+        , ( ( 7, 4 ), Kind Black Gipf )
+        , ( ( 2, 1 ), Kind White Gipf )
+        , ( ( 4, 1 ), Kind Black Regular )
+        , ( ( 1, 2 ), Kind White Regular )
+        , ( ( 1, 4 ), Kind White Gipf )
+        , ( ( 6, 6 ), Kind Black Regular )
         ]
 
 
@@ -366,7 +368,7 @@ movesTest =
             [ testPerformMove "making one move"
                 "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2"
                 { from = ( 0, 0 ), to = ( 1, 1 ) }
-                White
+                (Kind White Regular)
                 "GKb5 GKe2 GKh5 GWc3 GWe8 GWh2 Wb2"
             ]
         ]
