@@ -15,6 +15,7 @@ import Gipf
         , boardPointQ
         , boardPoints
         , boardToString
+        , connectedGroupsOfFour
         , coordinatesSlice
         , edgeBoardPointQ
         , interiorBoardPointQ
@@ -23,6 +24,7 @@ import Gipf
         , performMove
         , standardStartingBoard
         , stringToBoard
+        , stringToBoardWithDefault
         )
 import List exposing (sortWith)
 import Test exposing (..)
@@ -371,6 +373,19 @@ movesTest =
                 (Kind White Regular)
                 "GKb5 GKe2 GKh5 GWc3 GWe8 GWh2 Wb2"
             ]
+        ]
+
+
+connectedPiecestest : Test
+connectedPiecestest =
+    describe "Connected pieces"
+        [ test "adjacent pieces bug" <|
+            \_ ->
+                Expect.equal
+                    (connectedGroupsOfFour
+                        (stringToBoardWithDefault "GKb5 GKe2 GKh5 GWb2 GWe5 GWe8 Kc4 Kd4 Ke4 Kf3 Kh3 We3 Wf4 Wg2 Wg3 Wg4 Wh2")
+                    )
+                    []
         ]
 
 
