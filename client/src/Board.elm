@@ -1,7 +1,7 @@
 module Board exposing (..)
 
 import Browser
-import Gipf exposing (BoardPieces, Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, edgeBoardPoints, performMove, standardStartingBoard)
+import Gipf exposing (BoardPieces, Coord, Kind(..), Move, Piece, availableMoves, boardToPieces, connectedGroupsOfFour, edgeBoardPoints, performMove, standardStartingBoard)
 import Html exposing (Html)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Platform.Cmd as Cmd
@@ -18,6 +18,7 @@ import Task
 type alias Model =
     { board : BoardPieces
     , availableMoves : List Move
+    , groupsOfFour : List (List Piece)
     , currentColor : Kind
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
@@ -38,6 +39,7 @@ initFromBoard : BoardPieces -> Model
 initFromBoard b =
     { board = b
     , availableMoves = availableMoves b
+    , groupsOfFour = connectedGroupsOfFour b
     , currentColor = White
     , highlightedPiece = Nothing
     , moveFrom = Nothing
@@ -114,6 +116,7 @@ update msg model =
                     ( { model
                         | board = b1
                         , availableMoves = availableMoves b1
+                        , groupsOfFour = connectedGroupsOfFour b1
                         , currentColor =
                             if model.currentColor == Black then
                                 White
@@ -493,6 +496,23 @@ drawArrowXY x1_ y1_ x2_ y2_ =
         ]
 
 
+viewConnectedPieces : Model -> Svg msg
+viewConnectedPieces model =
+    g []
+        (List.map
+            (\group ->
+                g []
+                    (List.map
+                        (\piece ->
+                            drawCircle piece.coord 0.1 "LightCoral"
+                        )
+                        group
+                    )
+            )
+            model.groupsOfFour
+        )
+
+
 view : Model -> Html Msg
 view model =
     svg
@@ -504,6 +524,7 @@ view model =
         [ viewEmptyBoard
         , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor) "click" ChangeColor
         , viewPieces model
+        , viewConnectedPieces model
         , viewPossibleMoves model
         , viewMove model
         ]
