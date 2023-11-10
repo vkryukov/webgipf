@@ -1,31 +1,7 @@
 module GipfTests exposing (..)
 
 import Expect
-import Gipf
-    exposing
-        ( BoardPieces
-        , Color(..)
-        , Coord
-        , Kind(..)
-        , Move
-        , Piece
-        , allMoves
-        , availableMoves
-        , boardPointQ
-        , boardPoints
-        , boardToString
-        , connectedGroupsOfFour
-        , coordinatesSlice
-        , edgeBoardPointQ
-        , interiorBoardPointQ
-        , nameToCoord
-        , neighbors
-        , performMove
-        , piecesToBoard
-        , standardStartingBoard
-        , stringToBoard
-        , stringToBoardWithDefault
-        )
+import Gipf exposing (..)
 import List exposing (sortWith)
 import Test exposing (..)
 import Tools exposing (extendSublistWithJustItems, largestPrefixWithoutNothing)
@@ -380,7 +356,64 @@ movesTest =
 connectedPiecestest : Test
 connectedPiecestest =
     describe "Connected pieces"
-        [ test "adjacent pieces bug" <|
+        [ describe "connectedGroupOfFour func"
+            [ test "empty list" <|
+                \_ ->
+                    Expect.equal
+                        (connectedGroupOfFour [])
+                        Nothing
+            , test "short list" <|
+                \_ ->
+                    Expect.equal
+                        (connectedGroupOfFour
+                            [ Just (Piece ( 1, 1 ) White Regular)
+                            , Just (Piece ( 1, 2 ) White Regular)
+                            , Just (Piece ( 1, 3 ) White Regular)
+                            ]
+                        )
+                        Nothing
+            , test "four same color" <|
+                \_ ->
+                    Expect.equal
+                        (connectedGroupOfFour
+                            [ Nothing
+                            , Just (Piece ( 1, 1 ) White Regular)
+                            , Just (Piece ( 1, 2 ) White Regular)
+                            , Just (Piece ( 1, 3 ) White Regular)
+                            , Just (Piece ( 1, 4 ) White Gipf)
+                            , Nothing
+                            ]
+                        )
+                        (Just
+                            [ Piece ( 1, 1 ) White Regular
+                            , Piece ( 1, 2 ) White Regular
+                            , Piece ( 1, 3 ) White Regular
+                            , Piece ( 1, 4 ) White Gipf
+                            ]
+                        )
+            , test "four same color with adjacent pieces" <|
+                \_ ->
+                    Expect.equal
+                        (connectedGroupOfFour
+                            [ Nothing
+                            , Just (Piece ( 1, 1 ) White Regular)
+                            , Just (Piece ( 1, 2 ) White Regular)
+                            , Just (Piece ( 1, 3 ) White Regular)
+                            , Just (Piece ( 1, 4 ) White Gipf)
+                            , Just (Piece ( 1, 5 ) Black Gipf)
+                            , Nothing
+                            ]
+                        )
+                        (Just
+                            [ Piece ( 1, 1 ) White Regular
+                            , Piece ( 1, 2 ) White Regular
+                            , Piece ( 1, 3 ) White Regular
+                            , Piece ( 1, 4 ) White Gipf
+                            , Piece ( 1, 5 ) Black Gipf
+                            ]
+                        )
+            ]
+        , test "adjacent pieces bug" <|
             \_ ->
                 Expect.equal
                     (connectedGroupsOfFour

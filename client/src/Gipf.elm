@@ -415,7 +415,7 @@ connectedGroupOfFour slice =
     sublistsOfFour slice
         |> List.filter (\( _, list ) -> sameColorListQ list)
         |> List.head
-        |> Maybe.map (\( i, list ) -> extendSublistWithJustItems list i)
+        |> Maybe.map (\( i, _ ) -> extendSublistWithJustItems slice i)
 
 
 connectedGroupsOfFour : BoardPieces -> List (List Piece)
