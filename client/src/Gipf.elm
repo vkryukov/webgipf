@@ -13,19 +13,13 @@ type Color
     | White
 
 
-type PieceKind
+type Kind
     = Regular
     | Gipf
 
 
-type alias Kind =
-    { color : Color
-    , kind : PieceKind
-    }
-
-
 type alias Piece =
-    { coord : Coord, kind : Kind }
+    { coord : Coord, color : Color, kind : Kind }
 
 
 type alias Move =
@@ -33,24 +27,30 @@ type alias Move =
 
 
 type alias BoardPieces =
-    Dict Coord Kind
+    Dict Coord Piece
+
+
+piecesToBoard : List Piece -> BoardPieces
+piecesToBoard pieces =
+    List.map (\piece -> ( piece.coord, piece )) pieces
+        |> Dict.fromList
 
 
 standardStartingBoard : BoardPieces
 standardStartingBoard =
-    Dict.fromList
-        [ ( ( 4, 1 ), Kind Black Gipf )
-        , ( ( 7, 7 ), Kind Black Gipf )
-        , ( ( 1, 4 ), Kind Black Gipf )
-        , ( ( 4, 7 ), Kind White Gipf )
-        , ( ( 7, 4 ), Kind White Gipf )
-        , ( ( 1, 1 ), Kind White Gipf )
+    piecesToBoard
+        [ Piece ( 4, 1 ) Black Gipf
+        , Piece ( 7, 7 ) Black Gipf
+        , Piece ( 1, 4 ) Black Gipf
+        , Piece ( 4, 7 ) White Gipf
+        , Piece ( 7, 4 ) White Gipf
+        , Piece ( 1, 1 ) White Gipf
         ]
 
 
 boardToPieces : BoardPieces -> List Piece
 boardToPieces board =
-    Dict.toList board |> List.map (\( ( x, y ), kind ) -> Piece ( x, y ) kind)
+    Dict.values board
 
 
 boardPointQ : Coord -> Bool
@@ -138,16 +138,7 @@ coordinatesSlice ( x1, y1 ) ( x2, y2 ) =
 
 boardSlice : BoardPieces -> Move -> List (Maybe Piece)
 boardSlice boardPieces move =
-    let
-        cs =
-            coordinatesSlice move.from move.to
-
-        k =
-            dictSlice boardPieces cs
-    in
-    List.map2 (\key value -> Maybe.map (\k2 -> { coord = key, kind = k2 }) value)
-        cs
-        k
+    dictSlice boardPieces (coordinatesSlice move.from move.to)
 
 
 allMoves : List Move
@@ -214,34 +205,33 @@ coordToName ( x, y ) =
     String.fromChar xChar ++ String.fromInt adjustedY
 
 
-removeCoords : List ( Int, Int ) -> BoardPieces -> BoardPieces
-removeCoords coords boardPieces =
+removePieces : List Coord -> BoardPieces -> BoardPieces
+removePieces coords boardPieces =
     List.foldl
         (\coord board -> Dict.remove coord board)
         boardPieces
         coords
 
 
-insertWithVector : List ( Int, Int ) -> List Kind -> Coord -> BoardPieces -> BoardPieces
-insertWithVector coords kinds ( vx, vy ) boardPieces =
-    let
-        zippedList =
-            List.map2 (\coord kind -> ( coord, kind )) coords kinds
-    in
-    List.foldl
-        (\( ( x, y ), kind ) board ->
-            let
-                newCoord =
-                    ( x + vx, y + vy )
-            in
-            Dict.insert newCoord kind board
-        )
-        boardPieces
-        zippedList
+insertPieces : List Piece -> BoardPieces -> BoardPieces
+insertPieces pieces board =
+    List.foldl (\p b -> Dict.insert p.coord p b) board pieces
 
 
-performMove : Move -> Kind -> BoardPieces -> Maybe BoardPieces
-performMove move kind boardPieces =
+addCoords : Coord -> Coord -> Coord
+addCoords ( x, y ) ( vx, vy ) =
+    ( x + vx, y + vy )
+
+
+insertWithVector : List Piece -> Coord -> BoardPieces -> BoardPieces
+insertWithVector pieces vec board =
+    insertPieces
+        (List.map (\p -> Piece (addCoords p.coord vec) p.color p.kind) pieces)
+        board
+
+
+performMove : Move -> Color -> Kind -> BoardPieces -> Maybe BoardPieces
+performMove move color kind boardPieces =
     if movePossibleQ boardPieces move then
         let
             ( x1, y1 ) =
@@ -264,9 +254,9 @@ performMove move kind boardPieces =
         in
         Just
             (boardPieces
-                |> removeCoords coordsSliceWithoutNothing
-                |> insertWithVector coordsSliceWithoutNothing sliceWithoutNothing ( vx, vy )
-                |> Dict.insert ( x1 + vx, y1 + vy ) kind
+                |> removePieces coordsSliceWithoutNothing
+                |> insertWithVector sliceWithoutNothing ( vx, vy )
+                |> Dict.insert ( x1 + vx, y1 + vy ) (Piece ( x1 + vx, y1 + vy ) color kind)
             )
 
     else
@@ -308,16 +298,7 @@ stringToPiece s =
 
     else if g == "G" then
         Maybe.map
-            (\p ->
-                { p
-                    | kind =
-                        if p.kind.color == Black then
-                            Kind Black Gipf
-
-                        else
-                            Kind White Gipf
-                }
-            )
+            (\p -> { p | kind = Gipf })
             (stringToPiece
                 (String.dropLeft 1 s)
             )
@@ -334,12 +315,13 @@ stringToPiece s =
             Maybe.map
                 (\cc ->
                     { coord = cc
-                    , kind =
+                    , color =
                         if k == "K" then
-                            Kind Black Regular
+                            Black
 
                         else
-                            Kind White Regular
+                            White
+                    , kind = Regular
                     }
                 )
                 c
@@ -352,7 +334,7 @@ addStringToBoard : String -> BoardPieces -> Maybe BoardPieces
 addStringToBoard s b =
     Maybe.map
         (\p ->
-            Dict.insert p.coord p.kind b
+            Dict.insert p.coord p b
         )
         (stringToPiece s)
 
@@ -380,11 +362,6 @@ stringToBoardWithDefault str =
 -- Detecting 4 in a row
 
 
-sameColorQ : Kind -> Kind -> Bool
-sameColorQ k1 k2 =
-    k1.color == k2.color
-
-
 sameColorListQ : List (Maybe Piece) -> Bool
 sameColorListQ list =
     case list of
@@ -402,7 +379,7 @@ sameColorListQ list =
                             False
 
                         Just pp ->
-                            sameColorQ p.kind pp.kind
+                            p.color == pp.color
                 )
                 xs
 
@@ -438,7 +415,7 @@ connectedGroupOfFour slice =
     sublistsOfFour slice
         |> List.filter (\( _, list ) -> sameColorListQ list)
         |> List.head
-        |> Maybe.map (\( i, list ) -> extendSublistWithJustItems list i)
+        |> Maybe.map (\( i, _ ) -> extendSublistWithJustItems slice i)
 
 
 connectedGroupsOfFour : BoardPieces -> List (List Piece)

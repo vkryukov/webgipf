@@ -21,6 +21,7 @@ type alias Model =
     , availableMoves : List Move
     , groupsOfFour : List (List Piece)
     , currentKind : Kind
+    , currentColor : Color
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
@@ -46,7 +47,8 @@ initFromBoard b =
     { board = b
     , availableMoves = availableMoves b
     , groupsOfFour = connectedGroupsOfFour b
-    , currentKind = Kind White Regular
+    , currentKind = Regular
+    , currentColor = White
     , highlightedPiece = Nothing
     , moveFrom = Nothing
     , moveTo = Nothing
@@ -59,7 +61,7 @@ initFromBoard b =
 
 
 type Msg
-    = ChangeColor
+    = ChangeKind
     | MouseEnter Coord
     | MouseLeave Coord
     | PointClicked Coord
@@ -69,20 +71,14 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ChangeColor ->
+        ChangeKind ->
             ( { model
                 | currentKind =
-                    if model.currentKind == Kind Black Regular then
-                        Kind Black Gipf
-
-                    else if model.currentKind == Kind Black Gipf then
-                        Kind White Regular
-
-                    else if model.currentKind == Kind White Regular then
-                        Kind White Gipf
+                    if model.currentKind == Regular then
+                        Gipf
 
                     else
-                        Kind Black Regular
+                        Regular
               }
             , Cmd.none
             )
@@ -114,7 +110,7 @@ update msg model =
         MoveMade move ->
             let
                 b =
-                    performMove move model.currentKind model.board
+                    performMove move model.currentColor model.currentKind model.board
             in
             case b of
                 Just b1 ->
@@ -123,15 +119,12 @@ update msg model =
                         | board = b1
                         , availableMoves = availableMoves b1
                         , groupsOfFour = connectedGroupsOfFour b1
-                        , currentKind =
-                            Kind
-                                (if model.currentKind.color == White then
-                                    Black
+                        , currentColor =
+                            if model.currentColor == White then
+                                Black
 
-                                 else
-                                    White
-                                )
-                                model.currentKind.kind
+                            else
+                                White
                       }
                     , Cmd.none
                     )
@@ -345,17 +338,17 @@ viewEmptyBoard =
 
 
 viewPiece : Piece -> Svg msg
-viewPiece { coord, kind } =
-    if kind == Kind Black Regular then
+viewPiece { coord, color, kind } =
+    if kind == Regular && color == Black then
         drawCircle coord 0.25 "black"
 
-    else if kind == Kind Black Gipf then
+    else if kind == Gipf && color == Black then
         g []
             [ drawCircle coord 0.25 "black"
             , drawCircleWithStroke coord 0.125 "none" "white" "2"
             ]
 
-    else if kind == Kind White Regular then
+    else if kind == Regular && color == White then
         drawCircle coord 0.25 "lightyellow"
 
     else
@@ -418,22 +411,22 @@ viewPossibleMoves model =
 drawHighlights : Model -> Svg msg
 drawHighlights model =
     if model.moveFrom == Nothing then
-        drawHighlightedPiece model.highlightedPiece model.currentKind
+        drawHighlightedPiece model.highlightedPiece model.currentKind model.currentColor
 
     else
         g []
-            [ drawHighlightedPiece model.moveFrom model.currentKind
-            , drawHighlightedPiece model.highlightedPiece model.currentKind
+            [ drawHighlightedPiece model.moveFrom model.currentKind model.currentColor
+            , drawHighlightedPiece model.highlightedPiece model.currentKind model.currentColor
             ]
 
 
-drawHighlightedPiece : Maybe Coord -> Kind -> Svg msg
-drawHighlightedPiece maybeCoord color =
+drawHighlightedPiece : Maybe Coord -> Kind -> Color -> Svg msg
+drawHighlightedPiece maybeCoord kind color =
     case maybeCoord of
         Just coord ->
             g []
                 [ drawCircleWithStroke coord 0.25 "white" "grey" "1"
-                , addSvgOpacity (viewPiece (Piece coord color)) 0.5
+                , addSvgOpacity (viewPiece (Piece coord color kind)) 0.5
                 ]
 
         Nothing ->
@@ -525,7 +518,7 @@ view model =
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
-            , viewPieceWithAction (Piece ( 8, 10 ) model.currentKind) "click" ChangeColor
+            , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor model.currentKind) "click" ChangeKind
             , viewPieces model
             , viewConnectedPieces model
             , viewPossibleMoves model
