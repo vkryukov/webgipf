@@ -213,20 +213,25 @@ removePieces coords boardPieces =
         coords
 
 
-insertPieces : List Piece -> BoardPieces -> BoardPieces
-insertPieces pieces board =
-    List.foldl (\p b -> Dict.insert p.coord p b) board pieces
+insertPiece : Piece -> BoardPieces -> BoardPieces
+insertPiece piece board =
+    Dict.insert piece.coord piece board
 
 
 insertWithVector : List Piece -> Coord -> BoardPieces -> BoardPieces
 insertWithVector pieces vec board =
     let
-        addCoords ( x, y ) ( vx, vy ) =
-            ( x + vx, y + vy )
+        addCoords p ( vx, vy ) =
+            let
+                ( x, y ) =
+                    p.coord
+            in
+            Piece ( x + vx, y + vy ) p.color p.kind
     in
-    insertPieces
-        (List.map (\p -> Piece (addCoords p.coord vec) p.color p.kind) pieces)
+    List.foldl
+        (\p b -> insertPiece (addCoords p vec) b)
         board
+        pieces
 
 
 performMove : Move -> Color -> Kind -> BoardPieces -> Maybe BoardPieces
