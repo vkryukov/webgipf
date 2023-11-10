@@ -271,10 +271,10 @@ piecesToString pieces =
                 "GK"
 
              else if p.color == Black && p.kind == Regular then
-                "WK"
+                "K"
 
              else if p.color == White && p.kind == Gipf then
-                "W"
+                "GW"
 
              else
                 "W"
@@ -283,7 +283,7 @@ piecesToString pieces =
         )
         pieces
         |> List.sort
-        |> String.join ""
+        |> String.join " "
 
 
 boardToString : BoardPieces -> String
@@ -334,6 +334,25 @@ stringToPiece s =
             Nothing
 
 
+stringToPieces : String -> Maybe (List Piece)
+stringToPieces str =
+    let
+        maybeAppend s l =
+            Maybe.map (\p -> p :: l)
+                (stringToPiece s)
+    in
+    List.foldl
+        (\s l ->
+            Maybe.andThen
+                (\ll -> maybeAppend s ll)
+                l
+        )
+        (Just
+            []
+        )
+        (String.split " " str)
+
+
 addStringToBoard : String -> BoardPieces -> Maybe BoardPieces
 addStringToBoard s b =
     Maybe.map
@@ -345,16 +364,7 @@ addStringToBoard s b =
 
 stringToBoard : String -> Maybe BoardPieces
 stringToBoard str =
-    List.foldl
-        (\s b ->
-            Maybe.andThen
-                (\bb ->
-                    addStringToBoard s bb
-                )
-                b
-        )
-        (Just Dict.empty)
-        (String.split " " str)
+    Maybe.map piecesToBoard (stringToPieces str)
 
 
 stringToBoardWithDefault : String -> BoardPieces
