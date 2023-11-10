@@ -263,28 +263,32 @@ performMove move color kind boardPieces =
         Nothing
 
 
-boardToString : BoardPieces -> String
-boardToString boardPieces =
-    Dict.toList boardPieces
-        |> List.map
-            (\( ( x, y ), { color, kind } ) ->
-                (if color == Black then
-                    if kind == Regular then
-                        "K"
+piecesToString : List Piece -> String
+piecesToString pieces =
+    List.map
+        (\p ->
+            (if p.color == Black && p.kind == Gipf then
+                "GK"
 
-                    else
-                        "GK"
+             else if p.color == Black && p.kind == Regular then
+                "WK"
 
-                 else if kind == Regular then
-                    "W"
+             else if p.color == White && p.kind == Gipf then
+                "W"
 
-                 else
-                    "GW"
-                )
-                    ++ coordToName ( x, y )
+             else
+                "W"
             )
+                ++ coordToName p.coord
+        )
+        pieces
         |> List.sort
-        |> String.join " "
+        |> String.join ""
+
+
+boardToString : BoardPieces -> String
+boardToString board =
+    piecesToString (Dict.values board)
 
 
 stringToPiece : String -> Maybe Piece
