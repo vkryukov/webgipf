@@ -114,7 +114,7 @@ update msg model =
         MoveMade move ->
             let
                 b =
-                    performMove move model.currentColor model.currentKind model.board
+                    insertPieceWithMove move model.currentColor model.currentKind model.board
             in
             case b of
                 Just b1 ->

@@ -295,7 +295,7 @@ testPerformMove description startingBoardString move color kind expectedBoardStr
             in
             case b of
                 Just b2 ->
-                    case performMove move color kind b2 of
+                    case insertPieceWithMove move color kind b2 of
                         Just b3 ->
                             Expect.equal expectedBoardString (boardToString b3)
 

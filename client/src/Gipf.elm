@@ -218,8 +218,8 @@ insertPiece piece board =
     Dict.insert piece.coord piece board
 
 
-insertWithVector : List Piece -> Coord -> BoardPieces -> BoardPieces
-insertWithVector pieces vec board =
+insertPiecesWithVector : List Piece -> Coord -> BoardPieces -> BoardPieces
+insertPiecesWithVector pieces vec board =
     let
         addCoords p ( vx, vy ) =
             let
@@ -234,8 +234,8 @@ insertWithVector pieces vec board =
         pieces
 
 
-performMove : Move -> Color -> Kind -> BoardPieces -> Maybe BoardPieces
-performMove move color kind boardPieces =
+insertPieceWithMove : Move -> Color -> Kind -> BoardPieces -> Maybe BoardPieces
+insertPieceWithMove move color kind boardPieces =
     if movePossibleQ boardPieces move then
         let
             ( x1, y1 ) =
@@ -259,7 +259,7 @@ performMove move color kind boardPieces =
         Just
             (boardPieces
                 |> removePieces coordsSliceWithoutNothing
-                |> insertWithVector sliceWithoutNothing ( vx, vy )
+                |> insertPiecesWithVector sliceWithoutNothing ( vx, vy )
                 |> Dict.insert ( x1 + vx, y1 + vy ) (Piece ( x1 + vx, y1 + vy ) color kind)
             )
 
