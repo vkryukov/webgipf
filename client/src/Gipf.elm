@@ -22,7 +22,7 @@ type alias Piece =
     { coord : Coord, color : Color, kind : Kind }
 
 
-type alias Move =
+type alias Direction =
     { from : Coord, to : Coord }
 
 
@@ -136,12 +136,12 @@ coordinatesSlice ( x1, y1 ) ( x2, y2 ) =
         |> List.filter interiorBoardPointQ
 
 
-boardSlice : BoardPieces -> Move -> List (Maybe Piece)
+boardSlice : BoardPieces -> Direction -> List (Maybe Piece)
 boardSlice boardPieces move =
     dictSlice boardPieces (coordinatesSlice move.from move.to)
 
 
-allMoves : List Move
+allMoves : List Direction
 allMoves =
     List.concatMap
         (\point ->
@@ -152,14 +152,14 @@ allMoves =
         edgeBoardPoints
 
 
-movePossibleQ : BoardPieces -> Move -> Bool
+movePossibleQ : BoardPieces -> Direction -> Bool
 movePossibleQ boardPieces move =
     anyKeyMissing
         boardPieces
         (coordinatesSlice move.from move.to)
 
 
-availableMoves : BoardPieces -> List Move
+availableMoves : BoardPieces -> List Direction
 availableMoves boardPieces =
     List.filter
         (movePossibleQ boardPieces)
@@ -234,7 +234,7 @@ insertPiecesWithVector pieces vec board =
         pieces
 
 
-insertPieceWithMove : Move -> Color -> Kind -> BoardPieces -> Maybe BoardPieces
+insertPieceWithMove : Direction -> Color -> Kind -> BoardPieces -> Maybe BoardPieces
 insertPieceWithMove move color kind boardPieces =
     if movePossibleQ boardPieces move then
         let
@@ -393,7 +393,7 @@ sameColorListQ list =
                 xs
 
 
-allLines : List Move
+allLines : List Direction
 allLines =
     [ { from = ( 0, 0 ), to = ( 1, 1 ) }
     , { from = ( 1, 0 ), to = ( 1, 1 ) }

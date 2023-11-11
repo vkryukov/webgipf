@@ -18,14 +18,14 @@ import Task
 
 type alias Model =
     { board : BoardPieces
-    , availableMoves : List Move
+    , availableMoves : List Direction
     , groupsOfFour : List (List Piece)
     , currentKind : Kind
     , currentColor : Color
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
-    , move : Maybe Move
+    , move : Maybe Direction
     , boardInput : String
     }
 
@@ -67,7 +67,7 @@ type Msg
     | MouseEnter Coord
     | MouseLeave Coord
     | PointClicked Coord
-    | MoveMade Move
+    | MoveMade Direction
     | SaveBoardInput String
     | UpdateBoard
 
@@ -108,7 +108,7 @@ update msg model =
                             , moveTo = Nothing
                             , highlightedPiece = Nothing
                           }
-                        , Task.succeed (MoveMade (Move from coord)) |> Task.perform identity
+                        , Task.succeed (MoveMade (Direction from coord)) |> Task.perform identity
                         )
 
         MoveMade move ->

@@ -136,19 +136,19 @@ board =
         ]
 
 
-compareMoves : Move -> Move -> Order
-compareMoves move1 move2 =
-    case compare move1.from move2.from of
+compareDirections : Direction -> Direction -> Order
+compareDirections dir1 dir2 =
+    case compare dir1.from dir2.from of
         EQ ->
-            compare move1.to move2.to
+            compare dir1.to dir2.to
 
         order ->
             order
 
 
-sortMoves : List Move -> List Move
-sortMoves moves =
-    sortWith compareMoves moves
+sortDirections : List Direction -> List Direction
+sortDirections dirs =
+    sortWith compareDirections dirs
 
 
 randomBoard1 : BoardPieces
@@ -189,7 +189,7 @@ randomBoard1 =
         ]
 
 
-randomBoard1Moves : List Move
+randomBoard1Moves : List Direction
 randomBoard1Moves =
     [ { from = ( 0, 0 ), to = ( 1, 1 ) }
     , { from = ( 0, 2 ), to = ( 1, 3 ) }
@@ -256,7 +256,7 @@ randomBoard2 =
         ]
 
 
-randomBoard2Moves : List Move
+randomBoard2Moves : List Direction
 randomBoard2Moves =
     [ { from = ( 0, 0 ), to = ( 1, 1 ) }
     , { from = ( 0, 1 ), to = ( 1, 2 ) }
@@ -285,7 +285,7 @@ randomBoard2Moves =
     ]
 
 
-testPerformMove : String -> String -> Move -> Color -> Kind -> String -> Test
+testPerformMove : String -> String -> Direction -> Color -> Kind -> String -> Test
 testPerformMove description startingBoardString move color kind expectedBoardString =
     test description <|
         \_ ->
@@ -337,10 +337,10 @@ movesTest =
                     Expect.equal 42 (List.length allMoves)
             , test "available moves on random board 1" <|
                 \_ ->
-                    Expect.equal (sortMoves randomBoard1Moves) (sortMoves (availableMoves randomBoard1))
+                    Expect.equal (sortDirections randomBoard1Moves) (sortDirections (availableMoves randomBoard1))
             , test "available moves on random board 2" <|
                 \_ ->
-                    Expect.equal (sortMoves randomBoard2Moves) (sortMoves (availableMoves randomBoard2))
+                    Expect.equal (sortDirections randomBoard2Moves) (sortDirections (availableMoves randomBoard2))
             ]
         , describe "performing moves"
             [ testPerformMove "making one move"
