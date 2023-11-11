@@ -285,8 +285,8 @@ randomBoard2Moves =
     ]
 
 
-testPerformMove : String -> String -> Direction -> Color -> Kind -> String -> Test
-testPerformMove description startingBoardString move color kind expectedBoardString =
+testInsertPieceWithMove : String -> String -> Direction -> Color -> Kind -> String -> Test
+testInsertPieceWithMove description startingBoardString move color kind expectedBoardString =
     test description <|
         \_ ->
             let
@@ -306,8 +306,8 @@ testPerformMove description startingBoardString move color kind expectedBoardStr
                     Expect.fail "stringToBoard returned Nothing"
 
 
-movesTest : Test
-movesTest =
+availableMovesTest : Test
+availableMovesTest =
     describe "Move tests"
         [ describe "boardSlice function"
             [ boardSliceTest "checks board slice from {2,0} to {6,4}"
@@ -342,8 +342,8 @@ movesTest =
                 \_ ->
                     Expect.equal (sortDirections randomBoard2Moves) (sortDirections (availableMoves randomBoard2))
             ]
-        , describe "performing moves"
-            [ testPerformMove "making one move"
+        , describe "insert piece with move"
+            [ testInsertPieceWithMove "making one move"
                 "GKb5 GKe2 GKh5 GWb2 GWe8 GWh2"
                 { from = ( 0, 0 ), to = ( 1, 1 ) }
                 White
@@ -467,4 +467,46 @@ toolsTest =
                     Expect.equal [ -1, 1, 2, 3, 4 ]
                         (extendSublistWithJustItems [ Just 0, Nothing, Just -1, Just 1, Just 2, Just 3, Just 4, Nothing, Just 5 ] 2)
             ]
+        ]
+
+
+stringToMoveTest : Test
+stringToMoveTest =
+    describe "stringToMove function"
+        [ test "a1-b2" <|
+            \_ ->
+                Expect.equal
+                    (Just { direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, color = White, kind = Regular })
+                    (stringToMove "a1-b2")
+        , test "Wa1-b2" <|
+            \_ ->
+                Expect.equal
+                    (Just { direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, color = White, kind = Regular })
+                    (stringToMove "Wa1-b2")
+        , test "Ka1-b2" <|
+            \_ ->
+                Expect.equal
+                    (Just { direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, color = Black, kind = Regular })
+                    (stringToMove "Ka1-b2")
+        , test "Ga1-b2" <|
+            \_ ->
+                Expect.equal
+                    (Just { direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, color = White, kind = Gipf })
+                    (stringToMove "Ga1-b2")
+        , test "GWa1-b2" <|
+            \_ ->
+                Expect.equal
+                    (Just { direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, color = White, kind = Gipf })
+                    (stringToMove "GWa1-b2")
+        , test "GKa1-b2" <|
+            \_ ->
+                Expect.equal
+                    (Just { direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, color = Black, kind = Gipf })
+                    (stringToMove "GKa1-b2")
+        , test "invalid format" <|
+            \_ ->
+                Expect.equal
+                    Nothing
+                    (stringToMove "a1b2")
+        , test "invalid coordinates" <| \_ -> Expect.equal Nothing (stringToMove "a1-b7")
         ]

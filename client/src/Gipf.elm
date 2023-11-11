@@ -1,6 +1,7 @@
 module Gipf exposing (..)
 
 import Dict exposing (Dict)
+import Regex
 import Tools exposing (..)
 
 
@@ -432,3 +433,84 @@ connectedGroupsOfFour b =
     List.map (\line -> boardSlice b line) allLines
         |> List.map connectedGroupOfFour
         |> List.filterMap identity
+
+
+
+-- Game state
+
+
+type alias PiecesCount =
+    { own : Int
+    , captured : Int
+    }
+
+
+type alias Game =
+    { board : BoardPieces
+    , currentKind : Kind
+    , currentColor : Color
+    , blackCount : PiecesCount
+    , whiteCount : PiecesCount
+    , blackGipfCount : Int
+    , whiteGipfCount : Int
+    , useGipfPieces : Bool
+    , blackPlayedNonGipf : Bool
+    , whitePlayedNonGipf : Bool
+    , currentPlayerFourStones : List (List Piece)
+    , otherPlayerFourStones : List (List Piece)
+    , moveHistory : List Move
+    }
+
+
+type alias Move =
+    { direction : Direction, color : Color, kind : Kind }
+
+
+properMoveRx : Regex.Regex
+properMoveRx =
+    Maybe.withDefault Regex.never <|
+        Regex.fromString "^(G?)([KW]?)([a-i][1-9])-([a-i][1-9])$"
+
+
+stringToMove : String -> Maybe Move
+stringToMove str =
+    case Regex.find properMoveRx str of
+        [] ->
+            Nothing
+
+        match :: _ ->
+            let
+                kind =
+                    case match.submatches |> List.head |> Maybe.withDefault Nothing of
+                        Just "G" ->
+                            Just Gipf
+
+                        _ ->
+                            Just Regular
+
+                color =
+                    case match.submatches |> List.drop 1 |> List.head |> Maybe.withDefault Nothing of
+                        Just "K" ->
+                            Just Black
+
+                        _ ->
+                            Just White
+
+                fromCoord =
+                    match.submatches
+                        |> List.drop 2
+                        |> List.head
+                        |> Maybe.andThen (Maybe.andThen nameToCoord)
+
+                toCoord =
+                    match.submatches
+                        |> List.drop 3
+                        |> List.head
+                        |> Maybe.andThen (Maybe.andThen nameToCoord)
+            in
+            case ( ( kind, color ), ( fromCoord, toCoord ) ) of
+                ( ( Just k, Just c ), ( Just from, Just to ) ) ->
+                    Just { direction = Direction from to, color = c, kind = k }
+
+                _ ->
+                    Nothing
