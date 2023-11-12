@@ -341,21 +341,7 @@ stringToPiece s =
 
 stringToPieces : String -> Maybe (List Piece)
 stringToPieces str =
-    let
-        maybeAppend s l =
-            Maybe.map (\p -> p :: l)
-                (stringToPiece s)
-    in
-    List.foldl
-        (\s l ->
-            Maybe.andThen
-                (\ll -> maybeAppend s ll)
-                l
-        )
-        (Just
-            []
-        )
-        (String.split " " str)
+    maybeList (List.map stringToPiece (String.split " " str))
 
 
 stringToBoard : String -> Maybe BoardPieces
