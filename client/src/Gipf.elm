@@ -431,25 +431,38 @@ type alias PiecesCount =
     }
 
 
+type alias Move =
+    { direction : Direction, color : Color, kind : Kind }
+
+
+type GameState
+    = WaitingForMove
+    | WaitingForRemove
+    | BlackWon
+    | WhiteWon
+
+
+type Action
+    = MoveAction Move
+    | RemoveAction (List Piece)
+
+
 type alias Game =
     { board : BoardPieces
     , currentKind : Kind
     , currentColor : Color
+    , state : GameState
     , blackCount : PiecesCount
     , whiteCount : PiecesCount
     , blackGipfCount : Int
     , whiteGipfCount : Int
-    , useGipfPieces : Bool
+    , isBasicGame : Bool
     , blackPlayedNonGipf : Bool
     , whitePlayedNonGipf : Bool
     , currentPlayerFourStones : List (List Piece)
     , otherPlayerFourStones : List (List Piece)
-    , moveHistory : List Move
+    , actionHistory : List Action
     }
-
-
-type alias Move =
-    { direction : Direction, color : Color, kind : Kind }
 
 
 properMoveRx : Regex.Regex
@@ -500,3 +513,294 @@ stringToMove str =
 
                 _ ->
                     Nothing
+
+
+stringToMoves : String -> Maybe (List Move)
+stringToMoves str =
+    maybeList (List.map stringToMove (String.split " " str))
+
+
+emptyGame : Game
+emptyGame =
+    { board = Dict.empty
+    , currentKind = Gipf
+    , currentColor = White
+    , state = WaitingForMove
+    , blackCount = { own = 18, captured = 0 }
+    , whiteCount = { own = 18, captured = 0 }
+    , blackGipfCount = 0
+    , whiteGipfCount = 0
+    , isBasicGame = True
+    , blackPlayedNonGipf = False
+    , whitePlayedNonGipf = False
+    , currentPlayerFourStones = []
+    , otherPlayerFourStones = []
+    , actionHistory = [] -- from newest to oldest
+    }
+
+
+invalidMoveQ : Move -> Game -> Bool
+invalidMoveQ move game =
+    (game.currentColor /= move.color)
+        || (game.state /= WaitingForMove)
+        || -- in a properly constructed game, the above should be enough, but just in case we have 2 more conditions
+           ((move.color == White && game.whiteCount.own == 0)
+                || (move.color == Black && game.blackCount.own == 0)
+           )
+        || not (List.isEmpty game.currentPlayerFourStones || List.isEmpty game.otherPlayerFourStones)
+        || -- in a basic game, you can't play a Gipf piece
+           (game.isBasicGame && move.kind == Gipf)
+        || -- once you played a non-Gipf piece, you can't play a Gipf piece anymore
+           ((game.blackPlayedNonGipf && move.color == Black && move.kind == Gipf)
+                || (game.whitePlayedNonGipf && move.color == White && move.kind == Gipf)
+           )
+        || not (movePossibleQ game.board move.direction)
+
+
+dominantColor : List Piece -> Color
+dominantColor group =
+    let
+        blackCount =
+            count group (\p -> p.color == Black)
+
+        whiteCount =
+            count group (\p -> p.color == White)
+    in
+    if blackCount > whiteCount then
+        Black
+
+    else
+        White
+
+
+currentAndOtherFourStones : BoardPieces -> Color -> ( List (List Piece), List (List Piece) )
+currentAndOtherFourStones board color =
+    splitByPredicate
+        (\group -> dominantColor group == color)
+        (connectedGroupsOfFour board)
+
+
+performMove : Move -> Game -> Maybe Game
+performMove move game =
+    if invalidMoveQ move game then
+        Nothing
+
+    else
+        Maybe.map
+            (\newBoard ->
+                let
+                    ( currentFourStones, otherFourStones ) =
+                        currentAndOtherFourStones newBoard move.color
+
+                    updatedGame =
+                        if game.currentColor == White then
+                            { game
+                                | currentColor = Black
+                                , currentKind =
+                                    if not game.isBasicGame then
+                                        Regular
+
+                                    else if game.blackPlayedNonGipf then
+                                        Regular
+
+                                    else
+                                        Gipf
+                                , whiteCount =
+                                    { own = game.whiteCount.own - 1
+                                    , captured = game.whiteCount.captured
+                                    }
+                                , whitePlayedNonGipf = game.whitePlayedNonGipf || move.kind == Regular
+                            }
+
+                        else
+                            { game
+                                | currentColor = White
+                                , currentKind =
+                                    if not game.isBasicGame then
+                                        Regular
+
+                                    else if game.whitePlayedNonGipf then
+                                        Regular
+
+                                    else
+                                        Gipf
+                                , blackCount =
+                                    { own = game.blackCount.own - 1
+                                    , captured = game.blackCount.captured
+                                    }
+                                , blackPlayedNonGipf = game.blackPlayedNonGipf || move.kind == Regular
+                            }
+                in
+                { updatedGame
+                    | board = newBoard
+                    , currentPlayerFourStones = currentFourStones
+                    , otherPlayerFourStones = otherFourStones
+                    , actionHistory = MoveAction move :: game.actionHistory
+                    , state =
+                        if not (List.isEmpty currentFourStones || List.isEmpty otherFourStones) then
+                            WaitingForMove
+
+                        else if game.currentColor == Black && game.whiteCount.own == 0 then
+                            BlackWon
+
+                        else if game.currentColor == White && game.blackCount.own == 0 then
+                            WhiteWon
+
+                        else
+                            WaitingForMove
+                }
+            )
+            (insertPieceWithMove move.direction move.color move.kind game.board)
+
+
+removeInvalidQ : List Piece -> Game -> Bool
+removeInvalidQ pieces game =
+    let
+        remaining =
+            removeElementsFromOneOfSupersets (game.currentPlayerFourStones ++ game.currentPlayerFourStones) pieces
+
+        removingCurrent =
+            isSubsetOfAny game.currentPlayerFourStones pieces
+
+        removingOther =
+            isSubsetOfAny game.otherPlayerFourStones pieces
+    in
+    (game.state /= WaitingForMove)
+        || List.isEmpty pieces
+        || -- the above should be enough, but just in case we have 1 more conditions
+           (game.currentPlayerFourStones == [] && game.otherPlayerFourStones == [])
+        || -- pieces are not the ones that need to be removed
+           not (removingCurrent || removingOther)
+        || -- current player removes their connected stones first
+           (game.currentPlayerFourStones /= [] && removingOther)
+        || -- stones remained after removal by current player contain other player stones
+           (removingCurrent && List.any (\p -> p.color /= game.currentColor) remaining)
+        || -- stones remained after removal by other player contain current player stones
+           (removingOther && List.any (\p -> p.color == game.currentColor) remaining)
+        || -- remaining stones contain regular stones of either player
+           List.any (\p -> p.kind == Regular) remaining
+
+
+countPieces : List Piece -> ( Int, Int )
+countPieces pieces =
+    -- count number of white and black pieces (count gipf pieces as 2)
+    let
+        countPiece p ( w, b ) =
+            if p.color == White then
+                ( w
+                    + (if p.kind == Gipf then
+                        2
+
+                       else
+                        1
+                      )
+                , b
+                )
+
+            else
+                ( w
+                , b
+                    + (if p.kind == Gipf then
+                        2
+
+                       else
+                        1
+                      )
+                )
+    in
+    List.foldl countPiece ( 0, 0 ) pieces
+
+
+performRemove : List Piece -> Game -> Maybe Game
+performRemove pieces game =
+    if removeInvalidQ pieces game then
+        Nothing
+
+    else
+        let
+            newPieces =
+                removeElements pieces (boardToPieces game.board)
+
+            newBoard =
+                piecesToBoard newPieces
+
+            ( currentFourStones, otherFourStones ) =
+                currentAndOtherFourStones newBoard game.currentColor
+
+            ( removedWhiteCount, removedBlackCount ) =
+                countPieces pieces
+
+            removingPlayerColor =
+                dominantColor pieces
+
+            updatedGame =
+                { game
+                    | board = newBoard
+                    , currentPlayerFourStones = currentFourStones
+                    , otherPlayerFourStones = otherFourStones
+                    , actionHistory = RemoveAction pieces :: game.actionHistory
+                    , whiteCount =
+                        { own =
+                            if removingPlayerColor == White then
+                                game.whiteCount.own + removedWhiteCount
+
+                            else
+                                game.whiteCount.own
+                        , captured =
+                            if removingPlayerColor == White then
+                                game.whiteCount.captured + removedBlackCount
+
+                            else
+                                game.whiteCount.captured
+                        }
+                    , blackCount =
+                        { own =
+                            if removingPlayerColor == Black then
+                                game.blackCount.own + removedBlackCount
+
+                            else
+                                game.blackCount.own
+                        , captured =
+                            if removingPlayerColor == Black then
+                                game.blackCount.captured + removedWhiteCount
+
+                            else
+                                game.blackCount.captured
+                        }
+                    , whiteGipfCount = game.whiteGipfCount - count pieces (\p -> p.color == White && p.kind == Gipf)
+                    , blackGipfCount = game.whiteGipfCount - count pieces (\p -> p.color == White && p.kind == Gipf)
+                }
+
+            newState =
+                if not (List.isEmpty updatedGame.currentPlayerFourStones || List.isEmpty updatedGame.otherPlayerFourStones) then
+                    WaitingForRemove
+
+                else if
+                    (updatedGame.currentColor == Black && updatedGame.whiteCount.own == 0)
+                        || (updatedGame.whiteGipfCount == 0)
+                then
+                    BlackWon
+
+                else if
+                    (updatedGame.currentColor == White && updatedGame.blackCount.own == 0)
+                        || (updatedGame.blackGipfCount == 0)
+                then
+                    WhiteWon
+
+                else
+                    WaitingForMove
+        in
+        Just
+            { updatedGame
+                | state = newState
+                , currentColor =
+                    if newState == WaitingForMove then
+                        if game.currentColor == White then
+                            Black
+
+                        else
+                            White
+
+                    else
+                        updatedGame.currentColor
+            }

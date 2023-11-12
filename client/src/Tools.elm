@@ -65,3 +65,52 @@ maybeList list =
         )
         (Just [])
         list
+
+
+splitByPredicate : (a -> Bool) -> List a -> ( List a, List a )
+splitByPredicate predicate list =
+    let
+        matching =
+            List.filter predicate list
+
+        nonMatching =
+            List.filter (not << predicate) list
+    in
+    ( matching, nonMatching )
+
+
+isSubsetOf : List a -> List a -> Bool
+isSubsetOf subset list =
+    List.all (\element -> List.member element list) subset
+
+
+isSubsetOfAny : List (List a) -> List a -> Bool
+isSubsetOfAny subsets list =
+    List.any (\subset -> isSubsetOf subset list) subsets
+
+
+removeElements : List a -> List a -> List a
+removeElements toRemove list =
+    List.filter (\element -> not (List.member element toRemove)) list
+
+
+removeElementsFromOneOfSupersets : List (List a) -> List a -> List a
+removeElementsFromOneOfSupersets supersets list =
+    -- find the first superset that contains all elements of the list,
+    -- and remove those elements from that superset, returning them.
+    -- if no superset contains all elements of the list, return the empty list.
+    let
+        matchingSuperset =
+            List.filter (\superset -> isSubsetOf list superset) supersets
+    in
+    case matchingSuperset of
+        [] ->
+            []
+
+        x :: _ ->
+            removeElements list x
+
+
+count : List a -> (a -> Bool) -> Int
+count list pred =
+    List.length (List.filter pred list)

@@ -6,8 +6,8 @@ import Test exposing (..)
 import Tools exposing (..)
 
 
-toolsTest : Test
-toolsTest =
+largestPrefixTest : Test
+largestPrefixTest =
     describe "Tools tests"
         [ describe "largestPrefixWithoutNothihg function"
             [ test "finds the largest prefix without Nothing, starting with a Just item" <|
@@ -37,8 +37,8 @@ toolsTest =
         ]
 
 
-tests : Test
-tests =
+maybeListTest : Test
+maybeListTest =
     describe "maybeList function"
         [ test "All Just values" <|
             \_ ->
@@ -60,4 +60,88 @@ tests =
                         Nothing
                 in
                 Expect.equal (maybeList input) expected
+        ]
+
+
+isSubsetTest : Test
+isSubsetTest =
+    describe "isSubsetOf tests"
+        [ test "All elements of subset are in the list" <|
+            \_ ->
+                let
+                    subset =
+                        [ 3, 2, 1 ]
+
+                    list =
+                        [ 5, 2, 3, 4, 1 ]
+                in
+                Expect.equal (isSubsetOf subset list) True
+        , test "Not all elements of subset are in the list" <|
+            \_ ->
+                let
+                    subset =
+                        [ 1, 2, 6 ]
+
+                    list =
+                        [ 1, 2, 3, 4, 5 ]
+                in
+                Expect.equal (isSubsetOf subset list) False
+        ]
+
+
+removeElementsTest : Test
+removeElementsTest =
+    describe "removeElements tests"
+        [ test "Elements of toRemove are removed from the list" <|
+            \_ ->
+                let
+                    toRemove =
+                        [ 1, 3, 5 ]
+
+                    list =
+                        [ 1, 2, 3, 4, 5 ]
+
+                    expected =
+                        [ 2, 4 ]
+                in
+                Expect.equal (removeElements toRemove list) expected
+        , test "List remains the same when toRemove is empty" <|
+            \_ ->
+                let
+                    toRemove =
+                        []
+
+                    list =
+                        [ 1, 2, 3, 4, 5 ]
+                in
+                Expect.equal (removeElements toRemove list) list
+        ]
+
+
+removeElementsFromOneOfSupersetsTest : Test
+removeElementsFromOneOfSupersetsTest =
+    describe "removeElementsFromOneOfSupersets tests"
+        [ test "Elements of list are removed from the first matching superset" <|
+            \_ ->
+                let
+                    supersets =
+                        [ [ 4, 5, 6 ], [ 1, 2, 3 ], [ 7, 8, 9 ] ]
+
+                    list =
+                        [ 3, 1 ]
+
+                    expected =
+                        [ 2 ]
+                in
+                Expect.equal (removeElementsFromOneOfSupersets supersets list) expected
+        , test "Empty list is returned when no superset matches the list" <|
+            \_ ->
+                let
+                    supersets =
+                        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+                    list =
+                        [ 1, 2, 4 ]
+                in
+                Expect.equal (removeElementsFromOneOfSupersets supersets list) []
         ]
