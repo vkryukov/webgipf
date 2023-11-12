@@ -49,3 +49,19 @@ extendSublistWithJustItems list start =
             List.take start list
     in
     List.reverse (largestPrefixWithoutNothing (List.reverse prefix)) ++ largestPrefixWithoutNothing (List.drop start list)
+
+
+maybeList : List (Maybe a) -> Maybe (List a)
+maybeList list =
+    List.foldr
+        (\ma acc ->
+            Maybe.andThen
+                (\a ->
+                    Maybe.map
+                        (\aas -> a :: aas)
+                        acc
+                )
+                ma
+        )
+        (Just [])
+        list

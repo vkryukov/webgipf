@@ -4,12 +4,20 @@ import Expect
 import Gipf exposing (..)
 import List exposing (sortWith)
 import Test exposing (..)
-import Tools exposing (extendSublistWithJustItems, largestPrefixWithoutNothing)
 
 
 sortedEqual : List Coord -> List Coord -> Expect.Expectation
 sortedEqual a b =
     Expect.equal (List.sort a) (List.sort b)
+
+
+sortedEqualTest : Test
+sortedEqualTest =
+    describe "sortCoords function"
+        [ test "sorts a list of coordinates" <|
+            \_ ->
+                sortedEqual [ ( 1, 1 ), ( 2, 2 ), ( 3, 3 ) ] [ ( 3, 3 ), ( 1, 1 ), ( 2, 2 ) ]
+        ]
 
 
 neighborsTest : String -> Coord -> List Coord -> Test
@@ -431,42 +439,6 @@ connectedPiecestest =
                       , { color = White, coord = ( 7, 4 ), kind = Regular }
                       ]
                     ]
-        ]
-
-
-toolsTest : Test
-toolsTest =
-    describe "Tools tests"
-        [ describe "sortCoords function"
-            [ test "sorts a list of coordinates" <|
-                \_ ->
-                    sortedEqual [ ( 1, 1 ), ( 2, 2 ), ( 3, 3 ) ] [ ( 3, 3 ), ( 1, 1 ), ( 2, 2 ) ]
-            ]
-        , describe "largestPrefixWithoutNothihg function"
-            [ test "finds the largest prefix without Nothing, starting with a Just item" <|
-                \_ ->
-                    Expect.equal [ 1, 2, 3 ] (largestPrefixWithoutNothing [ Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
-            , test "finds the largest prefix without Nothing, starting with a Nothing item" <|
-                \_ ->
-                    Expect.equal [] (largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
-            , test "finds the largest prefix without Nothing when it's emmpty" <|
-                \_ ->
-                    Expect.equal [] (largestPrefixWithoutNothing [ Nothing, Just 1, Just 2, Just 3, Nothing, Just 4, Just 5 ])
-            ]
-        , describe "extendSublistWithJustItems function" <|
-            [ test "extends a sublist starting with 0" <|
-                \_ ->
-                    Expect.equal [ 1, 2, 3, 4 ]
-                        (extendSublistWithJustItems [ Just 1, Just 2, Just 3, Just 4, Nothing, Just 5 ] 0)
-            , test "extends a sublist starting with 2 but no left" <|
-                \_ ->
-                    Expect.equal [ 1, 2, 3, 4 ]
-                        (extendSublistWithJustItems [ Just 0, Nothing, Just 1, Just 2, Just 3, Just 4, Nothing, Just 5 ] 2)
-            , test "extends a sublist starting with 2" <|
-                \_ ->
-                    Expect.equal [ -1, 1, 2, 3, 4 ]
-                        (extendSublistWithJustItems [ Just 0, Nothing, Just -1, Just 1, Just 2, Just 3, Just 4, Nothing, Just 5 ] 2)
-            ]
         ]
 
 
