@@ -761,15 +761,15 @@ performAction action game =
 -- String conversions
 
 
-properMoveRx : Regex.Regex
-properMoveRx =
+moveActionRx : Regex.Regex
+moveActionRx =
     Maybe.withDefault Regex.never <|
         Regex.fromString "^(G?)([KW]?)([a-i][1-9])-([a-i][1-9])$"
 
 
 stringToMove : String -> Maybe Move
 stringToMove str =
-    case Regex.find properMoveRx str of
+    case Regex.find moveActionRx str of
         [] ->
             Nothing
 
@@ -811,15 +811,15 @@ stringToMove str =
                     Nothing
 
 
-properRemoveRx : Regex.Regex
-properRemoveRx =
+removeActionRx : Regex.Regex
+removeActionRx =
     Maybe.withDefault Regex.never <|
         Regex.fromString "^x[a-i][1-9](,[a-i][1-9])*$"
 
 
 stringToRemove : String -> Maybe (List Coord)
 stringToRemove str =
-    if Regex.contains properRemoveRx str then
+    if Regex.contains removeActionRx str then
         str
             |> String.dropLeft 1
             |> String.split ","
