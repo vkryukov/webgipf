@@ -1,5 +1,6 @@
 module GipfTests exposing (..)
 
+import Dict
 import Expect
 import Gipf exposing (..)
 import List exposing (sortWith)
@@ -481,4 +482,46 @@ stringToMoveTest =
                     Nothing
                     (stringToMove "a1b2")
         , test "invalid coordinates" <| \_ -> Expect.equal Nothing (stringToMove "a1-b7")
+        ]
+
+
+performMoveWithDefaultColorTest : Test
+performMoveWithDefaultColorTest =
+    describe "performMoveWithDefaultColor tests"
+        [ test "Perform move on an empty board" <|
+            \_ ->
+                let
+                    direction =
+                        { from = ( 4, 0 ), to = ( 4, 1 ) }
+
+                    kind =
+                        Gipf
+
+                    game =
+                        emptyGame
+
+                    -- assuming emptyBoard is a Game with an empty board
+                    expected =
+                        Nothing
+
+                    -- replace with expected result
+                in
+                Expect.equal (performMoveWithDefaultColor direction kind game)
+                    (Just
+                        { actionHistory = [ MoveAction { color = White, direction = { from = ( 4, 0 ), to = ( 4, 1 ) }, kind = Gipf } ]
+                        , blackCount = { captured = 0, own = 18 }
+                        , blackGipfCount = 0
+                        , blackPlayedNonGipf = False
+                        , board = Dict.fromList [ ( ( 4, 1 ), { color = White, coord = ( 4, 1 ), kind = Gipf } ) ]
+                        , currentColor = Black
+                        , currentKind = Gipf
+                        , currentPlayerFourStones = []
+                        , isBasicGame = False
+                        , otherPlayerFourStones = []
+                        , state = WaitingForMove
+                        , whiteCount = { captured = 0, own = 17 }
+                        , whiteGipfCount = 0
+                        , whitePlayedNonGipf = False
+                        }
+                    )
         ]

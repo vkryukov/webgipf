@@ -523,7 +523,7 @@ performMove move game =
                             { game
                                 | currentColor = Black
                                 , currentKind =
-                                    if not game.isBasicGame then
+                                    if game.isBasicGame then
                                         Regular
 
                                     else if game.blackPlayedNonGipf then
@@ -542,7 +542,7 @@ performMove move game =
                             { game
                                 | currentColor = White
                                 , currentKind =
-                                    if not game.isBasicGame then
+                                    if game.isBasicGame then
                                         Regular
 
                                     else if game.whitePlayedNonGipf then
@@ -859,7 +859,7 @@ emptyGame =
     , whiteCount = { own = 18, captured = 0 }
     , blackGipfCount = 0
     , whiteGipfCount = 0
-    , isBasicGame = True
+    , isBasicGame = False
     , blackPlayedNonGipf = False
     , whitePlayedNonGipf = False
     , currentPlayerFourStones = []
