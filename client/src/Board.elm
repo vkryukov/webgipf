@@ -2,7 +2,7 @@ module Board exposing (..)
 
 import Browser
 import Gipf exposing (..)
-import Html exposing (Html, button, div, form, input, p, text)
+import Html exposing (Html, button, div, form, input, p, s, text)
 import Html.Attributes exposing (disabled, placeholder, style, type_, value)
 import Html.Events exposing (onInput, onMouseEnter, onMouseLeave, onMouseOver, onSubmit)
 import Platform.Cmd as Cmd
@@ -17,15 +17,13 @@ import Task
 
 
 type alias Model =
-    { board : BoardPieces
-    , availableMoves : List Direction
-    , groupsOfFour : List (List Piece)
-    , currentKind : Kind
-    , currentColor : Color
+    { game : Game
+    , kind : Kind
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
     , move : Maybe Direction
+    , possibleMoves : List Direction
     , boardInput : String
     }
 
@@ -38,24 +36,29 @@ init =
 
 initFromString : String -> ( Model, Cmd msg )
 initFromString s =
-    ( initFromBoard (stringToBoardWithDefault s)
+    let
+        maybeGame =
+            stringToGame s
+
+        game =
+            case maybeGame of
+                Just g ->
+                    g
+
+                Nothing ->
+                    emptyGame
+    in
+    ( { game = game
+      , kind = Gipf -- TOOD: support Basic games
+      , highlightedPiece = Nothing
+      , moveFrom = Nothing
+      , moveTo = Nothing
+      , move = Nothing
+      , possibleMoves = availableMoves game.board
+      , boardInput = ""
+      }
     , Cmd.none
     )
-
-
-initFromBoard : BoardPieces -> Model
-initFromBoard b =
-    { board = b
-    , availableMoves = availableMoves b
-    , groupsOfFour = connectedGroupsOfFour b
-    , currentKind = Regular
-    , currentColor = White
-    , highlightedPiece = Nothing
-    , moveFrom = Nothing
-    , moveTo = Nothing
-    , move = Nothing
-    , boardInput = ""
-    }
 
 
 
@@ -63,8 +66,7 @@ initFromBoard b =
 
 
 type Msg
-    = ChangeKind
-    | MouseEnter Coord
+    = MouseEnter Coord
     | MouseLeave Coord
     | PointClicked Coord
     | MoveMade Direction
@@ -75,18 +77,6 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ChangeKind ->
-            ( { model
-                | currentKind =
-                    if model.currentKind == Regular then
-                        Gipf
-
-                    else
-                        Regular
-              }
-            , Cmd.none
-            )
-
         MouseEnter coord ->
             ( { model | highlightedPiece = Just coord }, Cmd.none )
 
@@ -113,22 +103,15 @@ update msg model =
 
         MoveMade move ->
             let
-                b =
-                    insertPieceWithMove move model.currentColor model.currentKind model.board
+                g =
+                    performMoveWithDefaultColor move model.kind model.game
             in
-            case b of
-                Just b1 ->
+            case g of
+                Just g1 ->
                     -- move was valid
                     ( { model
-                        | board = b1
-                        , availableMoves = availableMoves b1
-                        , groupsOfFour = connectedGroupsOfFour b1
-                        , currentColor =
-                            if model.currentColor == White then
-                                Black
-
-                            else
-                                White
+                        | game = g1
+                        , possibleMoves = availableMoves g1.board
                       }
                     , Cmd.none
                     )
@@ -398,7 +381,7 @@ viewPieceWithAction piece event msg =
 viewPieces : Model -> Svg msg
 viewPieces model =
     g []
-        (List.map viewPiece (boardToPieces model.board))
+        (List.map viewPiece (boardToPieces model.game.board))
 
 
 viewPossibleMoves : Model -> Svg Msg
@@ -407,11 +390,11 @@ viewPossibleMoves model =
         possibleClicks =
             case model.moveFrom of
                 Nothing ->
-                    List.map .from model.availableMoves
+                    List.map .from model.possibleMoves
 
                 Just coord ->
                     if model.moveTo == Nothing then
-                        coord :: List.map .to (List.filter (\move -> move.from == coord) model.availableMoves)
+                        coord :: List.map .to (List.filter (\move -> move.from == coord) model.possibleMoves)
 
                     else
                         []
@@ -425,12 +408,12 @@ viewPossibleMoves model =
 drawHighlights : Model -> Svg msg
 drawHighlights model =
     if model.moveFrom == Nothing then
-        drawHighlightedPiece model.highlightedPiece model.currentKind model.currentColor
+        drawHighlightedPiece model.highlightedPiece model.game.currentKind model.game.currentColor
 
     else
         g []
-            [ drawHighlightedPiece model.moveFrom model.currentKind model.currentColor
-            , drawHighlightedPiece model.highlightedPiece model.currentKind model.currentColor
+            [ drawHighlightedPiece model.moveFrom model.game.currentKind model.game.currentColor
+            , drawHighlightedPiece model.highlightedPiece model.game.currentKind model.game.currentColor
             ]
 
 
@@ -518,7 +501,7 @@ viewConnectedPieces model =
                         group
                     )
             )
-            model.groupsOfFour
+            (model.game.currentPlayerFourStones ++ model.game.otherPlayerFourStones)
         )
 
 
@@ -532,7 +515,8 @@ view model =
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
-            , viewPieceWithAction (Piece ( 8, 10 ) model.currentColor model.currentKind) "click" ChangeKind
+
+            --, viewPieceWithAction (Piece ( 8, 10 ) model.currentColor model.currentKind) "click" ChangeKind
             , viewPieces model
             , viewConnectedPieces model
             , viewPossibleMoves model
@@ -544,7 +528,7 @@ view model =
             , style "width" "610px"
             , style "word-wrap" "break-word"
             ]
-            [ p [] [ text (boardToString model.board) ]
+            [ p [] [ text (boardToString model.game.board) ]
             , p
                 []
                 [ form
