@@ -579,6 +579,11 @@ performMove move game =
             (insertPieceWithMove move.direction move.color move.kind game.board)
 
 
+performMoveWithDefaultColor : Direction -> Kind -> Game -> Maybe Game
+performMoveWithDefaultColor direction kind game =
+    performMove { direction = direction, color = game.currentColor, kind = kind } game
+
+
 removeInvalidQ : List Piece -> Game -> Bool
 removeInvalidQ piece game =
     let
