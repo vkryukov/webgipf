@@ -67,6 +67,20 @@ maybeList list =
         list
 
 
+maybeFoldr : (a -> b -> Maybe b) -> b -> List a -> Maybe b
+maybeFoldr f acc list =
+    List.foldr
+        (\a accumulator ->
+            Maybe.andThen
+                (\b ->
+                    f a b
+                )
+                accumulator
+        )
+        (Just acc)
+        list
+
+
 splitByPredicate : (a -> Bool) -> List a -> ( List a, List a )
 splitByPredicate predicate list =
     let

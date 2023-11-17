@@ -844,10 +844,6 @@ stringToActions str =
     maybeList (List.map stringToAction (String.split " " str))
 
 
-
--- Definition of standard starting positions
-
-
 emptyGame : Game
 emptyGame =
     { board = Dict.empty
@@ -865,3 +861,13 @@ emptyGame =
     , otherPlayerFourStones = []
     , actionHistory = []
     }
+
+
+stringToGame : String -> Maybe Game
+stringToGame str =
+    case stringToActions str of
+        Just actions ->
+            maybeFoldr (\g a -> performAction g a) emptyGame actions
+
+        Nothing ->
+            Nothing
