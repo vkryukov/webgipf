@@ -118,6 +118,10 @@ update msg model =
 
                 Nothing ->
                     -- move was invalid
+                    let
+                        _ =
+                            Debug.log "invalid move" move
+                    in
                     ( model, Cmd.none )
 
         SaveBoardInput str ->
@@ -528,7 +532,7 @@ view model =
             , style "width" "610px"
             , style "word-wrap" "break-word"
             ]
-            [ p [] [ text (boardToString model.game.board) ]
+            [ p [] [ text (actionsToString model.game.actionHistory) ]
             , p
                 []
                 [ form

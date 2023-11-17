@@ -849,6 +849,36 @@ stringToActions str =
     maybeList (List.map stringToAction (String.split " " str))
 
 
+actionsToString : List Action -> String
+actionsToString actions =
+    List.map
+        (\action ->
+            case action of
+                MoveAction move ->
+                    (if move.kind == Gipf then
+                        "G"
+
+                     else
+                        ""
+                    )
+                        ++ (if move.color == Black then
+                                "K"
+
+                            else
+                                "W"
+                           )
+                        ++ coordToName move.direction.from
+                        ++ "-"
+                        ++ coordToName move.direction.to
+
+                RemoveAction coords ->
+                    "x"
+                        ++ String.join "," (List.map coordToName coords)
+        )
+        (List.reverse actions)
+        |> String.join " "
+
+
 emptyGame : Game
 emptyGame =
     { board = Dict.empty
