@@ -523,7 +523,7 @@ performMove move game =
                             { game
                                 | currentColor = Black
                                 , currentKind =
-                                    if not game.isBasicGame then
+                                    if game.isBasicGame then
                                         Regular
 
                                     else if game.blackPlayedNonGipf then
@@ -542,7 +542,7 @@ performMove move game =
                             { game
                                 | currentColor = White
                                 , currentKind =
-                                    if not game.isBasicGame then
+                                    if game.isBasicGame then
                                         Regular
 
                                     else if game.whitePlayedNonGipf then
@@ -577,6 +577,11 @@ performMove move game =
                 }
             )
             (insertPieceWithMove move.direction move.color move.kind game.board)
+
+
+performMoveWithDefaultColor : Direction -> Kind -> Game -> Maybe Game
+performMoveWithDefaultColor direction kind game =
+    performMove { direction = direction, color = game.currentColor, kind = kind } game
 
 
 removeInvalidQ : List Piece -> Game -> Bool
@@ -844,8 +849,34 @@ stringToActions str =
     maybeList (List.map stringToAction (String.split " " str))
 
 
+actionsToString : List Action -> String
+actionsToString actions =
+    List.map
+        (\action ->
+            case action of
+                MoveAction move ->
+                    (if move.kind == Gipf then
+                        "G"
 
--- Definition of standard starting positions
+                     else
+                        ""
+                    )
+                        ++ (if move.color == Black then
+                                "K"
+
+                            else
+                                "W"
+                           )
+                        ++ coordToName move.direction.from
+                        ++ "-"
+                        ++ coordToName move.direction.to
+
+                RemoveAction coords ->
+                    "x"
+                        ++ String.join "," (List.map coordToName coords)
+        )
+        (List.reverse actions)
+        |> String.join " "
 
 
 emptyGame : Game
@@ -858,10 +889,20 @@ emptyGame =
     , whiteCount = { own = 18, captured = 0 }
     , blackGipfCount = 0
     , whiteGipfCount = 0
-    , isBasicGame = True
+    , isBasicGame = False
     , blackPlayedNonGipf = False
     , whitePlayedNonGipf = False
     , currentPlayerFourStones = []
     , otherPlayerFourStones = []
     , actionHistory = []
     }
+
+
+stringToGame : String -> Maybe Game
+stringToGame str =
+    case stringToActions str of
+        Just actions ->
+            maybeFoldr (\g a -> performAction g a) emptyGame actions
+
+        Nothing ->
+            Nothing
