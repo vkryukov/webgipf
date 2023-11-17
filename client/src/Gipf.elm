@@ -444,7 +444,7 @@ type GameState
 
 type Action
     = MoveAction Move
-    | RemoveAction (List Piece)
+    | RemoveAction (List Coord)
 
 
 type alias Game =
@@ -461,81 +461,7 @@ type alias Game =
     , whitePlayedNonGipf : Bool
     , currentPlayerFourStones : List (List Piece)
     , otherPlayerFourStones : List (List Piece)
-    , actionHistory : List Action
-    }
-
-
-properMoveRx : Regex.Regex
-properMoveRx =
-    Maybe.withDefault Regex.never <|
-        Regex.fromString "^(G?)([KW]?)([a-i][1-9])-([a-i][1-9])$"
-
-
-stringToMove : String -> Maybe Move
-stringToMove str =
-    case Regex.find properMoveRx str of
-        [] ->
-            Nothing
-
-        match :: _ ->
-            let
-                kind =
-                    case match.submatches |> List.head |> Maybe.withDefault Nothing of
-                        Just "G" ->
-                            Just Gipf
-
-                        _ ->
-                            Just Regular
-
-                color =
-                    case match.submatches |> List.drop 1 |> List.head |> Maybe.withDefault Nothing of
-                        Just "K" ->
-                            Just Black
-
-                        _ ->
-                            Just White
-
-                fromCoord =
-                    match.submatches
-                        |> List.drop 2
-                        |> List.head
-                        |> Maybe.andThen (Maybe.andThen nameToCoord)
-
-                toCoord =
-                    match.submatches
-                        |> List.drop 3
-                        |> List.head
-                        |> Maybe.andThen (Maybe.andThen nameToCoord)
-            in
-            case ( ( kind, color ), ( fromCoord, toCoord ) ) of
-                ( ( Just k, Just c ), ( Just from, Just to ) ) ->
-                    Just { direction = Direction from to, color = c, kind = k }
-
-                _ ->
-                    Nothing
-
-
-stringToMoves : String -> Maybe (List Move)
-stringToMoves str =
-    maybeList (List.map stringToMove (String.split " " str))
-
-
-emptyGame : Game
-emptyGame =
-    { board = Dict.empty
-    , currentKind = Gipf
-    , currentColor = White
-    , state = WaitingForMove
-    , blackCount = { own = 18, captured = 0 }
-    , whiteCount = { own = 18, captured = 0 }
-    , blackGipfCount = 0
-    , whiteGipfCount = 0
-    , isBasicGame = True
-    , blackPlayedNonGipf = False
-    , whitePlayedNonGipf = False
-    , currentPlayerFourStones = []
-    , otherPlayerFourStones = []
-    , actionHistory = [] -- from newest to oldest
+    , actionHistory : List Action -- from newest to oldest
     }
 
 
@@ -654,19 +580,19 @@ performMove move game =
 
 
 removeInvalidQ : List Piece -> Game -> Bool
-removeInvalidQ pieces game =
+removeInvalidQ piece game =
     let
         remaining =
-            removeElementsFromOneOfSupersets (game.currentPlayerFourStones ++ game.currentPlayerFourStones) pieces
+            removeElementsFromOneOfSupersets (game.currentPlayerFourStones ++ game.currentPlayerFourStones) piece
 
         removingCurrent =
-            isSubsetOfAny game.currentPlayerFourStones pieces
+            isSubsetOfAny game.currentPlayerFourStones piece
 
         removingOther =
-            isSubsetOfAny game.otherPlayerFourStones pieces
+            isSubsetOfAny game.otherPlayerFourStones piece
     in
     (game.state /= WaitingForMove)
-        || List.isEmpty pieces
+        || List.isEmpty piece
         || -- the above should be enough, but just in case we have 1 more conditions
            (game.currentPlayerFourStones == [] && game.otherPlayerFourStones == [])
         || -- pieces are not the ones that need to be removed
@@ -711,96 +637,231 @@ countPieces pieces =
     List.foldl countPiece ( 0, 0 ) pieces
 
 
-performRemove : List Piece -> Game -> Maybe Game
-performRemove pieces game =
-    if removeInvalidQ pieces game then
-        Nothing
+performRemove : List Coord -> Game -> Maybe Game
+performRemove coords game =
+    -- TODO: in situation where there are 4 adjacent gipf pieces in a row (and no other adjacent pieces),
+    -- which can easily happen at the start of the tournament game, performRemove will fail
+    -- to proceed to the next state, because it will think that the player need to remove
+    -- some pieces, while in fact they don't need to remove anything. We need to have some way to
+    -- record that the player decide to keep the 4 gipf pieces, and then proceed to the next state.
+    let
+        maybePieces =
+            dictSlice game.board coords
+                |> maybeList
+    in
+    case maybePieces of
+        Just pieces ->
+            if removeInvalidQ pieces game then
+                Nothing
 
-    else
-        let
-            newPieces =
-                removeElements pieces (boardToPieces game.board)
+            else
+                let
+                    newPieces =
+                        removeElements pieces (boardToPieces game.board)
 
-            newBoard =
-                piecesToBoard newPieces
+                    newBoard =
+                        piecesToBoard newPieces
 
-            ( currentFourStones, otherFourStones ) =
-                currentAndOtherFourStones newBoard game.currentColor
+                    ( currentFourStones, otherFourStones ) =
+                        currentAndOtherFourStones newBoard game.currentColor
 
-            ( removedWhiteCount, removedBlackCount ) =
-                countPieces pieces
+                    ( removedWhiteCount, removedBlackCount ) =
+                        countPieces pieces
 
-            removingPlayerColor =
-                dominantColor pieces
+                    removingPlayerColor =
+                        dominantColor pieces
 
-            updatedGame =
-                { game
-                    | board = newBoard
-                    , currentPlayerFourStones = currentFourStones
-                    , otherPlayerFourStones = otherFourStones
-                    , actionHistory = RemoveAction pieces :: game.actionHistory
-                    , whiteCount =
-                        { own =
-                            if removingPlayerColor == White then
-                                game.whiteCount.own + removedWhiteCount
+                    updatedGame =
+                        { game
+                            | board = newBoard
+                            , currentPlayerFourStones = currentFourStones
+                            , otherPlayerFourStones = otherFourStones
+                            , actionHistory = RemoveAction coords :: game.actionHistory
+                            , whiteCount =
+                                { own =
+                                    if removingPlayerColor == White then
+                                        game.whiteCount.own + removedWhiteCount
 
-                            else
-                                game.whiteCount.own
-                        , captured =
-                            if removingPlayerColor == White then
-                                game.whiteCount.captured + removedBlackCount
+                                    else
+                                        game.whiteCount.own
+                                , captured =
+                                    if removingPlayerColor == White then
+                                        game.whiteCount.captured + removedBlackCount
 
-                            else
-                                game.whiteCount.captured
+                                    else
+                                        game.whiteCount.captured
+                                }
+                            , blackCount =
+                                { own =
+                                    if removingPlayerColor == Black then
+                                        game.blackCount.own + removedBlackCount
+
+                                    else
+                                        game.blackCount.own
+                                , captured =
+                                    if removingPlayerColor == Black then
+                                        game.blackCount.captured + removedWhiteCount
+
+                                    else
+                                        game.blackCount.captured
+                                }
+                            , whiteGipfCount = game.whiteGipfCount - count pieces (\p -> p.color == White && p.kind == Gipf)
+                            , blackGipfCount = game.whiteGipfCount - count pieces (\p -> p.color == White && p.kind == Gipf)
                         }
-                    , blackCount =
-                        { own =
-                            if removingPlayerColor == Black then
-                                game.blackCount.own + removedBlackCount
 
-                            else
-                                game.blackCount.own
-                        , captured =
-                            if removingPlayerColor == Black then
-                                game.blackCount.captured + removedWhiteCount
+                    newState =
+                        if not (List.isEmpty updatedGame.currentPlayerFourStones || List.isEmpty updatedGame.otherPlayerFourStones) then
+                            WaitingForRemove
 
-                            else
-                                game.blackCount.captured
-                        }
-                    , whiteGipfCount = game.whiteGipfCount - count pieces (\p -> p.color == White && p.kind == Gipf)
-                    , blackGipfCount = game.whiteGipfCount - count pieces (\p -> p.color == White && p.kind == Gipf)
-                }
+                        else if
+                            (updatedGame.currentColor == Black && updatedGame.whiteCount.own == 0)
+                                || (updatedGame.whiteGipfCount == 0)
+                        then
+                            BlackWon
 
-            newState =
-                if not (List.isEmpty updatedGame.currentPlayerFourStones || List.isEmpty updatedGame.otherPlayerFourStones) then
-                    WaitingForRemove
-
-                else if
-                    (updatedGame.currentColor == Black && updatedGame.whiteCount.own == 0)
-                        || (updatedGame.whiteGipfCount == 0)
-                then
-                    BlackWon
-
-                else if
-                    (updatedGame.currentColor == White && updatedGame.blackCount.own == 0)
-                        || (updatedGame.blackGipfCount == 0)
-                then
-                    WhiteWon
-
-                else
-                    WaitingForMove
-        in
-        Just
-            { updatedGame
-                | state = newState
-                , currentColor =
-                    if newState == WaitingForMove then
-                        if game.currentColor == White then
-                            Black
+                        else if
+                            (updatedGame.currentColor == White && updatedGame.blackCount.own == 0)
+                                || (updatedGame.blackGipfCount == 0)
+                        then
+                            WhiteWon
 
                         else
-                            White
+                            WaitingForMove
+                in
+                Just
+                    { updatedGame
+                        | state = newState
+                        , currentColor =
+                            if newState == WaitingForMove then
+                                if game.currentColor == White then
+                                    Black
 
-                    else
-                        updatedGame.currentColor
-            }
+                                else
+                                    White
+
+                            else
+                                updatedGame.currentColor
+                    }
+
+        Nothing ->
+            Nothing
+
+
+performAction : Action -> Game -> Maybe Game
+performAction action game =
+    case action of
+        MoveAction move ->
+            performMove move game
+
+        RemoveAction coords ->
+            performRemove coords game
+
+
+
+-- String conversions
+
+
+properMoveRx : Regex.Regex
+properMoveRx =
+    Maybe.withDefault Regex.never <|
+        Regex.fromString "^(G?)([KW]?)([a-i][1-9])-([a-i][1-9])$"
+
+
+stringToMove : String -> Maybe Move
+stringToMove str =
+    case Regex.find properMoveRx str of
+        [] ->
+            Nothing
+
+        match :: _ ->
+            let
+                kind =
+                    case match.submatches |> List.head |> Maybe.withDefault Nothing of
+                        Just "G" ->
+                            Just Gipf
+
+                        _ ->
+                            Just Regular
+
+                color =
+                    case match.submatches |> List.drop 1 |> List.head |> Maybe.withDefault Nothing of
+                        Just "K" ->
+                            Just Black
+
+                        _ ->
+                            Just White
+
+                fromCoord =
+                    match.submatches
+                        |> List.drop 2
+                        |> List.head
+                        |> Maybe.andThen (Maybe.andThen nameToCoord)
+
+                toCoord =
+                    match.submatches
+                        |> List.drop 3
+                        |> List.head
+                        |> Maybe.andThen (Maybe.andThen nameToCoord)
+            in
+            case ( ( kind, color ), ( fromCoord, toCoord ) ) of
+                ( ( Just k, Just c ), ( Just from, Just to ) ) ->
+                    Just { direction = Direction from to, color = c, kind = k }
+
+                _ ->
+                    Nothing
+
+
+properRemoveRx : Regex.Regex
+properRemoveRx =
+    Maybe.withDefault Regex.never <|
+        Regex.fromString "^x[a-i][1-9](,[a-i][1-9])*$"
+
+
+stringToRemove : String -> Maybe (List Coord)
+stringToRemove str =
+    if Regex.contains properRemoveRx str then
+        str
+            |> String.dropLeft 1
+            |> String.split ","
+            |> List.map nameToCoord
+            |> maybeList
+
+    else
+        Nothing
+
+
+stringToAction : String -> Maybe Action
+stringToAction str =
+    if String.left 1 str == "x" then
+        Maybe.map RemoveAction (stringToRemove str)
+
+    else
+        Maybe.map MoveAction (stringToMove str)
+
+
+stringToActions : String -> Maybe (List Action)
+stringToActions str =
+    maybeList (List.map stringToAction (String.split " " str))
+
+
+
+-- Definition of standard starting positions
+
+
+emptyGame : Game
+emptyGame =
+    { board = Dict.empty
+    , currentKind = Gipf
+    , currentColor = White
+    , state = WaitingForMove
+    , blackCount = { own = 18, captured = 0 }
+    , whiteCount = { own = 18, captured = 0 }
+    , blackGipfCount = 0
+    , whiteGipfCount = 0
+    , isBasicGame = True
+    , blackPlayedNonGipf = False
+    , whitePlayedNonGipf = False
+    , currentPlayerFourStones = []
+    , otherPlayerFourStones = []
+    , actionHistory = []
+    }
