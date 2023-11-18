@@ -518,10 +518,18 @@ performMove move game =
                     ( currentFourStones, otherFourStones ) =
                         currentAndOtherFourStones newBoard move.color
 
+                    thereAreStonesToRemove =
+                        not (List.isEmpty currentFourStones && List.isEmpty otherFourStones)
+
                     updatedGame =
                         if game.currentColor == White then
                             { game
-                                | currentColor = Black
+                                | currentColor =
+                                    if thereAreStonesToRemove then
+                                        game.currentColor
+
+                                    else
+                                        Black
                                 , currentKind =
                                     if game.isBasicGame then
                                         Regular
@@ -555,7 +563,12 @@ performMove move game =
 
                         else
                             { game
-                                | currentColor = White
+                                | currentColor =
+                                    if thereAreStonesToRemove then
+                                        game.currentColor
+
+                                    else
+                                        White
                                 , currentKind =
                                     if game.isBasicGame then
                                         Regular
@@ -593,7 +606,7 @@ performMove move game =
                     , otherPlayerFourStones = otherFourStones
                     , actionHistory = MoveAction move :: game.actionHistory
                     , state =
-                        if not (List.isEmpty currentFourStones && List.isEmpty otherFourStones) then
+                        if thereAreStonesToRemove then
                             WaitingForRemove
 
                         else if game.currentColor == Black && game.whiteCount.own == 0 then
