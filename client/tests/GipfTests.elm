@@ -513,8 +513,34 @@ performMoveWithDefaultColorTest =
                         , isBasicGame = False
                         , otherPlayerFourStones = []
                         , state = WaitingForMove
-                        , whiteCount = { captured = 0, own = 17 }
-                        , whiteGipfCount = 0
+                        , whiteCount = { captured = 0, own = 16 }
+                        , whiteGipfCount = 1
+                        , whitePlayedNonGipf = False
+                        }
+                    )
+        ]
+
+
+stringToGameTest : Test
+stringToGameTest =
+    describe "stringToGame tets"
+        [ test "Playing Gipf pieces should change Gipf count and pieces count" <|
+            \_ ->
+                Expect.equal (stringToGame "GWf1-e2 GKe1-e2 GWf1-e2")
+                    (Just
+                        { actionHistory = [ MoveAction { color = White, direction = { from = ( 5, 1 ), to = ( 4, 1 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 4, 0 ), to = ( 4, 1 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 5, 1 ), to = ( 4, 1 ) }, kind = Gipf } ]
+                        , blackCount = { captured = 0, own = 16 }
+                        , blackGipfCount = 1
+                        , blackPlayedNonGipf = False
+                        , board = Dict.fromList [ ( ( 3, 1 ), { color = Black, coord = ( 3, 1 ), kind = Gipf } ), ( ( 4, 1 ), { color = White, coord = ( 4, 1 ), kind = Gipf } ), ( ( 4, 2 ), { color = White, coord = ( 4, 2 ), kind = Gipf } ) ]
+                        , currentColor = Black
+                        , currentKind = Gipf
+                        , currentPlayerFourStones = []
+                        , isBasicGame = False
+                        , otherPlayerFourStones = []
+                        , state = WaitingForMove
+                        , whiteCount = { captured = 0, own = 14 }
+                        , whiteGipfCount = 2
                         , whitePlayedNonGipf = False
                         }
                     )

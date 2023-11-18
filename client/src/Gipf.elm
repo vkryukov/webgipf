@@ -532,9 +532,24 @@ performMove move game =
                                     else
                                         Gipf
                                 , whiteCount =
-                                    { own = game.whiteCount.own - 1
+                                    { own =
+                                        game.whiteCount.own
+                                            - (if move.kind == Gipf then
+                                                2
+
+                                               else
+                                                1
+                                              )
                                     , captured = game.whiteCount.captured
                                     }
+                                , whiteGipfCount =
+                                    game.whiteGipfCount
+                                        + (if move.kind == Gipf then
+                                            1
+
+                                           else
+                                            0
+                                          )
                                 , whitePlayedNonGipf = game.whitePlayedNonGipf || move.kind == Regular
                             }
 
@@ -551,9 +566,24 @@ performMove move game =
                                     else
                                         Gipf
                                 , blackCount =
-                                    { own = game.blackCount.own - 1
+                                    { own =
+                                        game.blackCount.own
+                                            - (if move.kind == Gipf then
+                                                2
+
+                                               else
+                                                1
+                                              )
                                     , captured = game.blackCount.captured
                                     }
+                                , blackGipfCount =
+                                    game.blackGipfCount
+                                        + (if move.kind == Gipf then
+                                            1
+
+                                           else
+                                            0
+                                          )
                                 , blackPlayedNonGipf = game.blackPlayedNonGipf || move.kind == Regular
                             }
                 in
