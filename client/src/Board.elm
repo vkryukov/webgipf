@@ -126,6 +126,9 @@ update msg model =
             let
                 ( m, _ ) =
                     initFromString model.boardInput
+
+                _ =
+                    Debug.log "m" m
             in
             ( { m | boardInput = "" }, Cmd.none )
 
@@ -605,7 +608,7 @@ view model =
                     [ div []
                         [ input
                             [ type_ "text"
-                            , placeholder "Enter new board..."
+                            , placeholder "Enter new game..."
                             , value model.boardInput
                             , onInput SaveBoardInput
                             , style "width" "520px"
