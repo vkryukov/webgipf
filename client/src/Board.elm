@@ -34,20 +34,8 @@ init =
         initFromString ""
 
 
-initFromString : String -> ( Model, Cmd msg )
-initFromString s =
-    let
-        maybeGame =
-            stringToGame s
-
-        game =
-            case maybeGame of
-                Just g ->
-                    g
-
-                Nothing ->
-                    emptyGame
-    in
+initFromGame : Game -> ( Model, Cmd msg )
+initFromGame game =
     ( { game = game
       , kind = game.currentKind
       , highlightedPiece = Nothing
@@ -59,6 +47,11 @@ initFromString s =
       }
     , Cmd.none
     )
+
+
+initFromString : String -> ( Model, Cmd msg )
+initFromString s =
+    initFromGame (stringToGameWithDefault s)
 
 
 
