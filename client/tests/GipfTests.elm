@@ -544,7 +544,7 @@ stringToGameTest =
                         , whitePlayedNonGipf = False
                         }
                     )
-        , test "Playing standard game starting move should result in a good game" <|
+        , test "Playing standard game moves should result in a good game" <|
             \_ ->
                 Expect.equal (stringToGame "GWe1-e2 GKa1-b2 GWa5-b5 GKe9-e8 GWi5-h5 GKi1-h2")
                     (Just
