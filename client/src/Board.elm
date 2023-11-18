@@ -24,6 +24,8 @@ type alias Model =
     , moveTo : Maybe Coord
     , move : Maybe Direction
     , possibleMoves : List Direction
+    , selectedToRemove : List Coord
+    , autoSelectedToRemove : List Coord
     , boardInput : String
     }
 
@@ -31,7 +33,7 @@ type alias Model =
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        initFromGame emptyGame
+        initFromString "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
 
 
 initFromGame : Game -> ( Model, Cmd msg )
@@ -43,6 +45,8 @@ initFromGame game =
       , moveTo = Nothing
       , move = Nothing
       , possibleMoves = availableMoves game.board
+      , selectedToRemove = []
+      , autoSelectedToRemove = autoSelectToRemove game
       , boardInput = ""
       }
     , Cmd.none
@@ -107,6 +111,7 @@ update msg model =
                         | game = g1
                         , kind = g1.currentKind
                         , possibleMoves = availableMoves g1.board
+                        , autoSelectedToRemove = autoSelectToRemove g1
                       }
                     , Cmd.none
                     )
@@ -400,23 +405,28 @@ viewPieces model =
 
 viewPossibleMoves : Model -> Svg Msg
 viewPossibleMoves model =
-    let
-        possibleClicks =
-            case model.moveFrom of
-                Nothing ->
-                    List.map .from model.possibleMoves
+    case model.game.state of
+        WaitingForMove ->
+            let
+                possibleClicks =
+                    case model.moveFrom of
+                        Nothing ->
+                            List.map .from model.possibleMoves
 
-                Just coord ->
-                    if model.moveTo == Nothing then
-                        coord :: List.map .to (List.filter (\move -> move.from == coord) model.possibleMoves)
+                        Just coord ->
+                            if model.moveTo == Nothing then
+                                coord :: List.map .to (List.filter (\move -> move.from == coord) model.possibleMoves)
 
-                    else
-                        []
-    in
-    g []
-        (drawHighlights model
-            :: List.map (\p -> drawClickPoint p 0.25) possibleClicks
-        )
+                            else
+                                []
+            in
+            g []
+                (drawHighlights model
+                    :: List.map (\p -> drawClickPoint p 0.25) possibleClicks
+                )
+
+        _ ->
+            g [] []
 
 
 drawHighlights : Model -> Svg msg
@@ -502,20 +512,30 @@ drawArrowXY x1_ y1_ x2_ y2_ =
         ]
 
 
+drawLightMark : Coord -> Svg msg
+drawLightMark coord =
+    drawCircle coord 0.09 "LightCoral"
+
+
+drawDarkMark : Coord -> Svg msg
+drawDarkMark coord =
+    drawCircle coord 0.09 "Red"
+
+
 viewConnectedPieces : Model -> Svg msg
 viewConnectedPieces model =
+    let
+        allStones =
+            model.game.currentPlayerFourStones ++ model.game.otherPlayerFourStones
+    in
     g []
         (List.map
             (\group ->
                 g []
-                    (List.map
-                        (\piece ->
-                            drawCircle piece.coord 0.09 "LightCoral"
-                        )
-                        group
-                    )
+                    (List.map (\p -> drawLightMark p.coord) group)
             )
-            (model.game.currentPlayerFourStones ++ model.game.otherPlayerFourStones)
+            allStones
+            ++ [ g [] (List.map drawDarkMark model.autoSelectedToRemove) ]
         )
 
 
@@ -550,30 +570,50 @@ drawMultilineTextAtCoord text coord dx dy offY =
 
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
-    if
-        (model.game.currentKind == Regular)
-            || (not model.game.isBasicGame
-                    -- In the tournament, you have to play at least one Gipf piece
-                    && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
-                            || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
-                       )
-               )
-    then
-        viewPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+    if model.game.state == WaitingForMove then
+        if
+            (model.game.currentKind == Regular)
+                || (not model.game.isBasicGame
+                        -- In the tournament, you have to play at least one Gipf piece
+                        && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
+                                || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
+                           )
+                   )
+        then
+            viewPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+
+        else
+            let
+                pieceLabel =
+                    if model.kind == Regular then
+                        "Gipf"
+
+                    else
+                        "Regular"
+            in
+            g []
+                [ viewPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
+                , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                ]
+
+    else if model.game.state == WaitingForRemove then
+        g []
+            [ viewPiece
+                (Piece ( 8, 10 )
+                    (if model.game.currentPlayerFourStones == [] then
+                        reverseColor model.game.currentColor
+
+                     else
+                        model.game.currentColor
+                    )
+                    Regular
+                )
+            , drawDarkMark ( 8, 10 )
+            ]
 
     else
-        let
-            pieceLabel =
-                if model.kind == Regular then
-                    "Gipf"
-
-                else
-                    "Regular"
-        in
-        g []
-            [ viewPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
-            , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
-            ]
+        -- game is over
+        g [] []
 
 
 view : Model -> Html Msg

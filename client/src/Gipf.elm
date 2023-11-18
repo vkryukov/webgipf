@@ -977,3 +977,56 @@ basicGame =
         | isBasicGame = True
         , currentKind = Regular
     }
+
+
+reverseColor : Color -> Color
+reverseColor color =
+    if color == Black then
+        White
+
+    else
+        Black
+
+
+defaultPiece : Piece
+defaultPiece =
+    { coord = ( -1, -1 ), color = White, kind = Regular }
+
+
+autoSelectToRemove : Game -> List Coord
+autoSelectToRemove game =
+    let
+        maybeFirstOwn =
+            List.head game.currentPlayerFourStones
+
+        maybeFirstOther =
+            List.head game.otherPlayerFourStones
+
+        first =
+            case ( maybeFirstOwn, maybeFirstOther ) of
+                ( Just f, _ ) ->
+                    f
+
+                ( Nothing, Just f ) ->
+                    f
+
+                _ ->
+                    [ defaultPiece ]
+
+        -- We should never get here when if a piece can be autoselected
+        color =
+            if List.isEmpty game.currentPlayerFourStones then
+                reverseColor game.currentColor
+
+            else
+                game.currentColor
+    in
+    if
+        (List.length game.currentPlayerFourStones == 1)
+            || (List.length game.currentPlayerFourStones == 0 && List.length game.otherPlayerFourStones == 1)
+    then
+        List.filter (\p -> (p.color == color && p.kind == Regular) || (p.color /= color)) first
+            |> List.map (\p -> p.coord)
+
+    else
+        []
