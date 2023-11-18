@@ -1,5 +1,6 @@
 module GipfTests exposing (..)
 
+import DebugTools exposing (..)
 import Dict
 import Expect
 import Gipf exposing (..)
@@ -635,4 +636,11 @@ actionTest =
                         , whitePlayedNonGipf = True
                         }
                     )
+        , test "reconstruct a game with 4 pieces in a row" <|
+            \_ ->
+                let
+                    g =
+                        stringToGameWithDefault "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wf1-f2"
+                in
+                Expect.equal g.state WaitingForRemove
         ]
