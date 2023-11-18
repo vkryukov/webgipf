@@ -429,16 +429,16 @@ connectedPiecestest =
                     (connectedGroupsOfFour
                         (stringToBoardWithDefault "GKb5 GKe2 GKh5 GWb2 GWe5 GWe8 Kc4 Kd4 Ke4 Kf3 Kh3 We3 Wf4 Wg2 Wg3 Wg4 Wh2")
                     )
-                    [ [ { color = Black, coord = ( 2, 3 ), kind = Regular }
+                    [ [ { color = White, coord = ( 4, 4 ), kind = Gipf }
+                      , { color = White, coord = ( 5, 4 ), kind = Regular }
+                      , { color = White, coord = ( 6, 4 ), kind = Regular }
+                      , { color = White, coord = ( 7, 4 ), kind = Regular }
+                      ]
+                    , [ { color = Black, coord = ( 2, 3 ), kind = Regular }
                       , { color = Black, coord = ( 3, 3 ), kind = Regular }
                       , { color = Black, coord = ( 4, 3 ), kind = Regular }
                       , { color = Black, coord = ( 5, 3 ), kind = Regular }
                       , { color = White, coord = ( 6, 3 ), kind = Regular }
-                      ]
-                    , [ { color = White, coord = ( 4, 4 ), kind = Gipf }
-                      , { color = White, coord = ( 5, 4 ), kind = Regular }
-                      , { color = White, coord = ( 6, 4 ), kind = Regular }
-                      , { color = White, coord = ( 7, 4 ), kind = Regular }
                       ]
                     ]
         ]

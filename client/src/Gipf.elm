@@ -382,27 +382,32 @@ sameColorListQ list =
 
 allLines : List Direction
 allLines =
-    [ { from = ( 0, 0 ), to = ( 1, 1 ) }
-    , { from = ( 1, 0 ), to = ( 1, 1 ) }
-    , { from = ( 1, 0 ), to = ( 2, 1 ) }
+    [ -- bottom to top
+      { from = ( 1, 0 ), to = ( 1, 1 ) }
     , { from = ( 2, 0 ), to = ( 2, 1 ) }
-    , { from = ( 2, 0 ), to = ( 3, 1 ) }
     , { from = ( 3, 0 ), to = ( 3, 1 ) }
-    , { from = ( 3, 0 ), to = ( 4, 1 ) }
     , { from = ( 4, 0 ), to = ( 4, 1 ) }
-    , { from = ( 0, 1 ), to = ( 1, 2 ) }
-    , { from = ( 0, 1 ), to = ( 1, 1 ) }
-    , { from = ( 0, 2 ), to = ( 1, 3 ) }
-    , { from = ( 0, 2 ), to = ( 1, 2 ) }
+    , { from = ( 5, 1 ), to = ( 5, 2 ) }
+    , { from = ( 6, 2 ), to = ( 6, 3 ) }
+    , { from = ( 7, 3 ), to = ( 7, 4 ) }
+
+    -- bottom left to top right
     , { from = ( 0, 3 ), to = ( 1, 4 ) }
-    , { from = ( 0, 3 ), to = ( 1, 3 ) }
-    , { from = ( 0, 4 ), to = ( 1, 4 ) }
-    , { from = ( 1, 5 ), to = ( 2, 5 ) }
-    , { from = ( 1, 5 ), to = ( 1, 4 ) }
-    , { from = ( 2, 6 ), to = ( 3, 6 ) }
-    , { from = ( 2, 6 ), to = ( 2, 5 ) }
+    , { from = ( 0, 2 ), to = ( 1, 3 ) }
+    , { from = ( 0, 1 ), to = ( 1, 2 ) }
+    , { from = ( 0, 0 ), to = ( 1, 1 ) }
+    , { from = ( 1, 0 ), to = ( 2, 1 ) }
+    , { from = ( 2, 0 ), to = ( 3, 1 ) }
+    , { from = ( 3, 0 ), to = ( 4, 1 ) }
+
+    -- top left to bottom right
     , { from = ( 3, 7 ), to = ( 4, 7 ) }
-    , { from = ( 3, 7 ), to = ( 3, 6 ) }
+    , { from = ( 2, 6 ), to = ( 3, 6 ) }
+    , { from = ( 1, 5 ), to = ( 2, 5 ) }
+    , { from = ( 0, 4 ), to = ( 1, 4 ) }
+    , { from = ( 0, 3 ), to = ( 1, 3 ) }
+    , { from = ( 0, 2 ), to = ( 1, 2 ) }
+    , { from = ( 0, 1 ), to = ( 1, 1 ) }
     ]
 
 
