@@ -933,7 +933,7 @@ emptyGame =
 
 stringToGame : String -> Maybe Game
 stringToGame str =
-    List.foldr (\g a -> performAction g a) (Just emptyGame) (stringToActions str)
+    List.foldr performAction (Just emptyGame) (stringToActions str)
 
 
 stringToGameWithDefault : String -> Game
