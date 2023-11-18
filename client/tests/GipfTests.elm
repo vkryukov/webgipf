@@ -521,6 +521,12 @@ performMoveWithDefaultColorTest =
         ]
 
 
+game1 : Maybe Game
+game1 =
+    -- http://www.gipf.com/gipf/archives/game010821_01.html
+    stringToGame "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
+
+
 stringToGameTest : Test
 stringToGameTest =
     describe "stringToGame tests"
@@ -583,9 +589,8 @@ stringToGameTest =
                     , whitePlayedNonGipf = True
                     }
         , test "Game with some remove Action" <|
-            -- http://www.gipf.com/gipf/archives/game010821_01.html
             \_ ->
-                Expect.equal (stringToGame "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5")
+                Expect.equal game1
                     (Just
                         { actionHistory = [ MoveAction { color = Black, direction = { from = ( 0, 4 ), to = ( 1, 4 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 6, 2 ), to = ( 5, 2 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 5, 8 ), to = ( 5, 7 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 1, 5 ), to = ( 2, 5 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 1, 5 ), to = ( 2, 5 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 6, 8 ), to = ( 6, 7 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 8, 7 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 0, 4 ), to = ( 1, 4 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 7 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 2, 6 ), to = ( 2, 5 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 5 ), to = ( 7, 5 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 2, 6 ), to = ( 2, 5 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 5 ), to = ( 7, 5 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 1, 5 ), to = ( 2, 5 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 5 ) }, kind = Gipf } ]
                         , blackCount = { captured = 0, own = 6 }
@@ -603,4 +608,16 @@ stringToGameTest =
                         , whitePlayedNonGipf = True
                         }
                     )
+        ]
+
+
+actionTest : Test
+actionTest =
+    describe "Action tests"
+        [ -- a test that removes some pieces from game1 and compares it to empty board
+          test "remove pieces from game1" <|
+            \_ ->
+                Expect.equal
+                    (performAction (Just (RemoveAction [ ( 5, 6 ), ( 6, 7 ) ])) game1)
+                    (Just emptyGame)
         ]
