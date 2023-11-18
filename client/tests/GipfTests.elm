@@ -544,7 +544,7 @@ stringToGameTest =
                         , whitePlayedNonGipf = False
                         }
                     )
-        , test "Playing standard game starting move should result in a good game" <|
+        , test "Playing standard game moves should result in a good game" <|
             \_ ->
                 Expect.equal (stringToGame "GWe1-e2 GKa1-b2 GWa5-b5 GKe9-e8 GWi5-h5 GKi1-h2")
                     (Just
@@ -570,16 +570,16 @@ stringToGameTest =
                     { actionHistory = [ MoveAction { color = Black, direction = { from = ( 8, 4 ), to = ( 7, 4 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 8 ), to = ( 7, 7 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 4, 8 ), to = ( 4, 7 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 0, 4 ), to = ( 1, 4 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 0, 0 ), to = ( 1, 1 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 4, 0 ), to = ( 4, 1 ) }, kind = Gipf } ]
                     , blackCount = { captured = 0, own = 12 }
                     , blackGipfCount = 3
-                    , blackPlayedNonGipf = False
+                    , blackPlayedNonGipf = True
                     , board = Dict.fromList [ ( ( 1, 1 ), { color = Black, coord = ( 1, 1 ), kind = Gipf } ), ( ( 1, 4 ), { color = White, coord = ( 1, 4 ), kind = Gipf } ), ( ( 4, 1 ), { color = White, coord = ( 4, 1 ), kind = Gipf } ), ( ( 4, 7 ), { color = Black, coord = ( 4, 7 ), kind = Gipf } ), ( ( 7, 4 ), { color = Black, coord = ( 7, 4 ), kind = Gipf } ), ( ( 7, 7 ), { color = White, coord = ( 7, 7 ), kind = Gipf } ) ]
                     , currentColor = White
-                    , currentKind = Gipf
+                    , currentKind = Regular
                     , currentPlayerFourStones = []
                     , isBasicGame = False
                     , otherPlayerFourStones = []
                     , state = WaitingForMove
                     , whiteCount = { captured = 0, own = 12 }
                     , whiteGipfCount = 3
-                    , whitePlayedNonGipf = False
+                    , whitePlayedNonGipf = True
                     }
         ]
