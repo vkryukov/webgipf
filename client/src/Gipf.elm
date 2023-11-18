@@ -956,7 +956,11 @@ standardGame =
 
 basicGame : Game
 basicGame =
-    { emptyGame
+    let
+        g =
+            stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2"
+    in
+    { g
         | isBasicGame = True
         , currentKind = Regular
     }
