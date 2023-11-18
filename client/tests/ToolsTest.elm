@@ -145,3 +145,45 @@ removeElementsFromOneOfSupersetsTest =
                 in
                 Expect.equal (removeElementsFromOneOfSupersets supersets list) []
         ]
+
+
+maybeFoldrTest : Test
+maybeFoldrTest =
+    describe "maybeFoldr tests"
+        [ test "maybeFoldr with a function that returns Just" <|
+            \_ ->
+                let
+                    f x acc1 =
+                        Just (x + acc1)
+
+                    acc =
+                        0
+
+                    list =
+                        [ 1, 2, 3, 4, 5 ]
+
+                    expected =
+                        Just 15
+                in
+                Expect.equal (maybeFoldr f acc list) expected
+        , test "maybeFoldr with a function that returns Nothing" <|
+            \_ ->
+                let
+                    f x acc1 =
+                        if x > 3 then
+                            Nothing
+
+                        else
+                            Just (x + acc1)
+
+                    acc =
+                        0
+
+                    list =
+                        [ 1, 2, 3, 4, 5 ]
+
+                    expected =
+                        Nothing
+                in
+                Expect.equal (maybeFoldr f acc list) expected
+        ]
