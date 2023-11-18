@@ -70,6 +70,7 @@ type Msg
     | SaveBoardInput String
     | UpdateBoard
     | ChangeKind
+    | RemovePieces
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -148,6 +149,28 @@ update msg model =
               }
             , Cmd.none
             )
+
+        RemovePieces ->
+            let
+                g =
+                    performAction (Just (RemoveAction model.autoSelectedToRemove)) (Just model.game)
+
+                _ =
+                    Debug.log "g" g
+            in
+            case g of
+                Just g1 ->
+                    ( { model
+                        | game = g1
+                        , possibleMoves = availableMoves g1.board
+                        , kind = g1.currentKind
+                        , autoSelectedToRemove = autoSelectToRemove g1
+                      }
+                    , Cmd.none
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
 
 
@@ -618,7 +641,7 @@ viewCurrentAction model =
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [ style "position" "relative" ]
         [ svg
             [ width "660"
             , height "780"
@@ -632,6 +655,7 @@ view model =
             , viewPossibleMoves model
             , viewMove model
             ]
+        , viewConfirmRemoveButton model
         , div
             [ style "text-align" "left"
             , style "padding-left" "25px"
@@ -660,6 +684,21 @@ view model =
                 ]
             ]
         ]
+
+
+viewConfirmRemoveButton : Model -> Html Msg
+viewConfirmRemoveButton model =
+    if model.autoSelectedToRemove == [] then
+        div [] []
+
+    else
+        button
+            [ style "position" "absolute"
+            , style "top" "100px"
+            , style "left" "570px"
+            , onClick RemovePieces
+            ]
+            [ text "Remove" ]
 
 
 main : Program () Model Msg
