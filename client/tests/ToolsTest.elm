@@ -187,3 +187,54 @@ maybeFoldrTest =
                 in
                 Expect.equal (maybeFoldr f acc list) expected
         ]
+
+
+isSubsetOfAnyTest : Test
+isSubsetOfAnyTest =
+    describe "isSubsetOfAny tests"
+        [ test "isSubsetOfAny with a subset" <|
+            \_ ->
+                let
+                    subsets =
+                        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+                    list =
+                        [ 1, 2, 3 ]
+
+                    expected =
+                        True
+                in
+                Expect.equal (isSubsetOfAny subsets list) expected
+        , test "isSubsetOfAny without a subset" <|
+            \_ ->
+                let
+                    subsets =
+                        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+                    list =
+                        [ 1, 4, 7 ]
+
+                    expected =
+                        False
+                in
+                Expect.equal (isSubsetOfAny subsets list) expected
+        , test "isSubsetOfAny for pieces" <|
+            \_ ->
+                let
+                    subsets =
+                        [ [ { color = Black, coord = ( 2, 3 ), kind = Gipf }
+                          , { color = Black, coord = ( 3, 4 ), kind = Gipf }
+                          , { color = Black, coord = ( 4, 5 ), kind = Gipf }
+                          , { color = Black, coord = ( 5, 6 ), kind = Regular }
+                          , { color = Black, coord = ( 6, 7 ), kind = Regular }
+                          ]
+                        ]
+
+                    list =
+                        [ { color = Black, coord = ( 5, 6 ), kind = Regular }, { color = Black, coord = ( 6, 7 ), kind = Regular } ]
+
+                    expected =
+                        True
+                in
+                Expect.equal (isSubsetOfAny subsets list) expected
+        ]
