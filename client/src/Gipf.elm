@@ -782,14 +782,17 @@ performRemove coords game =
             Nothing
 
 
-performAction : Action -> Game -> Maybe Game
+performAction : Maybe Action -> Maybe Game -> Maybe Game
 performAction action game =
-    case action of
-        MoveAction move ->
-            performMove move game
+    case ( action, game ) of
+        ( Just (MoveAction move), Just g ) ->
+            performMove move g
 
-        RemoveAction coords ->
-            performRemove coords game
+        ( Just (RemoveAction coords), Just g ) ->
+            performRemove coords g
+
+        _ ->
+            Nothing
 
 
 
@@ -874,9 +877,9 @@ stringToAction str =
         Maybe.map MoveAction (stringToMove str)
 
 
-stringToActions : String -> Maybe (List Action)
+stringToActions : String -> List (Maybe Action)
 stringToActions str =
-    maybeList (List.map stringToAction (String.split " " str))
+    List.map stringToAction (String.split " " str)
 
 
 actionsToString : List Action -> String
@@ -930,12 +933,7 @@ emptyGame =
 
 stringToGame : String -> Maybe Game
 stringToGame str =
-    case stringToActions str of
-        Just actions ->
-            maybeFoldr (\g a -> performAction g a) emptyGame actions
-
-        Nothing ->
-            Nothing
+    List.foldr (\g a -> performAction g a) (Just emptyGame) (stringToActions str)
 
 
 stringToGameWithDefault : String -> Game
