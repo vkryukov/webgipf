@@ -499,12 +499,6 @@ performMoveWithDefaultColorTest =
 
                     game =
                         emptyGame
-
-                    -- assuming emptyBoard is a Game with an empty board
-                    expected =
-                        Nothing
-
-                    -- replace with expected result
                 in
                 Expect.equal (performMoveWithDefaultColor direction kind game)
                     (Just
