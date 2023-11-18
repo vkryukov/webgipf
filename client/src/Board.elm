@@ -7,7 +7,7 @@ import Html.Attributes exposing (disabled, placeholder, style, type_, value)
 import Html.Events exposing (onInput, onMouseEnter, onMouseLeave, onMouseOver, onSubmit)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, circle, g, line, polygon, rect, svg, text_)
-import Svg.Attributes exposing (cx, cy, fill, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
+import Svg.Attributes exposing (cx, cy, fill, fontSize, height, points, r, stroke, strokeWidth, viewBox, width, x, x1, x2, y, y1, y2)
 import Svg.Events exposing (onClick)
 import Task
 
@@ -49,7 +49,7 @@ initFromString s =
                     emptyGame
     in
     ( { game = game
-      , kind = Gipf -- TOOD: support Basic games
+      , kind = game.currentKind
       , highlightedPiece = Nothing
       , moveFrom = Nothing
       , moveTo = Nothing
@@ -72,6 +72,7 @@ type Msg
     | MoveMade Direction
     | SaveBoardInput String
     | UpdateBoard
+    | ChangeKind
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -111,6 +112,7 @@ update msg model =
                     -- move was valid
                     ( { model
                         | game = g1
+                        , kind = g1.currentKind
                         , possibleMoves = availableMoves g1.board
                       }
                     , Cmd.none
@@ -133,6 +135,18 @@ update msg model =
                     initFromString model.boardInput
             in
             ( { m | boardInput = "" }, Cmd.none )
+
+        ChangeKind ->
+            ( { model
+                | kind =
+                    if model.kind == Gipf then
+                        Regular
+
+                    else
+                        Gipf
+              }
+            , Cmd.none
+            )
 
 
 
@@ -412,12 +426,12 @@ viewPossibleMoves model =
 drawHighlights : Model -> Svg msg
 drawHighlights model =
     if model.moveFrom == Nothing then
-        drawHighlightedPiece model.highlightedPiece model.game.currentKind model.game.currentColor
+        drawHighlightedPiece model.highlightedPiece model.kind model.game.currentColor
 
     else
         g []
-            [ drawHighlightedPiece model.moveFrom model.game.currentKind model.game.currentColor
-            , drawHighlightedPiece model.highlightedPiece model.game.currentKind model.game.currentColor
+            [ drawHighlightedPiece model.moveFrom model.kind model.game.currentColor
+            , drawHighlightedPiece model.highlightedPiece model.kind model.game.currentColor
             ]
 
 
@@ -509,6 +523,63 @@ viewConnectedPieces model =
         )
 
 
+drawMultilineText : String -> ( Int, Int ) -> Int -> Int -> Int -> Svg msg
+drawMultilineText text ( x_, y_ ) dx dy offY =
+    let
+        lines =
+            String.split "\n" text
+    in
+    g []
+        (List.indexedMap
+            (\i line ->
+                text_
+                    [ x (String.fromInt (x_ + dx))
+                    , y (String.fromInt (y_ + i * offY + dy))
+                    , fontSize "12"
+                    ]
+                    [ Svg.text line ]
+            )
+            lines
+        )
+
+
+drawMultilineTextAtCoord : String -> Coord -> Int -> Int -> Int -> Svg msg
+drawMultilineTextAtCoord text coord dx dy offY =
+    let
+        ( x_, y_ ) =
+            coordToXY coord
+    in
+    drawMultilineText text ( x_, y_ ) dx dy offY
+
+
+viewCurrentAction : Model -> Svg Msg
+viewCurrentAction model =
+    if
+        (model.game.currentKind == Regular)
+            || (not model.game.isBasicGame
+                    -- In the tournament, you have to play at least one Gipf piece
+                    && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
+                            || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
+                       )
+               )
+    then
+        viewPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+
+    else
+        let
+            pieceLabel =
+                if model.kind == Regular then
+                    "Gipf"
+
+                else
+                    "Regular"
+        in
+        g []
+            [ viewPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
+            , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+            ]
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -519,8 +590,7 @@ view model =
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
-
-            --, viewPieceWithAction (Piece ( 8, 10 ) model.currentColor model.currentKind) "click" ChangeKind
+            , viewCurrentAction model
             , viewPieces model
             , viewConnectedPieces model
             , viewPossibleMoves model
@@ -533,6 +603,7 @@ view model =
             , style "word-wrap" "break-word"
             ]
             [ p [] [ text (actionsToString model.game.actionHistory) ]
+            , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
             , p
                 []
                 [ form
