@@ -614,10 +614,25 @@ stringToGameTest =
 actionTest : Test
 actionTest =
     describe "Action tests"
-        [ -- a test that removes some pieces from game1 and compares it to empty board
-          test "remove pieces from game1" <|
+        [ test "remove pieces from game1" <|
             \_ ->
                 Expect.equal
                     (performAction (Just (RemoveAction [ ( 5, 6 ), ( 6, 7 ) ])) game1)
-                    (Just emptyGame)
+                    (Just
+                        { actionHistory = [ RemoveAction [ ( 5, 6 ), ( 6, 7 ) ], MoveAction { color = Black, direction = { from = ( 0, 4 ), to = ( 1, 4 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 6, 2 ), to = ( 5, 2 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 5, 8 ), to = ( 5, 7 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 1, 5 ), to = ( 2, 5 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 1, 5 ), to = ( 2, 5 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 6, 8 ), to = ( 6, 7 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 8, 7 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 0, 4 ), to = ( 1, 4 ) }, kind = Regular }, MoveAction { color = White, direction = { from = ( 8, 7 ), to = ( 7, 6 ) }, kind = Regular }, MoveAction { color = Black, direction = { from = ( 2, 6 ), to = ( 2, 5 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 5 ), to = ( 7, 5 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 2, 6 ), to = ( 2, 5 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 5 ), to = ( 7, 5 ) }, kind = Gipf }, MoveAction { color = Black, direction = { from = ( 1, 5 ), to = ( 2, 5 ) }, kind = Gipf }, MoveAction { color = White, direction = { from = ( 8, 6 ), to = ( 7, 5 ) }, kind = Gipf } ]
+                        , blackCount = { captured = 0, own = 8 }
+                        , blackGipfCount = 3
+                        , blackPlayedNonGipf = True
+                        , board = Dict.fromList [ ( ( 1, 4 ), { color = Black, coord = ( 1, 4 ), kind = Regular } ), ( ( 2, 3 ), { color = Black, coord = ( 2, 3 ), kind = Gipf } ), ( ( 2, 4 ), { color = Black, coord = ( 2, 4 ), kind = Regular } ), ( ( 2, 5 ), { color = Black, coord = ( 2, 5 ), kind = Regular } ), ( ( 3, 4 ), { color = Black, coord = ( 3, 4 ), kind = Gipf } ), ( ( 3, 5 ), { color = White, coord = ( 3, 5 ), kind = Regular } ), ( ( 4, 5 ), { color = Black, coord = ( 4, 5 ), kind = Gipf } ), ( ( 4, 6 ), { color = White, coord = ( 4, 6 ), kind = Regular } ), ( ( 5, 2 ), { color = White, coord = ( 5, 2 ), kind = Regular } ), ( ( 5, 4 ), { color = White, coord = ( 5, 4 ), kind = Gipf } ), ( ( 5, 5 ), { color = White, coord = ( 5, 5 ), kind = Gipf } ), ( ( 5, 7 ), { color = Black, coord = ( 5, 7 ), kind = Regular } ), ( ( 6, 5 ), { color = White, coord = ( 6, 5 ), kind = Regular } ), ( ( 6, 6 ), { color = White, coord = ( 6, 6 ), kind = Regular } ), ( ( 7, 5 ), { color = White, coord = ( 7, 5 ), kind = Gipf } ), ( ( 7, 6 ), { color = White, coord = ( 7, 6 ), kind = Regular } ) ]
+                        , currentColor = White
+                        , currentKind = Regular
+                        , currentPlayerFourStones = []
+                        , isBasicGame = False
+                        , otherPlayerFourStones = []
+                        , state = WaitingForMove
+                        , whiteCount = { captured = 0, own = 6 }
+                        , whiteGipfCount = 3
+                        , whitePlayedNonGipf = True
+                        }
+                    )
         ]
