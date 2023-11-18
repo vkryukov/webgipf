@@ -936,3 +936,29 @@ stringToGame str =
 
         Nothing ->
             Nothing
+
+
+stringToGameWithDefault : String -> Game
+stringToGameWithDefault str =
+    Maybe.withDefault emptyGame (stringToGame str)
+
+
+standardGame : Game
+standardGame =
+    let
+        g =
+            stringToGameWithDefault "GWe1-e2 GKa1-b2 GWa5-b5 GKe9-e8 GWi5-h5 GKi1-h2"
+    in
+    { g
+        | blackPlayedNonGipf = True
+        , whitePlayedNonGipf = True
+        , currentKind = Regular
+    }
+
+
+basicGame : Game
+basicGame =
+    { emptyGame
+        | isBasicGame = True
+        , currentKind = Regular
+    }
