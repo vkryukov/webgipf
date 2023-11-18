@@ -593,8 +593,8 @@ performMove move game =
                     , otherPlayerFourStones = otherFourStones
                     , actionHistory = MoveAction move :: game.actionHistory
                     , state =
-                        if not (List.isEmpty currentFourStones || List.isEmpty otherFourStones) then
-                            WaitingForMove
+                        if not (List.isEmpty currentFourStones && List.isEmpty otherFourStones) then
+                            WaitingForRemove
 
                         else if game.currentColor == Black && game.whiteCount.own == 0 then
                             BlackWon
