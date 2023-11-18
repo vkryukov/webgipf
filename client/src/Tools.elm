@@ -98,9 +98,9 @@ isSubsetOf subset list =
     List.all (\element -> List.member element list) subset
 
 
-isSubsetOfAny : List (List a) -> List a -> Bool
-isSubsetOfAny subsets list =
-    List.any (\subset -> isSubsetOf subset list) subsets
+isSubsetOfAny : List a -> List (List a) -> Bool
+isSubsetOfAny subset lists =
+    List.any (\l -> isSubsetOf subset l) lists
 
 
 removeElements : List a -> List a -> List a

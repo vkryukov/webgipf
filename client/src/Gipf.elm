@@ -628,19 +628,19 @@ performMoveWithDefaultColor direction kind game =
 
 
 removeInvalidQ : List Piece -> Game -> Bool
-removeInvalidQ piece game =
+removeInvalidQ pieces game =
     let
         remaining =
-            removeElementsFromOneOfSupersets (game.currentPlayerFourStones ++ game.currentPlayerFourStones) piece
+            removeElementsFromOneOfSupersets (game.currentPlayerFourStones ++ game.currentPlayerFourStones) pieces
 
         removingCurrent =
-            isSubsetOfAny game.currentPlayerFourStones piece
+            isSubsetOfAny pieces game.currentPlayerFourStones
 
         removingOther =
-            isSubsetOfAny game.otherPlayerFourStones piece
+            isSubsetOfAny pieces game.otherPlayerFourStones
     in
-    (game.state /= WaitingForMove)
-        || List.isEmpty piece
+    (game.state /= WaitingForRemove)
+        || List.isEmpty pieces
         || -- the above should be enough, but just in case we have 1 more conditions
            (game.currentPlayerFourStones == [] && game.otherPlayerFourStones == [])
         || -- pieces are not the ones that need to be removed

@@ -195,33 +195,33 @@ isSubsetOfAnyTest =
         [ test "isSubsetOfAny with a subset" <|
             \_ ->
                 let
-                    subsets =
+                    lists =
                         [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
 
-                    list =
+                    subset =
                         [ 1, 2, 3 ]
 
                     expected =
                         True
                 in
-                Expect.equal (isSubsetOfAny subsets list) expected
+                Expect.equal (isSubsetOfAny subset lists) expected
         , test "isSubsetOfAny without a subset" <|
             \_ ->
                 let
-                    subsets =
+                    lists =
                         [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
 
-                    list =
+                    subset =
                         [ 1, 4, 7 ]
 
                     expected =
                         False
                 in
-                Expect.equal (isSubsetOfAny subsets list) expected
+                Expect.equal (isSubsetOfAny subset lists) expected
         , test "isSubsetOfAny for pieces" <|
             \_ ->
                 let
-                    subsets =
+                    lists =
                         [ [ { color = Black, coord = ( 2, 3 ), kind = Gipf }
                           , { color = Black, coord = ( 3, 4 ), kind = Gipf }
                           , { color = Black, coord = ( 4, 5 ), kind = Gipf }
@@ -230,11 +230,13 @@ isSubsetOfAnyTest =
                           ]
                         ]
 
-                    list =
-                        [ { color = Black, coord = ( 5, 6 ), kind = Regular }, { color = Black, coord = ( 6, 7 ), kind = Regular } ]
+                    subset =
+                        [ { color = Black, coord = ( 5, 6 ), kind = Regular }
+                        , { color = Black, coord = ( 6, 7 ), kind = Regular }
+                        ]
 
                     expected =
                         True
                 in
-                Expect.equal (isSubsetOfAny subsets list) expected
+                Expect.equal (isSubsetOfAny subset lists) expected
         ]
