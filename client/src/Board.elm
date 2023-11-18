@@ -31,7 +31,7 @@ type alias Model =
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        initFromString ""
+        initFromGame emptyGame
 
 
 initFromGame : Game -> ( Model, Cmd msg )
