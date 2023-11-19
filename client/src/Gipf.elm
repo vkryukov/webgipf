@@ -763,18 +763,18 @@ performRemove coords game =
                         }
 
                     newState =
-                        if not (List.isEmpty updatedGame.currentPlayerFourStones || List.isEmpty updatedGame.otherPlayerFourStones) then
+                        if not (List.isEmpty updatedGame.currentPlayerFourStones && List.isEmpty updatedGame.otherPlayerFourStones) then
                             WaitingForRemove
 
                         else if
                             (updatedGame.currentColor == Black && updatedGame.whiteCount.own == 0)
-                                || (updatedGame.whiteGipfCount == 0)
+                                || (not updatedGame.isBasicGame && updatedGame.whiteGipfCount == 0)
                         then
                             BlackWon
 
                         else if
                             (updatedGame.currentColor == White && updatedGame.blackCount.own == 0)
-                                || (updatedGame.blackGipfCount == 0)
+                                || (not updatedGame.isBasicGame && updatedGame.blackGipfCount == 0)
                         then
                             WhiteWon
 
