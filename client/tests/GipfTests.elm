@@ -524,8 +524,14 @@ performMoveWithDefaultColorTest =
 
 game1 : Maybe Game
 game1 =
-    -- http://www.gipf.com/gipf/archives/game010821_01.html
+    -- http://www.gipf.com/gipf/archives/game010821_01.html till move 09
     stringToGame "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
+
+
+game2 : Maybe Game
+game2 =
+    --  http://www.gipf.com/gipf/archives/game010821_01.html till move 17
+    stringToGame "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wa4-b5 Ka4-b5 Wd8-d7 Ke9-e8 xc5,d6,e7,f7 xe6,g4 Wb6-c6 Ka5-b5 Wh6-h5 Ki4-h5 Wi4-h5 Kg7-g6 Wi3-h4 Kh6-h5 Wa5-b5 Ki3-h3 Wi4-h4"
 
 
 stringToGameTest : Test
