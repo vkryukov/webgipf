@@ -609,6 +609,13 @@ stringToGameTest =
                         , whitePlayedNonGipf = True
                         }
                     )
+        , test "Game where first move is a regular piece should become a basic game" <|
+            \_ ->
+                let
+                    g =
+                        stringToGameWithDefault "We1-e2"
+                in
+                Expect.equal g.isBasicGame True
         ]
 
 

@@ -951,7 +951,25 @@ emptyGame =
 
 stringToGame : String -> Maybe Game
 stringToGame str =
-    List.foldl performAction (Just emptyGame) (stringToActions str)
+    let
+        actions =
+            stringToActions str
+
+        firstAction =
+            List.head actions
+
+        startingGame =
+            case firstAction of
+                Just (Just (MoveAction move)) ->
+                    Just
+                        { emptyGame
+                            | isBasicGame = move.kind == Regular
+                        }
+
+                _ ->
+                    Just emptyGame
+    in
+    List.foldl performAction startingGame actions
 
 
 stringToGameWithDefault : String -> Game
