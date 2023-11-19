@@ -616,6 +616,13 @@ stringToGameTest =
                         stringToGameWithDefault "We1-e2"
                 in
                 Expect.equal g.isBasicGame True
+        , test "Basic game should not be won after white removes their pieces for the first time" <|
+            \_ ->
+                let
+                    g =
+                        stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8 xb5,c6,d7,e8"
+                in
+                Expect.equal g.state WaitingForRemove
         ]
 
 
