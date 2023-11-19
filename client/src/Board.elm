@@ -33,7 +33,11 @@ type alias Model =
 init : () -> ( Model, Cmd msg )
 init =
     \_ ->
-        initFromString "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
+        -- initFromString "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
+        -- initFromGame standardGame
+        -- initFromGame basicGame
+        -- one move creates two groups
+        initFromString "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4"
 
 
 initFromGame : Game -> ( Model, Cmd msg )
@@ -639,6 +643,26 @@ viewCurrentAction model =
         g [] []
 
 
+viewPiecesCounts : Model -> Svg msg
+viewPiecesCounts model =
+    g []
+        [ viewPiece (Piece ( 0, -2 ) White Regular)
+        , viewPiece (Piece ( 8, 2 ) Black Regular)
+        , drawMultilineTextAtCoord
+            ("Left: " ++ String.fromInt model.game.whiteCount.own ++ "\nCaptured: " ++ String.fromInt model.game.whiteCount.captured)
+            ( 0, -2 )
+            25
+            0
+            10
+        , drawMultilineTextAtCoord
+            ("Left: " ++ String.fromInt model.game.blackCount.own ++ "\nCaptured: " ++ String.fromInt model.game.blackCount.captured)
+            ( 8, 2 )
+            -85
+            0
+            10
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div [ style "position" "relative" ]
@@ -653,6 +677,7 @@ view model =
             , viewPieces model
             , viewConnectedPieces model
             , viewPossibleMoves model
+            , viewPiecesCounts model
             , viewMove model
             ]
         , viewConfirmRemoveButton model
