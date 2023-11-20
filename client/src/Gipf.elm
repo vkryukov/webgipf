@@ -497,6 +497,10 @@ dominantColor group =
         whiteCount =
             count group (\p -> p.color == White)
     in
+    let
+        _ =
+            Debug.log "dominantColor" ( blackCount, whiteCount )
+    in
     if blackCount > whiteCount then
         Black
 
@@ -722,7 +726,11 @@ performRemove coords game =
                         countPieces pieces
 
                     removingPlayerColor =
-                        dominantColor pieces
+                        if List.length game.currentPlayerFourStones > 0 then
+                            game.currentColor
+
+                        else
+                            reverseColor game.currentColor
 
                     updatedGame =
                         { game
