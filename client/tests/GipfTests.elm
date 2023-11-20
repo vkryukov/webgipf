@@ -709,4 +709,19 @@ disambiguateRemovalTest =
         [ test "game2 disambiguation points" <|
             \_ ->
                 coordsEqual (disambiguateRemovalCoords game2) "b5 c5 d5 e5 g3 h2 f2 f3 f5 f6 f7"
+        , test "game2 auto selection with point c5" <|
+            \_ ->
+                coordsEqual
+                    (autoSelectToRemoveWithDisambiguation (Maybe.withDefault emptyGame game2) ( 2, 4 ))
+                    "b5 c5 d5 e5 f4 g3"
+        , test "game2 auto selection with point h2" <|
+            \_ ->
+                coordsEqual
+                    (autoSelectToRemoveWithDisambiguation (Maybe.withDefault emptyGame game2) ( 7, 4 ))
+                    "b5 c5 d5 e5 f4 g3"
+        , test "game2 auto selection with point f6" <|
+            \_ ->
+                coordsEqual
+                    (autoSelectToRemoveWithDisambiguation (Maybe.withDefault emptyGame game2) ( 5, 6 ))
+                    "f2 f4 f6 f7"
         ]
