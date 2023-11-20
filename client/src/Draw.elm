@@ -280,8 +280,8 @@ drawPieceWithAction piece event msg =
     addSvgAction (drawPiece piece) event msg
 
 
-drawClickPoint : Coord -> Float -> (Coord -> msg) -> (Coord -> msg) -> (Coord -> msg) -> Svg msg
-drawClickPoint p radius mouseEnter mouseLeave pointClicked =
+drawClickPoint : Coord -> (Coord -> msg) -> (Coord -> msg) -> (Coord -> msg) -> Svg msg
+drawClickPoint p mouseEnter mouseLeave pointClicked =
     let
         ( x, y ) =
             coordToXY p
@@ -289,7 +289,7 @@ drawClickPoint p radius mouseEnter mouseLeave pointClicked =
     circle
         [ cx (String.fromInt x)
         , cy (String.fromInt y)
-        , r (String.fromInt (round (radius * scale)))
+        , r (String.fromInt (round (innerPieceRadius * scale)))
         , fill "none"
         , onMouseEnter (mouseEnter p)
         , onMouseLeave (mouseLeave p)

@@ -293,7 +293,7 @@ viewPossibleMoves model =
             in
             g []
                 (viewHighlights model
-                    :: List.map (\p -> drawClickPoint p innerPieceRadius MouseEnter MouseLeave PointClicked) possibleClicks
+                    :: List.map (\p -> drawClickPoint p MouseEnter MouseLeave PointClicked) possibleClicks
                 )
 
         _ ->
