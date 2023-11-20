@@ -183,11 +183,17 @@ update msg model =
 -- View
 
 
+viewEdgePoints : Svg msg
+viewEdgePoints =
+    g []
+        (List.map drawEdgePoint edgeBoardPoints)
+
+
 viewEmptyBoard : Svg msg
 viewEmptyBoard =
     g []
-        ([ -- interior polygon
-           rect
+        [ -- interior polygon
+          rect
             [ x "25"
             , y "25"
             , width "610"
@@ -195,7 +201,7 @@ viewEmptyBoard =
             , fill "#F0F0F0"
             ]
             []
-         , drawPolygon
+        , drawPolygon
             [ ( 1, 1 )
             , ( 4, 1 )
             , ( 7, 4 )
@@ -206,53 +212,54 @@ viewEmptyBoard =
             ]
             "white"
 
-         -- lines
-         , drawLine ( 1, 0 ) ( 1, 5 )
-         , drawLine ( 2, 0 ) ( 2, 6 )
-         , drawLine ( 3, 0 ) ( 3, 7 )
-         , drawLine ( 4, 0 ) ( 4, 8 )
-         , drawLine ( 5, 1 ) ( 5, 8 )
-         , drawLine ( 6, 2 ) ( 6, 8 )
-         , drawLine ( 7, 3 ) ( 7, 8 )
-         , drawLine ( 0, 3 ) ( 5, 8 )
-         , drawLine ( 0, 2 ) ( 6, 8 )
-         , drawLine ( 0, 1 ) ( 7, 8 )
-         , drawLine ( 0, 0 ) ( 8, 8 )
-         , drawLine ( 1, 0 ) ( 8, 7 )
-         , drawLine ( 2, 0 ) ( 8, 6 )
-         , drawLine ( 3, 0 ) ( 8, 5 )
-         , drawLine ( 3, 7 ) ( 8, 7 )
-         , drawLine ( 2, 6 ) ( 8, 6 )
-         , drawLine ( 1, 5 ) ( 8, 5 )
-         , drawLine ( 0, 4 ) ( 8, 4 )
-         , drawLine ( 0, 3 ) ( 7, 3 )
-         , drawLine ( 0, 2 ) ( 6, 2 )
-         , drawLine ( 0, 1 ) ( 5, 1 )
+        -- lines
+        , drawLine ( 1, 0 ) ( 1, 5 )
+        , drawLine ( 2, 0 ) ( 2, 6 )
+        , drawLine ( 3, 0 ) ( 3, 7 )
+        , drawLine ( 4, 0 ) ( 4, 8 )
+        , drawLine ( 5, 1 ) ( 5, 8 )
+        , drawLine ( 6, 2 ) ( 6, 8 )
+        , drawLine ( 7, 3 ) ( 7, 8 )
+        , drawLine ( 0, 3 ) ( 5, 8 )
+        , drawLine ( 0, 2 ) ( 6, 8 )
+        , drawLine ( 0, 1 ) ( 7, 8 )
+        , drawLine ( 0, 0 ) ( 8, 8 )
+        , drawLine ( 1, 0 ) ( 8, 7 )
+        , drawLine ( 2, 0 ) ( 8, 6 )
+        , drawLine ( 3, 0 ) ( 8, 5 )
+        , drawLine ( 3, 7 ) ( 8, 7 )
+        , drawLine ( 2, 6 ) ( 8, 6 )
+        , drawLine ( 1, 5 ) ( 8, 5 )
+        , drawLine ( 0, 4 ) ( 8, 4 )
+        , drawLine ( 0, 3 ) ( 7, 3 )
+        , drawLine ( 0, 2 ) ( 6, 2 )
+        , drawLine ( 0, 1 ) ( 5, 1 )
 
-         -- bottom labels
-         , drawBottomLabel "a1" ( 0, 0 )
-         , drawBottomLabel "b1" ( 1, 0 )
-         , drawBottomLabel "c1" ( 2, 0 )
-         , drawBottomLabel "d1" ( 3, 0 )
-         , drawBottomLabel "e1" ( 4, 0 )
-         , drawBottomLabel "f1" ( 5, 1 )
-         , drawBottomLabel "g1" ( 6, 2 )
-         , drawBottomLabel "h1" ( 7, 3 )
-         , drawBottomLabel "i1" ( 8, 4 )
+        -- bottom labels
+        , drawBottomLabel "a1" ( 0, 0 )
+        , drawBottomLabel "b1" ( 1, 0 )
+        , drawBottomLabel "c1" ( 2, 0 )
+        , drawBottomLabel "d1" ( 3, 0 )
+        , drawBottomLabel "e1" ( 4, 0 )
+        , drawBottomLabel "f1" ( 5, 1 )
+        , drawBottomLabel "g1" ( 6, 2 )
+        , drawBottomLabel "h1" ( 7, 3 )
+        , drawBottomLabel "i1" ( 8, 4 )
 
-         -- top labels
-         , drawTopLabel "a5" ( 0, 4 )
-         , drawTopLabel "b6" ( 1, 5 )
-         , drawTopLabel "c7" ( 2, 6 )
-         , drawTopLabel "d8" ( 3, 7 )
-         , drawTopLabel "e9" ( 4, 8 )
-         , drawTopLabel "f8" ( 5, 8 )
-         , drawTopLabel "g7" ( 6, 8 )
-         , drawTopLabel "h6" ( 7, 8 )
-         , drawTopLabel "i5" ( 8, 8 )
-         ]
-            ++ List.map (\p -> drawCircle p 0.1 "black") edgeBoardPoints
-        )
+        -- top labels
+        , drawTopLabel "a5" ( 0, 4 )
+        , drawTopLabel "b6" ( 1, 5 )
+        , drawTopLabel "c7" ( 2, 6 )
+        , drawTopLabel "d8" ( 3, 7 )
+        , drawTopLabel "e9" ( 4, 8 )
+        , drawTopLabel "f8" ( 5, 8 )
+        , drawTopLabel "g7" ( 6, 8 )
+        , drawTopLabel "h6" ( 7, 8 )
+        , drawTopLabel "i5" ( 8, 8 )
+
+        -- edge points
+        , viewEdgePoints
+        ]
 
 
 viewPieces : Model -> Svg msg

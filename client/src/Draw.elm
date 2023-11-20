@@ -4,6 +4,7 @@ module Draw exposing
     , drawCircle
     , drawClickPoint
     , drawDarkMark
+    , drawEdgePoint
     , drawHighlightedPiece
     , drawLightMark
     , drawLine
@@ -269,6 +270,11 @@ drawPiece { coord, color, kind } =
             [ drawCircle coord pieceRadius "lightyellow"
             , drawCircleWithStroke coord innerPieceRadius "none" "black" "2"
             ]
+
+
+drawEdgePoint : Coord -> Svg msg
+drawEdgePoint coord =
+    drawCircle coord 0.1 "black"
 
 
 
