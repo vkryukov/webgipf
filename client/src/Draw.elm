@@ -3,6 +3,7 @@ module Draw exposing
     , drawBottomLabel
     , drawCircle
     , drawClickPoint
+    , drawDarkCross
     , drawDarkMark
     , drawEdgePoint
     , drawHighlightedPiece
@@ -238,7 +239,38 @@ drawLightMark coord =
 
 drawDarkMark : Coord -> Svg msg
 drawDarkMark coord =
-    drawCircle coord markRadius "SaddleBrown"
+    drawCircle coord markRadius "Red"
+
+
+drawDarkCross : Coord -> Svg msg
+drawDarkCross coord =
+    let
+        ( x_, y_ ) =
+            coordToXY coord
+
+        d =
+            round (pieceRadius * sqrt 2 * scale / 2)
+    in
+    g []
+        [ line
+            [ x1 (String.fromInt (x_ - d))
+            , y1 (String.fromInt (y_ - d))
+            , x2 (String.fromInt (x_ + d))
+            , y2 (String.fromInt (y_ + d))
+            , stroke "Red"
+            , strokeWidth "2"
+            ]
+            []
+        , line
+            [ x1 (String.fromInt (x_ - d))
+            , y1 (String.fromInt (y_ + d))
+            , x2 (String.fromInt (x_ + d))
+            , y2 (String.fromInt (y_ - d))
+            , stroke "Red"
+            , strokeWidth "2"
+            ]
+            []
+        ]
 
 
 pieceRadius : Float

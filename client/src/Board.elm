@@ -332,7 +332,7 @@ viewConnectedPieces model =
                     (List.map (\p -> drawLightMark p.coord) group)
             )
             allStones
-            ++ [ g [] (List.map drawDarkMark model.autoSelectedToRemove) ]
+            ++ [ g [] (List.map drawDarkCross model.autoSelectedToRemove) ]
         )
 
 
