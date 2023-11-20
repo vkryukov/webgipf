@@ -378,7 +378,7 @@ viewCurrentAction model =
                 )
             , drawDarkMark ( 8, 10 )
             , if model.autoSelectedToRemove == [] then
-                drawMultilineTextAtCoord "Click on a\ngroup to\nremove first" ( 8, 10 ) -35 35 12
+                drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
 
               else
                 g [] []
