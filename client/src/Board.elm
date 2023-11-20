@@ -380,8 +380,8 @@ viewEmptyBoard =
         )
 
 
-viewPiece : Piece -> Svg msg
-viewPiece { coord, color, kind } =
+drawPiece : Piece -> Svg msg
+drawPiece { coord, color, kind } =
     if kind == Regular && color == Black then
         drawCircle coord 0.25 "black"
 
@@ -421,13 +421,13 @@ addSvgOpacity originalSvg opacity =
 
 viewPieceWithAction : Piece -> String -> msg -> Svg msg
 viewPieceWithAction piece event msg =
-    addSvgAction (viewPiece piece) event msg
+    addSvgAction (drawPiece piece) event msg
 
 
 viewPieces : Model -> Svg msg
 viewPieces model =
     g []
-        (List.map viewPiece (boardToPieces model.game.board))
+        (List.map drawPiece (boardToPieces model.game.board))
 
 
 viewPossibleMoves : Model -> Svg Msg
@@ -474,7 +474,7 @@ drawHighlightedPiece maybeCoord kind color =
         Just coord ->
             g []
                 [ drawCircleWithStroke coord 0.25 "white" "grey" "1"
-                , addSvgOpacity (viewPiece (Piece coord color kind)) 0.5
+                , addSvgOpacity (drawPiece (Piece coord color kind)) 0.5
                 ]
 
         Nothing ->
@@ -607,7 +607,7 @@ viewCurrentAction model =
                            )
                    )
         then
-            viewPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+            drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
 
         else
             let
@@ -625,7 +625,7 @@ viewCurrentAction model =
 
     else if model.game.state == WaitingForRemove then
         g []
-            [ viewPiece
+            [ drawPiece
                 (Piece ( 8, 10 )
                     (if model.game.currentPlayerFourStones == [] then
                         reverseColor model.game.currentColor
@@ -646,20 +646,20 @@ viewCurrentAction model =
 viewPiecesCounts : Model -> Svg msg
 viewPiecesCounts model =
     g []
-        [ viewPiece (Piece ( 0, -2 ) White Regular)
-        , viewPiece (Piece ( 8, 2 ) Black Regular)
+        [ drawPiece (Piece ( 0, -2 ) White Regular)
+        , drawPiece (Piece ( 8, 2 ) Black Regular)
         , drawMultilineTextAtCoord
-            ("Left: " ++ String.fromInt model.game.whiteCount.own ++ "\nCaptured: " ++ String.fromInt model.game.whiteCount.captured)
+            ("Remaining: " ++ String.fromInt model.game.whiteCount.own ++ "\nCaptured: " ++ String.fromInt model.game.whiteCount.captured)
             ( 0, -2 )
             25
             0
-            10
+            13
         , drawMultilineTextAtCoord
-            ("Left: " ++ String.fromInt model.game.blackCount.own ++ "\nCaptured: " ++ String.fromInt model.game.blackCount.captured)
+            ("Remaining: " ++ String.fromInt model.game.blackCount.own ++ "\nCaptured: " ++ String.fromInt model.game.blackCount.captured)
             ( 8, 2 )
-            -85
+            -90
             0
-            10
+            13
         ]
 
 
