@@ -81,6 +81,7 @@ type Msg
     | UpdateBoard
     | ChangeKind
     | RemovePieces
+    | CancelRemovePieces
     | RemovalDisambiguationEnter Coord
     | RemovalDisambiguationLeave Coord
     | RemovalDisambiguationClick Coord
@@ -177,6 +178,13 @@ update msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        CancelRemovePieces ->
+            ( { model
+                | autoSelectedToRemove = []
+              }
+            , Cmd.none
+            )
 
         RemovalDisambiguationEnter coord ->
             ( { model | selectedToDisambiguate = Just coord }, Cmd.none )
@@ -441,13 +449,22 @@ viewConfirmRemoveButton model =
         div [] []
 
     else
-        button
-            [ style "position" "absolute"
-            , style "top" "100px"
-            , style "left" "570px"
-            , onClick RemovePieces
+        div []
+            [ button
+                [ style "position" "absolute"
+                , style "top" "100px"
+                , style "left" "570px"
+                , onClick RemovePieces
+                ]
+                [ text "Remove" ]
+            , button
+                [ style "position" "absolute"
+                , style "top" "125px"
+                , style "left" "570px"
+                , onClick CancelRemovePieces
+                ]
+                [ text "Cancel" ]
             ]
-            [ text "Remove" ]
 
 
 view : Model -> Html Msg
