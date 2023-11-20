@@ -25,7 +25,6 @@ type alias Model =
     , moveTo : Maybe Coord
     , move : Maybe Direction
     , possibleMoves : List Direction
-    , selectedToRemove : List Coord
     , autoSelectedToRemove : List Coord
     , selectedToDisambiguate : Maybe Coord
     , boardInput : String
@@ -54,7 +53,6 @@ initFromGame game =
       , moveTo = Nothing
       , move = Nothing
       , possibleMoves = availableMoves game.board
-      , selectedToRemove = []
       , autoSelectedToRemove = autoSelectToRemove game
       , selectedToDisambiguate = Nothing
       , boardInput = ""
