@@ -683,6 +683,26 @@ coordsEqual coords string =
             Expect.fail "stringToCoords returned Nothing"
 
 
+autoSelectToRemoveTest : Test
+autoSelectToRemoveTest =
+    describe "autoSelectToRemove function"
+        [ test "white pieces are selected" <|
+            \_ ->
+                let
+                    g =
+                        stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8"
+                in
+                coordsEqual (autoSelectToRemove g) "b5 c6 d7 e8"
+        , test "black pieces are selected" <|
+            \_ ->
+                let
+                    g =
+                        stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8 xb5,c6,d7,e8"
+                in
+                coordsEqual (autoSelectToRemove g) "b4 c5 d6 e7"
+        ]
+
+
 disambiguateRemovalTest : Test
 disambiguateRemovalTest =
     describe "Disambiguate removal of connected pieces"

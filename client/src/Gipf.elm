@@ -1016,6 +1016,17 @@ defaultPiece =
     { coord = ( -1, -1 ), color = White, kind = Regular }
 
 
+autoSelectWithColor : List Piece -> Color -> List Coord
+autoSelectWithColor pieces color =
+    List.filter (\p -> (p.color == color && p.kind == Regular) || (p.color /= color)) pieces
+        |> List.map .coord
+
+
+autoSelect : List Piece -> List Coord
+autoSelect pieces =
+    autoSelectWithColor pieces (dominantColor pieces)
+
+
 autoSelectToRemove : Game -> List Coord
 autoSelectToRemove game =
     let
@@ -1034,22 +1045,14 @@ autoSelectToRemove game =
                     f
 
                 _ ->
+                    -- We should never get here when a piece can be autoselected
                     [ defaultPiece ]
-
-        -- We should never get here when if a piece can be autoselected
-        color =
-            if List.isEmpty game.currentPlayerFourStones then
-                reverseColor game.currentColor
-
-            else
-                game.currentColor
     in
     if
         (List.length game.currentPlayerFourStones == 1)
             || (List.length game.currentPlayerFourStones == 0 && List.length game.otherPlayerFourStones == 1)
     then
-        List.filter (\p -> (p.color == color && p.kind == Regular) || (p.color /= color)) first
-            |> List.map .coord
+        autoSelect first
 
     else
         []
