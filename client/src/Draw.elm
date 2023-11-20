@@ -326,7 +326,7 @@ drawClickPoint p mouseEnter mouseLeave pointClicked =
     circle
         [ cx (String.fromInt x)
         , cy (String.fromInt y)
-        , r (String.fromInt (round (innerPieceRadius * scale)))
+        , r (String.fromInt (round (pieceRadius * scale)))
         , fill "none"
         , onMouseEnter (mouseEnter p)
         , onMouseLeave (mouseLeave p)
