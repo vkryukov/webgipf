@@ -1073,3 +1073,29 @@ disambiguateRemovalCoords maybeGame =
 
         Nothing ->
             []
+
+
+autoSelectToRemoveWithDisambiguation : Game -> Coord -> List Coord
+autoSelectToRemoveWithDisambiguation game coord =
+    let
+        maybePiece =
+            Dict.get coord game.board
+
+        piece =
+            Maybe.withDefault defaultPiece maybePiece
+
+        maybeListToList list =
+            Maybe.withDefault [] list
+    in
+    if List.length game.currentPlayerFourStones >= 2 then
+        findSubsetContaining game.currentPlayerFourStones piece
+            |> maybeListToList
+            |> autoSelect
+
+    else if (List.length game.currentPlayerFourStones == 0) && (List.length game.otherPlayerFourStones >= 2) then
+        findSubsetContaining game.otherPlayerFourStones piece
+            |> maybeListToList
+            |> autoSelect
+
+    else
+        []

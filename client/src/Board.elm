@@ -185,7 +185,7 @@ update msg model =
             ( { model | selectedToDisambiguate = Nothing }, Cmd.none )
 
         RemovalDisambiguationClick coord ->
-            ( model, Cmd.none )
+            ( { model | autoSelectedToRemove = autoSelectToRemoveWithDisambiguation model.game coord }, Cmd.none )
 
 
 
