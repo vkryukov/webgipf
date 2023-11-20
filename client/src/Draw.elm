@@ -1,5 +1,8 @@
 module Draw exposing (..)
 
+-- Draw contains a set of drawing primitives that can be used to draw SVG objects on the screen.
+-- They are support Coord and translate to SVG coordinates.
+
 import Gipf exposing (Color(..), Coord, Kind(..), Piece)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
 import Svg exposing (Svg, circle, g, line, text_)
@@ -8,8 +11,7 @@ import Svg.Events exposing (onClick)
 
 
 
--- Draw contains a set of drawing primitives that can be used to draw SVG objects on the screen.
--- They are support Coord and translate to SVG coordinates.
+-- Translations from Coord to SVG coordinates.
 
 
 cos30 : Float
@@ -40,6 +42,10 @@ scale =
 coordToXY : Coord -> ( Int, Int )
 coordToXY ( x, y ) =
     ( round (toFloat x * cos30 * scale) + offsetX, offsetY - round ((toFloat y - sin30 * toFloat x) * scale) )
+
+
+
+-- Drawing primitives.
 
 
 drawLine : Coord -> Coord -> Svg msg
@@ -97,35 +103,6 @@ drawTextLabel label p offX offY =
         [ Svg.text label ]
 
 
-drawBottomLabel : String -> Coord -> Svg msg
-drawBottomLabel label p =
-    drawTextLabel label p -5 25
-
-
-drawTopLabel : String -> Coord -> Svg msg
-drawTopLabel label p =
-    drawTextLabel label p -5 -15
-
-
-drawClickPoint : Coord -> Float -> (Coord -> msg) -> (Coord -> msg) -> (Coord -> msg) -> Svg msg
-drawClickPoint p radius mouseEnter mouseLeave pointClicked =
-    let
-        ( x, y ) =
-            coordToXY p
-    in
-    circle
-        [ cx (String.fromInt x)
-        , cy (String.fromInt y)
-        , r (String.fromInt (round (radius * scale)))
-        , fill "none"
-        , onMouseEnter (mouseEnter p)
-        , onMouseLeave (mouseLeave p)
-        , onClick (pointClicked p)
-        , Svg.Attributes.style "pointer-events: all;"
-        ]
-        []
-
-
 drawArrow : Coord -> Coord -> Svg msg
 drawArrow from to =
     let
@@ -174,16 +151,6 @@ drawArrowXY x1_ y1_ x2_ y2_ =
         ]
 
 
-drawLightMark : Coord -> Svg msg
-drawLightMark coord =
-    drawCircle coord 0.09 "LightCoral"
-
-
-drawDarkMark : Coord -> Svg msg
-drawDarkMark coord =
-    drawCircle coord 0.09 "Red"
-
-
 drawMultilineText : String -> ( Int, Int ) -> Int -> Int -> Int -> Svg msg
 drawMultilineText text ( x_, y_ ) dx dy offY =
     let
@@ -213,25 +180,68 @@ drawMultilineTextAtCoord text coord dx dy offY =
     drawMultilineText text ( x_, y_ ) dx dy offY
 
 
+
+-- Composite drawing primitives.
+
+
+drawBottomLabel : String -> Coord -> Svg msg
+drawBottomLabel label p =
+    drawTextLabel label p -5 25
+
+
+drawTopLabel : String -> Coord -> Svg msg
+drawTopLabel label p =
+    drawTextLabel label p -5 -15
+
+
+markRadius : Float
+markRadius =
+    0.08
+
+
+drawLightMark : Coord -> Svg msg
+drawLightMark coord =
+    drawCircle coord markRadius "LightCoral"
+
+
+drawDarkMark : Coord -> Svg msg
+drawDarkMark coord =
+    drawCircle coord markRadius "Red"
+
+
+pieceRadius : Float
+pieceRadius =
+    0.25
+
+
+innerPieceRadius : Float
+innerPieceRadius =
+    0.125
+
+
 drawPiece : Piece -> Svg msg
 drawPiece { coord, color, kind } =
     if kind == Regular && color == Black then
-        drawCircle coord 0.25 "black"
+        drawCircle coord pieceRadius "black"
 
     else if kind == Gipf && color == Black then
         g []
-            [ drawCircle coord 0.25 "black"
-            , drawCircleWithStroke coord 0.125 "none" "white" "2"
+            [ drawCircle coord pieceRadius "black"
+            , drawCircleWithStroke coord innerPieceRadius "none" "white" "2"
             ]
 
     else if kind == Regular && color == White then
-        drawCircle coord 0.25 "lightyellow"
+        drawCircle coord pieceRadius "lightyellow"
 
     else
         g []
-            [ drawCircle coord 0.25 "lightyellow"
-            , drawCircleWithStroke coord 0.125 "none" "black" "2"
+            [ drawCircle coord pieceRadius "lightyellow"
+            , drawCircleWithStroke coord innerPieceRadius "none" "black" "2"
             ]
+
+
+
+-- Primitives with interactivity.
 
 
 addSvgAction : Svg msg -> String -> msg -> Svg msg
@@ -257,9 +267,35 @@ drawHighlightedPiece maybeCoord kind color =
     case maybeCoord of
         Just coord ->
             g []
-                [ drawCircleWithStroke coord 0.25 "white" "grey" "1"
+                [ drawCircleWithStroke coord pieceRadius "white" "grey" "1"
                 , addSvgOpacity (drawPiece (Piece coord color kind)) 0.5
                 ]
 
         Nothing ->
             g [] []
+
+
+drawPieceWithAction : Piece -> String -> msg -> Svg msg
+drawPieceWithAction piece event msg =
+    addSvgAction (drawPiece piece) event msg
+
+
+drawClickPoint : Coord -> Float -> (Coord -> msg) -> (Coord -> msg) -> (Coord -> msg) -> Svg msg
+drawClickPoint p radius mouseEnter mouseLeave pointClicked =
+    let
+        ( x, y ) =
+            coordToXY p
+    in
+    circle
+        [ cx (String.fromInt x)
+        , cy (String.fromInt y)
+        , r (String.fromInt (round (radius * scale)))
+        , fill "none"
+        , onMouseEnter (mouseEnter p)
+        , onMouseLeave (mouseLeave p)
+        , onClick (pointClicked p)
+
+        -- This is needed to make the circle clickable, as transparent SVG elements are not clickable by default.
+        , Svg.Attributes.style "pointer-events: all;"
+        ]
+        []

@@ -268,11 +268,6 @@ viewEmptyBoard =
         )
 
 
-viewPieceWithAction : Piece -> String -> msg -> Svg msg
-viewPieceWithAction piece event msg =
-    addSvgAction (drawPiece piece) event msg
-
-
 viewPieces : Model -> Svg msg
 viewPieces model =
     g []
@@ -298,7 +293,7 @@ viewPossibleMoves model =
             in
             g []
                 (viewHighlights model
-                    :: List.map (\p -> drawClickPoint p 0.25 MouseEnter MouseLeave PointClicked) possibleClicks
+                    :: List.map (\p -> drawClickPoint p innerPieceRadius MouseEnter MouseLeave PointClicked) possibleClicks
                 )
 
         _ ->
@@ -368,7 +363,7 @@ viewCurrentAction model =
                         "Regular"
             in
             g []
-                [ viewPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
+                [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
                 , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
                 ]
 
@@ -433,6 +428,21 @@ viewMultiGroupSelector model =
         g [] []
 
 
+viewConfirmRemoveButton : Model -> Html Msg
+viewConfirmRemoveButton model =
+    if model.autoSelectedToRemove == [] then
+        div [] []
+
+    else
+        button
+            [ style "position" "absolute"
+            , style "top" "100px"
+            , style "left" "570px"
+            , onClick RemovePieces
+            ]
+            [ text "Remove" ]
+
+
 view : Model -> Html Msg
 view model =
     div [ style "position" "relative" ]
@@ -480,21 +490,6 @@ view model =
                 ]
             ]
         ]
-
-
-viewConfirmRemoveButton : Model -> Html Msg
-viewConfirmRemoveButton model =
-    if model.autoSelectedToRemove == [] then
-        div [] []
-
-    else
-        button
-            [ style "position" "absolute"
-            , style "top" "100px"
-            , style "left" "570px"
-            , onClick RemovePieces
-            ]
-            [ text "Remove" ]
 
 
 main : Program () Model Msg
