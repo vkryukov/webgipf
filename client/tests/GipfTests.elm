@@ -6,6 +6,7 @@ import Expect
 import Gipf exposing (..)
 import List exposing (sortWith)
 import Test exposing (..)
+import Tools exposing (maybeList)
 
 
 sortedEqual : List Coord -> List Coord -> Expect.Expectation
@@ -663,4 +664,29 @@ actionTest =
                         stringToGameWithDefault "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wf1-f2"
                 in
                 Expect.equal g.state WaitingForRemove
+        ]
+
+
+coordsEqual : List Coord -> String -> Expect.Expectation
+coordsEqual coords string =
+    let
+        maybeCoordsFromString =
+            String.split " " string
+                |> List.map nameToCoord
+                |> maybeList
+    in
+    case maybeCoordsFromString of
+        Just coordsFromString ->
+            sortedEqual coords coordsFromString
+
+        Nothing ->
+            Expect.fail "stringToCoords returned Nothing"
+
+
+disambiguateRemovalTest : Test
+disambiguateRemovalTest =
+    describe "Disambiguate removal of connected pieces"
+        [ test "game2 disambiguation points" <|
+            \_ ->
+                coordsEqual (disambiguateRemovalCoords game2) "b5 c5 d5 e5 g3 h2 f2 f3 f5 f6 f7"
         ]

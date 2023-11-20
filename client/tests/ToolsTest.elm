@@ -240,3 +240,39 @@ isSubsetOfAnyTest =
                 in
                 Expect.equal (isSubsetOfAny subset lists) expected
         ]
+
+
+symmetricalDifferenceTest : Test
+symmetricalDifferenceTest =
+    describe "test symmetricalDifference function"
+        [ test "symmetricalDifference with no common elements" <|
+            \_ ->
+                let
+                    lists =
+                        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+                    expected =
+                        [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+                in
+                Expect.equal (Tools.symmetricalDifference lists) expected
+        , test "symmetricalDifference with some common elements" <|
+            \_ ->
+                let
+                    lists =
+                        [ [ 1, 2, 3 ], [ 2, 3, 4 ], [ 3, 4, 5 ] ]
+
+                    expected =
+                        [ 1, 5 ]
+                in
+                Expect.equal (Tools.symmetricalDifference lists) expected
+        , test "symmetricalDifference with all common elements" <|
+            \_ ->
+                let
+                    lists =
+                        [ [ 1, 2, 3 ], [ 1, 2, 3 ], [ 1, 2, 3 ] ]
+
+                    expected =
+                        []
+                in
+                Expect.equal (Tools.symmetricalDifference lists) expected
+        ]

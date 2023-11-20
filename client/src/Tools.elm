@@ -128,3 +128,34 @@ removeElementsFromOneOfSupersets supersets list =
 count : List a -> (a -> Bool) -> Int
 count list pred =
     List.length (List.filter pred list)
+
+
+symmetricalDifference : List (List a) -> List a
+symmetricalDifference lists =
+    {-
+       symmetricalDifference takes a list of lists and returns a list of all elements that are in exactly one of the lists.
+    -}
+    let
+        allElements =
+            List.concat lists
+
+        counts =
+            List.map
+                (\element ->
+                    ( element, count allElements (\e -> e == element) )
+                )
+                allElements
+
+        elementsInExactlyOneList =
+            List.map
+                (\( element, c ) ->
+                    if c == 1 then
+                        Just element
+
+                    else
+                        Nothing
+                )
+                counts
+    in
+    -- remove all the Nothings, and return the list of Justs
+    List.filterMap identity elementsInExactlyOneList

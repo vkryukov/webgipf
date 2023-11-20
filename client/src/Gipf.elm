@@ -1049,7 +1049,24 @@ autoSelectToRemove game =
             || (List.length game.currentPlayerFourStones == 0 && List.length game.otherPlayerFourStones == 1)
     then
         List.filter (\p -> (p.color == color && p.kind == Regular) || (p.color /= color)) first
-            |> List.map (\p -> p.coord)
+            |> List.map .coord
 
     else
         []
+
+
+disambiguateRemovalCoords : Maybe Game -> List Coord
+disambiguateRemovalCoords maybeGame =
+    case maybeGame of
+        Just game ->
+            if List.length game.currentPlayerFourStones >= 2 then
+                List.map .coord (symmetricalDifference game.currentPlayerFourStones)
+
+            else if (List.length game.currentPlayerFourStones == 0) && (List.length game.otherPlayerFourStones >= 2) then
+                List.map .coord (symmetricalDifference game.otherPlayerFourStones)
+
+            else
+                []
+
+        Nothing ->
+            []
