@@ -497,10 +497,6 @@ dominantColor group =
         whiteCount =
             count group (\p -> p.color == White)
     in
-    let
-        _ =
-            Debug.log "dominantColor" ( blackCount, whiteCount )
-    in
     if blackCount > whiteCount then
         Black
 
