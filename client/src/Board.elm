@@ -121,14 +121,7 @@ update msg model =
             case g of
                 Just g1 ->
                     -- move was valid
-                    ( { model
-                        | game = g1
-                        , kind = g1.currentKind
-                        , possibleMoves = availableMoves g1.board
-                        , autoSelectedToRemove = autoSelectToRemove g1
-                      }
-                    , Cmd.none
-                    )
+                    initFromGame g1
 
                 Nothing ->
                     -- move was invalid
@@ -191,7 +184,7 @@ update msg model =
         RemovalDisambiguationLeave _ ->
             ( { model | selectedToDisambiguate = Nothing }, Cmd.none )
 
-        RemovalDisambiguationClick _ ->
+        RemovalDisambiguationClick coord ->
             ( model, Cmd.none )
 
 
