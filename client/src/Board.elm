@@ -122,24 +122,13 @@ update msg model =
 
                 Nothing ->
                     -- move was invalid
-                    let
-                        _ =
-                            Debug.log "invalid move" move
-                    in
                     ( model, Cmd.none )
 
         SaveBoardInput str ->
             ( { model | boardInput = str }, Cmd.none )
 
         UpdateBoard ->
-            let
-                ( m, _ ) =
                     initFromString model.boardInput
-
-                _ =
-                    Debug.log "m" m
-            in
-            ( { m | boardInput = "" }, Cmd.none )
 
         ChangeKind ->
             ( { model
@@ -157,9 +146,6 @@ update msg model =
             let
                 g =
                     performAction (Just (RemoveAction model.autoSelectedToRemove)) (Just model.game)
-
-                _ =
-                    Debug.log "g" g
             in
             case g of
                 Just g1 ->
