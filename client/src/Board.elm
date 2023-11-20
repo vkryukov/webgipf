@@ -149,14 +149,7 @@ update msg model =
             in
             case g of
                 Just g1 ->
-                    ( { model
-                        | game = g1
-                        , possibleMoves = availableMoves g1.board
-                        , kind = g1.currentKind
-                        , autoSelectedToRemove = autoSelectToRemove g1
-                      }
-                    , Cmd.none
-                    )
+                    initFromGame g1
 
                 Nothing ->
                     ( model, Cmd.none )
