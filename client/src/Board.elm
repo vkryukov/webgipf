@@ -27,6 +27,7 @@ type alias Model =
     , possibleMoves : List Direction
     , selectedToRemove : List Coord
     , autoSelectedToRemove : List Coord
+    , selectedToDisambiguate : Maybe Coord
     , boardInput : String
     }
 
@@ -55,6 +56,7 @@ initFromGame game =
       , possibleMoves = availableMoves game.board
       , selectedToRemove = []
       , autoSelectedToRemove = autoSelectToRemove game
+      , selectedToDisambiguate = Nothing
       , boardInput = ""
       }
     , Cmd.none
@@ -79,6 +81,9 @@ type Msg
     | UpdateBoard
     | ChangeKind
     | RemovePieces
+    | RemovalDisambiguationEnter Coord
+    | RemovalDisambiguationLeave Coord
+    | RemovalDisambiguationClick Coord
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -179,6 +184,15 @@ update msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        RemovalDisambiguationEnter coord ->
+            ( { model | selectedToDisambiguate = Just coord }, Cmd.none )
+
+        RemovalDisambiguationLeave _ ->
+            ( { model | selectedToDisambiguate = Nothing }, Cmd.none )
+
+        RemovalDisambiguationClick _ ->
+            ( model, Cmd.none )
 
 
 
@@ -412,12 +426,16 @@ viewMultiGroupSelector : Model -> Svg Msg
 viewMultiGroupSelector model =
     if model.game.state == WaitingForRemove && model.autoSelectedToRemove == [] then
         g []
-            (List.map
-                (\group ->
-                    g []
-                        (List.map (\p -> drawLightMark p.coord) group)
-                )
-                model.game.currentPlayerFourStones
+            ((case model.selectedToDisambiguate of
+                Nothing ->
+                    g [] []
+
+                Just coord ->
+                    drawDarkMark coord
+             )
+                :: List.map
+                    (\p -> drawClickPoint p RemovalDisambiguationEnter RemovalDisambiguationLeave RemovalDisambiguationClick)
+                    (disambiguateRemovalCoords (Just model.game))
             )
 
     else
