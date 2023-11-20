@@ -7,8 +7,8 @@ import Html exposing (Html, button, div, form, input, p, s, text)
 import Html.Attributes exposing (disabled, placeholder, style, type_, value)
 import Html.Events exposing (onInput, onSubmit)
 import Platform.Cmd as Cmd
-import Svg exposing (Svg, g, polygon, rect, svg)
-import Svg.Attributes exposing (fill, fontSize, height, points, viewBox, width, x, y)
+import Svg exposing (Svg, g, rect, svg)
+import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
 import Svg.Events exposing (onClick)
 import Task
 
