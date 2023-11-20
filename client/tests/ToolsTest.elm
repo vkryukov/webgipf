@@ -276,3 +276,35 @@ symmetricalDifferenceTest =
                 in
                 Expect.equal (Tools.symmetricalDifference lists) expected
         ]
+
+
+findSubsetContainingTest : Test
+findSubsetContainingTest =
+    describe "test findSubsetContaining function"
+        [ test "findSubsetContaining with element in one of the subsets" <|
+            \_ ->
+                let
+                    lists =
+                        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+                    element =
+                        5
+
+                    expected =
+                        Just [ 4, 5, 6 ]
+                in
+                Expect.equal (Tools.findSubsetContaining lists element) expected
+        , test "findSubsetContaining with element not in any of the subsets" <|
+            \_ ->
+                let
+                    lists =
+                        [ [ 1, 2, 3 ], [ 4, 5, 6 ], [ 7, 8, 9 ] ]
+
+                    element =
+                        10
+
+                    expected =
+                        Nothing
+                in
+                Expect.equal (Tools.findSubsetContaining lists element) expected
+        ]

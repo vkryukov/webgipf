@@ -159,3 +159,17 @@ symmetricalDifference lists =
     in
     -- remove all the Nothings, and return the list of Justs
     List.filterMap identity elementsInExactlyOneList
+
+
+findSubsetContaining : List (List a) -> a -> Maybe (List a)
+findSubsetContaining lists element =
+    let
+        matchingSubsets =
+            List.filter (\subset -> List.member element subset) lists
+    in
+    case matchingSubsets of
+        [] ->
+            Nothing
+
+        x :: _ ->
+            Just x
