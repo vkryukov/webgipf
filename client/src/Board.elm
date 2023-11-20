@@ -23,7 +23,6 @@ type alias Model =
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
-    , move : Maybe Direction
     , possibleMoves : List Direction
     , autoSelectedToRemove : List Coord
     , selectedToDisambiguate : Maybe Coord
@@ -51,7 +50,6 @@ initFromGame game =
       , highlightedPiece = Nothing
       , moveFrom = Nothing
       , moveTo = Nothing
-      , move = Nothing
       , possibleMoves = availableMoves game.board
       , autoSelectedToRemove = autoSelectToRemove game
       , selectedToDisambiguate = Nothing
@@ -321,16 +319,6 @@ viewHighlights model =
             ]
 
 
-viewMove : Model -> Svg msg
-viewMove model =
-    case model.move of
-        Just move ->
-            drawArrow move.from move.to
-
-        Nothing ->
-            g [] []
-
-
 viewConnectedPieces : Model -> Svg msg
 viewConnectedPieces model =
     let
@@ -481,7 +469,6 @@ view model =
             , viewPossibleMoves model
             , viewPiecesCounts model
             , viewMultiGroupSelector model
-            , viewMove model
             ]
         , viewConfirmRemoveButton model
         , div
