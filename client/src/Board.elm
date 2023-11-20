@@ -183,14 +183,6 @@ update msg model =
 -- View
 
 
-coordsToPoints : List Coord -> String
-coordsToPoints coords =
-    -- coordsToPoints converts a list of coordinates to a string of points used in the SVG polygon
-    List.map coordToXY coords
-        |> List.map (\( x, y ) -> String.fromInt x ++ "," ++ String.fromInt y)
-        |> String.join " "
-
-
 viewEmptyBoard : Svg msg
 viewEmptyBoard =
     g []
@@ -203,21 +195,16 @@ viewEmptyBoard =
             , fill "#F0F0F0"
             ]
             []
-         , polygon
-            [ points
-                (coordsToPoints
-                    [ ( 1, 1 )
-                    , ( 4, 1 )
-                    , ( 7, 4 )
-                    , ( 7, 7 )
-                    , ( 4, 7 )
-                    , ( 1, 4 )
-                    , ( 1, 1 )
-                    ]
-                )
-            , Svg.Attributes.style "fill: white;"
+         , drawPolygon
+            [ ( 1, 1 )
+            , ( 4, 1 )
+            , ( 7, 4 )
+            , ( 7, 7 )
+            , ( 4, 7 )
+            , ( 1, 4 )
+            , ( 1, 1 )
             ]
-            []
+            "white"
 
          -- lines
          , drawLine ( 1, 0 ) ( 1, 5 )

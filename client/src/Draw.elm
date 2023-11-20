@@ -1,12 +1,26 @@
-module Draw exposing (..)
+module Draw exposing
+    ( drawArrow
+    , drawBottomLabel
+    , drawCircle
+    , drawClickPoint
+    , drawDarkMark
+    , drawHighlightedPiece
+    , drawLightMark
+    , drawLine
+    , drawMultilineTextAtCoord
+    , drawPiece
+    , drawPieceWithAction
+    , drawPolygon
+    , drawTopLabel
+    )
 
 -- Draw contains a set of drawing primitives that can be used to draw SVG objects on the screen.
 -- They are support Coord and translate to SVG coordinates.
 
 import Gipf exposing (Color(..), Coord, Kind(..), Piece)
 import Html.Events exposing (onMouseEnter, onMouseLeave, onMouseOver)
-import Svg exposing (Svg, circle, g, line, text_)
-import Svg.Attributes exposing (cx, cy, fill, fontSize, r, stroke, strokeWidth, x, x1, x2, y, y1, y2)
+import Svg exposing (Svg, circle, g, line, polygon, text_)
+import Svg.Attributes exposing (cx, cy, fill, fontSize, points, r, stroke, strokeWidth, x, x1, x2, y, y1, y2)
 import Svg.Events exposing (onClick)
 
 
@@ -42,6 +56,14 @@ scale =
 coordToXY : Coord -> ( Int, Int )
 coordToXY ( x, y ) =
     ( round (toFloat x * cos30 * scale) + offsetX, offsetY - round ((toFloat y - sin30 * toFloat x) * scale) )
+
+
+coordsToPoints : List Coord -> String
+coordsToPoints coords =
+    -- coordsToPoints converts a list of coordinates to a string of points used in the SVG polygon
+    List.map coordToXY coords
+        |> List.map (\( x, y ) -> String.fromInt x ++ "," ++ String.fromInt y)
+        |> String.join " "
 
 
 
@@ -87,6 +109,15 @@ drawCircleWithStroke p radius fill_ stroke_ strokeWidth_ =
 drawCircle : Coord -> Float -> String -> Svg msg
 drawCircle p radius fill_ =
     drawCircleWithStroke p radius fill_ "black" "1"
+
+
+drawPolygon : List Coord -> String -> Svg msg
+drawPolygon coords fill_ =
+    let
+        points_ =
+            coordsToPoints coords
+    in
+    polygon [ fill fill_, points points_ ] []
 
 
 drawTextLabel : String -> Coord -> Int -> Int -> Svg msg
