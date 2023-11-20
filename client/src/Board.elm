@@ -37,7 +37,8 @@ init =
         -- initFromGame standardGame
         -- initFromGame basicGame
         -- one move creates two groups
-        initFromString "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4"
+        -- initFromString "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4"
+        initFromString "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wa4-b5 Ka4-b5 Wd8-d7 Ke9-e8 xc5,d6,e7,f7 xe6,g4 Wb6-c6 Ka5-b5 Wh6-h5 Ki4-h5 Wi4-h5 Kg7-g6 Wi3-h4 Kh6-h5 Wa5-b5 Ki3-h3 Wi4-h4"
 
 
 initFromGame : Game -> ( Model, Cmd msg )
@@ -636,6 +637,11 @@ viewCurrentAction model =
                     Regular
                 )
             , drawDarkMark ( 8, 10 )
+            , if model.autoSelectedToRemove == [] then
+                drawMultilineTextAtCoord "Click on a\ngroup to\nremove first" ( 8, 10 ) -35 35 12
+
+              else
+                g [] []
             ]
 
     else
@@ -663,6 +669,22 @@ viewPiecesCounts model =
         ]
 
 
+viewMultiGroupSelector : Model -> Svg Msg
+viewMultiGroupSelector model =
+    if model.game.state == WaitingForRemove && model.autoSelectedToRemove == [] then
+        g []
+            (List.map
+                (\group ->
+                    g []
+                        (List.map (\p -> drawLightMark p.coord) group)
+                )
+                model.game.currentPlayerFourStones
+            )
+
+    else
+        g [] []
+
+
 view : Model -> Html Msg
 view model =
     div [ style "position" "relative" ]
@@ -678,6 +700,7 @@ view model =
             , viewConnectedPieces model
             , viewPossibleMoves model
             , viewPiecesCounts model
+            , viewMultiGroupSelector model
             , viewMove model
             ]
         , viewConfirmRemoveButton model
