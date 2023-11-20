@@ -443,13 +443,17 @@ viewConfirmRemoveButton model =
                 , onClick RemovePieces
                 ]
                 [ text "Remove" ]
-            , button
-                [ style "position" "absolute"
-                , style "top" "125px"
-                , style "left" "570px"
-                , onClick CancelRemovePieces
-                ]
-                [ text "Cancel" ]
+            , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
+                button
+                    [ style "position" "absolute"
+                    , style "top" "125px"
+                    , style "left" "570px"
+                    , onClick CancelRemovePieces
+                    ]
+                    [ text "Cancel" ]
+
+              else
+                div [] []
             ]
 
 
