@@ -233,12 +233,12 @@ markRadius =
 
 drawLightMark : Coord -> Svg msg
 drawLightMark coord =
-    drawCircle coord markRadius "LightCoral"
+    drawCircle coord markRadius "PeachPuff"
 
 
 drawDarkMark : Coord -> Svg msg
 drawDarkMark coord =
-    drawCircle coord markRadius "Red"
+    drawCircle coord markRadius "SaddleBrown"
 
 
 pieceRadius : Float
