@@ -369,7 +369,7 @@ viewCurrentAction model =
                     )
                     Regular
                 )
-            , drawDarkMark ( 8, 10 )
+            , drawLightMark ( 8, 10 )
             , if selected model == [] then
                 drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
 
@@ -402,18 +402,34 @@ viewPiecesCounts model =
         ]
 
 
+{-|
+
+    viewMultiGroupSelector is used in a situation where there are multiple groups that can be removed.
+    It does a few things:
+    - designate every pieces that can be used for disambiguation with a light mark
+    - attach enter/leave/click events to all this points
+    - draw dark crossed on all points that will be selected for removal on the hover
+
+-}
 viewMultiGroupSelector : Model -> Svg Msg
 viewMultiGroupSelector model =
     if model.game.state == WaitingForRemove && selected model == [] then
         g []
             ((case model.selectedToDisambiguate of
                 Nothing ->
-                    g [] []
+                    []
 
                 Just coord ->
-                    drawDarkMark coord
+                    let
+                        ( auto, gipfs ) =
+                            autoSelectToRemoveWithDisambiguation model.game coord
+
+                        willBeRemoved =
+                            auto ++ gipfs
+                    in
+                    List.map drawDarkCross willBeRemoved
              )
-                :: List.map
+                ++ List.map
                     (\p -> drawClickPoint p RemovalDisambiguationEnter RemovalDisambiguationLeave RemovalDisambiguationClick)
                     (disambiguateRemovalCoords model.game)
             )
