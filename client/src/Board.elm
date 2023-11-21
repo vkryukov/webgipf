@@ -316,15 +316,15 @@ viewConnectedPieces : Model -> Svg msg
 viewConnectedPieces model =
     let
         allStones =
-            model.game.currentPlayerFourStones ++ model.game.otherPlayerFourStones
+            model.game.currentPlayerFourStones
+                ++ model.game.otherPlayerFourStones
+                |> List.concatMap (\l -> List.map .coord l)
+
+        allStonesExceptSelected =
+            List.filter (\c -> not (List.member c (selected model))) allStones
     in
     g []
-        (List.map
-            (\group ->
-                g []
-                    (List.map (\p -> drawLightMark p.coord) group)
-            )
-            allStones
+        (List.map drawLightMark allStonesExceptSelected
             ++ [ g [] (List.map drawDarkCross (selected model)) ]
         )
 
