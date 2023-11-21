@@ -378,7 +378,7 @@ viewCurrentAction model =
             ]
 
     else
-        -- game is over
+        -- The game is over
         g [] []
 
 
@@ -404,11 +404,11 @@ viewPiecesCounts model =
 
 {-|
 
-    viewMultiGroupSelector is used in a situation where there are multiple groups that can be removed.
+    viewMultiGroupSelector is used when there are multiple groups that can be removed.
     It does a few things:
-    - designate every pieces that can be used for disambiguation with a light mark
-    - attach enter/leave/click events to all this points
-    - draw dark crossed on all points that will be selected for removal on the hover
+    - Designates each piece that can be used for disambiguation with a light mark.
+    - Attaches enter/leave/click events to all these points.
+    - Draws dark crosses on all points that will be selected for removal upon hover.
 
 -}
 viewMultiGroupSelector : Model -> Svg Msg
