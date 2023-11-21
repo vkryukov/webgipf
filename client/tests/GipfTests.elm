@@ -683,6 +683,11 @@ coordsEqual coords string =
             Expect.fail "stringToCoords returned Nothing"
 
 
+coordsEqual1 : List Coord -> String -> () -> Expect.Expectation
+coordsEqual1 coords string _ =
+    coordsEqual coords string
+
+
 autoSelectToRemoveTest : Test
 autoSelectToRemoveTest =
     describe "autoSelectToRemove function"
@@ -692,7 +697,7 @@ autoSelectToRemoveTest =
                     g =
                         stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8"
 
-                    ( auto, gipfs ) =
+                    ( auto, _ ) =
                         autoSelectToRemove g
                 in
                 coordsEqual auto "b5 c6 d7 e8"
@@ -702,10 +707,20 @@ autoSelectToRemoveTest =
                     g =
                         stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8 xb5,c6,d7,e8"
 
-                    ( auto, gipfs ) =
+                    ( auto, _ ) =
                         autoSelectToRemove g
                 in
                 coordsEqual auto "b4 c5 d6 e7"
+        , test "black line has no gipf pieces" <|
+            \_ ->
+                let
+                    g =
+                        stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8 xb5,c6,d7,e8"
+
+                    ( _, gipfs ) =
+                        autoSelectToRemove g
+                in
+                Expect.equal gipfs []
         ]
 
 
@@ -718,10 +733,17 @@ disambiguateRemovalTest =
         , test "game2 auto selection with point c5" <|
             \_ ->
                 let
-                    ( auto, gipfs ) =
+                    ( auto, _ ) =
                         autoSelectToRemoveWithDisambiguation game2 ( 2, 4 )
                 in
                 coordsEqual auto "b5 c5 d5 e5 f4 g3"
+        , test "game2 gipf selection with point c5" <|
+            \_ ->
+                let
+                    ( _, gipfs ) =
+                        autoSelectToRemoveWithDisambiguation game2 ( 2, 4 )
+                in
+                coordsEqual gipfs "h2"
         , test "game2 auto selection with point h2" <|
             \_ ->
                 let
