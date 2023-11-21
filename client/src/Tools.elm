@@ -173,3 +173,8 @@ findSubsetContaining lists element =
 
         x :: _ ->
             Just x
+
+
+fst : ( a, b ) -> a
+fst ( a, _ ) =
+    a

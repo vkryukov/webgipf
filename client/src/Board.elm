@@ -11,6 +11,7 @@ import Svg exposing (Svg, g, rect, svg)
 import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
 import Svg.Events exposing (onClick)
 import Task
+import Tools exposing (fst)
 
 
 
@@ -19,13 +20,20 @@ import Task
 
 type alias Model =
     { game : Game
+
+    -- move related
     , kind : Kind
     , highlightedPiece : Maybe Coord
     , moveFrom : Maybe Coord
     , moveTo : Maybe Coord
     , possibleMoves : List Direction
-    , autoSelectedToRemove : List Coord
+
+    -- remove related
+    , autoSelected : ( List Coord, List Coord )
     , selectedToDisambiguate : Maybe Coord
+    , gipfsSelected : List Coord
+
+    -- debugging info
     , boardInput : String
     }
 
@@ -51,8 +59,9 @@ initFromGame game =
       , moveFrom = Nothing
       , moveTo = Nothing
       , possibleMoves = availableMoves game.board
-      , autoSelectedToRemove = autoSelectToRemove game
+      , autoSelected = autoSelectToRemove game
       , selectedToDisambiguate = Nothing
+      , gipfsSelected = []
       , boardInput = ""
       }
     , Cmd.none
@@ -62,6 +71,11 @@ initFromGame game =
 initFromString : String -> ( Model, Cmd msg )
 initFromString s =
     initFromGame (stringToGameWithDefault s)
+
+
+selected : Model -> List Coord
+selected model =
+    fst model.autoSelected ++ model.gipfsSelected
 
 
 
@@ -128,7 +142,7 @@ update msg model =
             ( { model | boardInput = str }, Cmd.none )
 
         UpdateBoard ->
-                    initFromString model.boardInput
+            initFromString model.boardInput
 
         ChangeKind ->
             ( { model
@@ -145,7 +159,7 @@ update msg model =
         RemovePieces ->
             let
                 g =
-                    performAction (Just (RemoveAction model.autoSelectedToRemove)) (Just model.game)
+                    performAction (Just (RemoveAction (selected model))) (Just model.game)
             in
             case g of
                 Just g1 ->
@@ -156,7 +170,7 @@ update msg model =
 
         CancelRemovePieces ->
             ( { model
-                | autoSelectedToRemove = []
+                | autoSelected = ( [], [] )
               }
             , Cmd.none
             )
@@ -168,7 +182,7 @@ update msg model =
             ( { model | selectedToDisambiguate = Nothing }, Cmd.none )
 
         RemovalDisambiguationClick coord ->
-            ( { model | autoSelectedToRemove = autoSelectToRemoveWithDisambiguation model.game coord }, Cmd.none )
+            ( { model | autoSelected = autoSelectToRemoveWithDisambiguation model.game coord }, Cmd.none )
 
 
 
@@ -311,7 +325,7 @@ viewConnectedPieces model =
                     (List.map (\p -> drawLightMark p.coord) group)
             )
             allStones
-            ++ [ g [] (List.map drawDarkCross model.autoSelectedToRemove) ]
+            ++ [ g [] (List.map drawDarkCross (selected model)) ]
         )
 
 
@@ -356,7 +370,7 @@ viewCurrentAction model =
                     Regular
                 )
             , drawDarkMark ( 8, 10 )
-            , if model.autoSelectedToRemove == [] then
+            , if selected model == [] then
                 drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
 
               else
@@ -390,7 +404,7 @@ viewPiecesCounts model =
 
 viewMultiGroupSelector : Model -> Svg Msg
 viewMultiGroupSelector model =
-    if model.game.state == WaitingForRemove && model.autoSelectedToRemove == [] then
+    if model.game.state == WaitingForRemove && selected model == [] then
         g []
             ((case model.selectedToDisambiguate of
                 Nothing ->
@@ -401,7 +415,7 @@ viewMultiGroupSelector model =
              )
                 :: List.map
                     (\p -> drawClickPoint p RemovalDisambiguationEnter RemovalDisambiguationLeave RemovalDisambiguationClick)
-                    (disambiguateRemovalCoords (Just model.game))
+                    (disambiguateRemovalCoords model.game)
             )
 
     else
@@ -410,7 +424,7 @@ viewMultiGroupSelector model =
 
 viewConfirmRemoveButton : Model -> Html Msg
 viewConfirmRemoveButton model =
-    if model.autoSelectedToRemove == [] then
+    if selected model == [] then
         div [] []
 
     else
