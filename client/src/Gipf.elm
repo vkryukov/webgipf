@@ -1015,23 +1015,47 @@ reverseColor color =
         Black
 
 
-defaultPiece : Piece
-defaultPiece =
+impossiblePiece : Piece
+impossiblePiece =
     { coord = ( -1, -1 ), color = White, kind = Regular }
 
 
-autoSelectWithColor : List Piece -> Color -> List Coord
+{-|
+
+    autoSelectWithColor takes a list of pieces (presumably, all connected pieces on one of the lines)
+    and a color, and returns a tuple of two lists of coordinates:
+        1)  pieces that can be auto-selected for removal, i.e., all the non-Gipf pieces of the current player
+            all the pieces of the other player.
+        2)  all the Gipf pieces of the current player, since for these pieces, the player has a choice
+            whether to remove them or leave them on the board.
+
+-}
+autoSelectWithColor : List Piece -> Color -> ( List Coord, List Coord )
 autoSelectWithColor pieces color =
-    List.filter (\p -> (p.color == color && p.kind == Regular) || (p.color /= color)) pieces
+    ( List.filter (\p -> (p.color == color && p.kind == Regular) || (p.color /= color)) pieces
         |> List.map .coord
+    , List.filter (\p -> p.color == color && p.kind == Gipf) pieces
+        |> List.map .coord
+    )
 
 
-autoSelect : List Piece -> List Coord
+{-|
+
+    autoSelect is like autoSelectWithColor, but it automatically determines the color, which is the majority color.
+
+-}
+autoSelect : List Piece -> ( List Coord, List Coord )
 autoSelect pieces =
     autoSelectWithColor pieces (dominantColor pieces)
 
 
-autoSelectToRemove : Game -> List Coord
+{-|
+
+    autoSelectToRemove takes a game and returns a list of coordinates that can be auto-selected for removal.
+    If there are no pieces that can be auto-selected, it returns an empty list.
+
+-}
+autoSelectToRemove : Game -> ( List Coord, List Coord )
 autoSelectToRemove game =
     let
         maybeFirstOwn =
@@ -1050,7 +1074,7 @@ autoSelectToRemove game =
 
                 _ ->
                     -- We should never get here when a piece can be autoselected
-                    [ defaultPiece ]
+                    [ impossiblePiece ]
     in
     if
         (List.length game.currentPlayerFourStones == 1)
@@ -1059,34 +1083,46 @@ autoSelectToRemove game =
         autoSelect first
 
     else
+        ( [], [] )
+
+
+{-|
+
+    disambiguateRemovalCoords takes a game and returns a list of coordinates that can help disambiguate the removal.
+    A typical case is when there are 2 or more groups of 4 stones of the same color, and the player needs to remove one of them.
+    This can be done by selecting a piece in one of these group that can uniquely identify the group.
+
+-}
+disambiguateRemovalCoords : Game -> List Coord
+disambiguateRemovalCoords game =
+    if List.length game.currentPlayerFourStones >= 2 then
+        List.map .coord (symmetricalDifference game.currentPlayerFourStones)
+
+    else if (List.length game.currentPlayerFourStones == 0) && (List.length game.otherPlayerFourStones >= 2) then
+        List.map .coord (symmetricalDifference game.otherPlayerFourStones)
+
+    else
         []
 
 
-disambiguateRemovalCoords : Maybe Game -> List Coord
-disambiguateRemovalCoords maybeGame =
-    case maybeGame of
-        Just game ->
-            if List.length game.currentPlayerFourStones >= 2 then
-                List.map .coord (symmetricalDifference game.currentPlayerFourStones)
+{-|
 
-            else if (List.length game.currentPlayerFourStones == 0) && (List.length game.otherPlayerFourStones >= 2) then
-                List.map .coord (symmetricalDifference game.otherPlayerFourStones)
+    autoSelectToRemoveWithDisambiguation takes a game and a coordinate that uniquely defines just one of two or more possible groups of 4 stones,
+    and returns a tuple of two lists of coordinates:
+        1)  pieces that can be auto-selected for removal, i.e., all the non-Gipf pieces of the current player
+            all the pieces of the other player.
+        2)  all the Gipf pieces of the current player, since for these pieces, the player has a choice
+            whether to remove them or leave them on the board.
 
-            else
-                []
-
-        Nothing ->
-            []
-
-
-autoSelectToRemoveWithDisambiguation : Game -> Coord -> List Coord
+-}
+autoSelectToRemoveWithDisambiguation : Game -> Coord -> ( List Coord, List Coord )
 autoSelectToRemoveWithDisambiguation game coord =
     let
         maybePiece =
             Dict.get coord game.board
 
         piece =
-            Maybe.withDefault defaultPiece maybePiece
+            Maybe.withDefault impossiblePiece maybePiece
 
         maybeListToList list =
             Maybe.withDefault [] list
@@ -1102,4 +1138,4 @@ autoSelectToRemoveWithDisambiguation game coord =
             |> autoSelect
 
     else
-        []
+        ( [], [] )

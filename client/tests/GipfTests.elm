@@ -529,10 +529,10 @@ game1 =
     stringToGame "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
 
 
-game2 : Maybe Game
+game2 : Game
 game2 =
     --  http://www.gipf.com/gipf/archives/game010821_01.html till move 17
-    stringToGame "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wa4-b5 Ka4-b5 Wd8-d7 Ke9-e8 xc5,d6,e7,f7 xe6,g4 Wb6-c6 Ka5-b5 Wh6-h5 Ki4-h5 Wi4-h5 Kg7-g6 Wi3-h4 Kh6-h5 Wa5-b5 Ki3-h3 Wi4-h4"
+    stringToGameWithDefault "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wa4-b5 Ka4-b5 Wd8-d7 Ke9-e8 xc5,d6,e7,f7 xe6,g4 Wb6-c6 Ka5-b5 Wh6-h5 Ki4-h5 Wi4-h5 Kg7-g6 Wi3-h4 Kh6-h5 Wa5-b5 Ki3-h3 Wi4-h4"
 
 
 stringToGameTest : Test
@@ -691,15 +691,21 @@ autoSelectToRemoveTest =
                 let
                     g =
                         stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8"
+
+                    ( auto, gipfs ) =
+                        autoSelectToRemove g
                 in
-                coordsEqual (autoSelectToRemove g) "b5 c6 d7 e8"
+                coordsEqual auto "b5 c6 d7 e8"
         , test "black pieces are selected" <|
             \_ ->
                 let
                     g =
                         stringToGameWithDefault "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4 We9-e8 xb5,c6,d7,e8"
+
+                    ( auto, gipfs ) =
+                        autoSelectToRemove g
                 in
-                coordsEqual (autoSelectToRemove g) "b4 c5 d6 e7"
+                coordsEqual auto "b4 c5 d6 e7"
         ]
 
 
@@ -711,19 +717,25 @@ disambiguateRemovalTest =
                 coordsEqual (disambiguateRemovalCoords game2) "b5 c5 d5 e5 g3 h2 f2 f3 f5 f6 f7"
         , test "game2 auto selection with point c5" <|
             \_ ->
-                coordsEqual
-                    (autoSelectToRemoveWithDisambiguation (Maybe.withDefault emptyGame game2) ( 2, 4 ))
-                    "b5 c5 d5 e5 f4 g3"
+                let
+                    ( auto, gipfs ) =
+                        autoSelectToRemoveWithDisambiguation game2 ( 2, 4 )
+                in
+                coordsEqual auto "b5 c5 d5 e5 f4 g3"
         , test "game2 auto selection with point h2" <|
             \_ ->
-                coordsEqual
-                    (autoSelectToRemoveWithDisambiguation (Maybe.withDefault emptyGame game2) ( 7, 4 ))
-                    "b5 c5 d5 e5 f4 g3"
+                let
+                    ( auto, gipfs ) =
+                        autoSelectToRemoveWithDisambiguation game2 ( 7, 4 )
+                in
+                coordsEqual auto "b5 c5 d5 e5 f4 g3"
         , test "game2 auto selection with point f6" <|
             \_ ->
-                coordsEqual
-                    (autoSelectToRemoveWithDisambiguation (Maybe.withDefault emptyGame game2) ( 5, 6 ))
-                    "f2 f4 f6 f7"
+                let
+                    ( auto, gipfs ) =
+                        autoSelectToRemoveWithDisambiguation game2 ( 5, 6 )
+                in
+                coordsEqual auto "f2 f4 f6 f7"
         ]
 
 
