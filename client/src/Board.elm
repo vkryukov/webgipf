@@ -334,9 +334,9 @@ viewPiecesCounts model =
 
 {-|
 
-    currentSelectionState determines the current state of the selection process. It's complicated enough to warrant its own function.
+    currentSelectionState determines the current state of the selection process.
     Basically, there are the following states:
-        1. We are waiting for a player's move - the simplest case.
+        1. We are not removing any pieces - the simplest case.
         2. There is only one line that needs to be removed, with no Gipf pieces - we highlight it and wait for the player to confirm.
         3. There are few possible lines that can be removed, and we need to disambiguate between them.
         4. We selected a line to remove, and now we need to select the Gipf pieces to remove (this can also happen in case 2 when we autoselected the pieces).
@@ -349,105 +349,96 @@ currentSelectionState model =
 
     else if selected model == [] then
         -- Nothing has been auto-selected yet. That means that we need to disambiguate between the possible removals.
-        if List.length model.game.currentPlayerFourStones > 1 then
-            CurrentPlayerDisambiguatesRemoval
+        PlayerNeedsToDisambiguateRemoval
 
-        else if List.length model.game.otherPlayerFourStones > 1 then
-            OtherPlayerDisambiguatesRemoval
-
-        else
-            -- We should never get here, because we should have auto-selected the removals if there was only one possible removal.
-            ImpossibleState
+    else if snd model.autoSelected == [] then
+        -- The player has no Gipf pieces to remove, so we need to wait for them to confirm.
+        PlayerNeedsToConfirmRemoval
 
     else
-    -- A selection was made, either by the player who disambiguated the removal or by the auto-selection.
-    if
-        List.length model.game.currentPlayerFourStones == 1
-    then
-        if snd model.autoSelected == [] then
-            -- The current player has no Gipf pieces to remove, so we need to wait for them to confirm.
-            CurrentPlayerNeedsToConfirmRemoval
-
-        else
-            -- The current player has Gipf pieces to remove, so we need to wait for them to confirm.
-            CurrentPlayerSelectsGipfPieces
-
-    else
-    -- List.length model.game.otherPlayerFourStones == 1
-    if
-        snd model.autoSelected == []
-    then
-        -- The other player has no Gipf pieces to remove, so we need to wait for them to confirm.
-        OtherPlayerNeedsToConfirmRemoval
-
-    else
-        -- The other player has Gipf pieces to remove, so we need to wait for them to confirm.
-        OtherPlayerSelectsGipfPieces
+        -- The  player has some Gipf pieces to remove, so we give them a chance to toggle them for removal.
+        PlayerNeedsToToggleGipfPieces
 
 
 type SelectionState
     = NothingToSelect
-    | CurrentPlayerNeedsToConfirmRemoval
-    | OtherPlayerNeedsToConfirmRemoval
-    | CurrentPlayerSelectsGipfPieces
-    | OtherPlayerSelectsGipfPieces
-    | CurrentPlayerDisambiguatesRemoval
-    | OtherPlayerDisambiguatesRemoval
+    | PlayerNeedsToConfirmRemoval
+    | PlayerNeedsToToggleGipfPieces
+    | PlayerNeedsToDisambiguateRemoval
     | ImpossibleState
+
+
+{-|
+
+    playerWithAction returns the color of the player that needs to perform the action.
+
+-}
+playerWithAction : Model -> Color
+playerWithAction model =
+    if model.game.state == WaitingForRemove && model.game.currentPlayerFourStones == [] then
+        reverseColor model.game.currentColor
+
+    else
+        model.game.currentColor
 
 
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
-    if model.game.state == WaitingForMove then
-        if
-            -- TODO: Move this logic to Gipf.elm
-            (model.game.currentKind == Regular)
-                || (not model.game.isBasicGame
-                        -- In the tournament, you have to play at least one Gipf piece
-                        && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
-                                || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
+    case currentSelectionState model of
+        NothingToSelect ->
+            if model.game.state == WaitingForMove then
+                if
+                    -- TODO: Move this logic to Gipf.elm
+                    (model.game.currentKind == Regular)
+                        || (not model.game.isBasicGame
+                                -- In the tournament, you have to play at least one Gipf piece
+                                && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
+                                        || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
+                                   )
                            )
-                   )
-        then
-            drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+                then
+                    drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
 
-        else
-            let
-                pieceLabel =
-                    if model.kind == Regular then
-                        "Gipf"
+                else
+                    let
+                        pieceLabel =
+                            if model.kind == Regular then
+                                "Gipf"
 
-                    else
-                        "Regular"
-            in
+                            else
+                                "Regular"
+                    in
+                    g []
+                        [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
+                        , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                        ]
+
+            else
+                -- TODO: show the winner when the game is over
+                g [] []
+
+        PlayerNeedsToDisambiguateRemoval ->
             g []
-                [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
-                , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
+                , drawLightMark ( 8, 10 )
+                , drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
                 ]
 
-    else if model.game.state == WaitingForRemove then
-        g []
-            [ drawPiece
-                (Piece ( 8, 10 )
-                    (if model.game.currentPlayerFourStones == [] then
-                        reverseColor model.game.currentColor
+        PlayerNeedsToToggleGipfPieces ->
+            g []
+                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
+                , drawLightMark ( 8, 10 )
+                , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -80 -10 12
+                ]
 
-                     else
-                        model.game.currentColor
-                    )
-                    Regular
-                )
-            , drawLightMark ( 8, 10 )
-            , if selected model == [] then
-                drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
+        PlayerNeedsToConfirmRemoval ->
+            g []
+                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
+                , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
+                ]
 
-              else
-                g [] []
-            ]
-
-    else
-        -- TODO: show the winner when the game is over
-        g [] []
+        _ ->
+            g [] []
 
 
 {-|
