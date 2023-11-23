@@ -178,3 +178,8 @@ findSubsetContaining lists element =
 fst : ( a, b ) -> a
 fst ( a, _ ) =
     a
+
+
+snd : ( a, b ) -> b
+snd ( _, b ) =
+    b
