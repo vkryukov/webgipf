@@ -11,7 +11,7 @@ import Svg exposing (Svg, g, rect, svg)
 import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
 import Svg.Events exposing (onClick)
 import Task
-import Tools exposing (fst)
+import Tools exposing (fst, snd)
 
 
 
@@ -312,27 +312,95 @@ viewHighlights model =
             ]
 
 
-viewConnectedPieces : Model -> Svg msg
-viewConnectedPieces model =
-    let
-        allStones =
-            model.game.currentPlayerFourStones
-                ++ model.game.otherPlayerFourStones
-                |> List.concatMap (\l -> List.map .coord l)
-
-        allStonesExceptSelected =
-            List.filter (\c -> not (List.member c (selected model))) allStones
-    in
+viewPiecesCounts : Model -> Svg msg
+viewPiecesCounts model =
     g []
-        (List.map drawLightMark allStonesExceptSelected
-            ++ [ g [] (List.map drawDarkCross (selected model)) ]
-        )
+        [ drawPiece (Piece ( 0, -2 ) White Regular)
+        , drawPiece (Piece ( 8, 2 ) Black Regular)
+        , drawMultilineTextAtCoord
+            ("Remaining: " ++ String.fromInt model.game.whiteCount.own ++ "\nCaptured: " ++ String.fromInt model.game.whiteCount.captured)
+            ( 0, -2 )
+            25
+            0
+            13
+        , drawMultilineTextAtCoord
+            ("Remaining: " ++ String.fromInt model.game.blackCount.own ++ "\nCaptured: " ++ String.fromInt model.game.blackCount.captured)
+            ( 8, 2 )
+            -90
+            0
+            13
+        ]
+
+
+{-|
+
+    currentSelectionState determines the current state of the selection process. It's complicated enough to warrant its own function.
+    Basically, there are the following states:
+        1. We are waiting for a player's move - the simplest case.
+        2. There is only one line that needs to be removed, with no Gipf pieces - we highlight it and wait for the player to confirm.
+        3. There are few possible lines that can be removed, and we need to disambiguate between them.
+        4. We selected a line to remove, and now we need to select the Gipf pieces to remove (this can also happen in case 2 when we autoselected the pieces).
+
+-}
+currentSelectionState : Model -> SelectionState
+currentSelectionState model =
+    if model.game.state /= WaitingForRemove then
+        NothingToSelect
+
+    else if selected model == [] then
+        -- Nothing has been auto-selected yet. That means that we need to disambiguate between the possible removals.
+        if List.length model.game.currentPlayerFourStones > 1 then
+            CurrentPlayerDisambiguatesRemoval
+
+        else if List.length model.game.otherPlayerFourStones > 1 then
+            OtherPlayerDisambiguatesRemoval
+
+        else
+            -- We should never get here, because we should have auto-selected the removals if there was only one possible removal.
+            ImpossibleState
+
+    else
+    -- A selection was made, either by the player who disambiguated the removal or by the auto-selection.
+    if
+        List.length model.game.currentPlayerFourStones == 1
+    then
+        if snd model.autoSelected == [] then
+            -- The current player has no Gipf pieces to remove, so we need to wait for them to confirm.
+            CurrentPlayerNeedsToConfirmRemoval
+
+        else
+            -- The current player has Gipf pieces to remove, so we need to wait for them to confirm.
+            CurrentPlayerSelectsGipfPieces
+
+    else
+    -- List.length model.game.otherPlayerFourStones == 1
+    if
+        snd model.autoSelected == []
+    then
+        -- The other player has no Gipf pieces to remove, so we need to wait for them to confirm.
+        OtherPlayerNeedsToConfirmRemoval
+
+    else
+        -- The other player has Gipf pieces to remove, so we need to wait for them to confirm.
+        OtherPlayerSelectsGipfPieces
+
+
+type SelectionState
+    = NothingToSelect
+    | CurrentPlayerNeedsToConfirmRemoval
+    | OtherPlayerNeedsToConfirmRemoval
+    | CurrentPlayerSelectsGipfPieces
+    | OtherPlayerSelectsGipfPieces
+    | CurrentPlayerDisambiguatesRemoval
+    | OtherPlayerDisambiguatesRemoval
+    | ImpossibleState
 
 
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
     if model.game.state == WaitingForMove then
         if
+            -- TODO: Move this logic to Gipf.elm
             (model.game.currentKind == Regular)
                 || (not model.game.isBasicGame
                         -- In the tournament, you have to play at least one Gipf piece
@@ -378,28 +446,25 @@ viewCurrentAction model =
             ]
 
     else
-        -- The game is over
+        -- TODO: show the winner when the game is over
         g [] []
 
 
-viewPiecesCounts : Model -> Svg msg
-viewPiecesCounts model =
+{-|
+
+    viewConnectedPieces highlights all the lines with 4+ pieces of the same color in a row, that can be removed.
+
+-}
+viewConnectedPieces : Model -> Svg msg
+viewConnectedPieces model =
     g []
-        [ drawPiece (Piece ( 0, -2 ) White Regular)
-        , drawPiece (Piece ( 8, 2 ) Black Regular)
-        , drawMultilineTextAtCoord
-            ("Remaining: " ++ String.fromInt model.game.whiteCount.own ++ "\nCaptured: " ++ String.fromInt model.game.whiteCount.captured)
-            ( 0, -2 )
-            25
-            0
-            13
-        , drawMultilineTextAtCoord
-            ("Remaining: " ++ String.fromInt model.game.blackCount.own ++ "\nCaptured: " ++ String.fromInt model.game.blackCount.captured)
-            ( 8, 2 )
-            -90
-            0
-            13
-        ]
+        (if selected model == [] then
+            List.map drawLightMark (disambiguateRemovalCoords model.game)
+
+         else
+            List.map drawDarkCross (selected model ++ model.gipfsSelected)
+                ++ List.map drawLightMark (snd model.autoSelected)
+        )
 
 
 {-|
@@ -478,9 +543,11 @@ view model =
             [ viewEmptyBoard
             , viewCurrentAction model
             , viewPieces model
-            , viewConnectedPieces model
             , viewPossibleMoves model
             , viewPiecesCounts model
+
+            -- TODO: maybe join the two below views into one?
+            , viewConnectedPieces model
             , viewMultiGroupSelector model
             ]
         , viewConfirmRemoveButton model
