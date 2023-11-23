@@ -365,7 +365,6 @@ type SelectionState
     | PlayerNeedsToConfirmRemoval
     | PlayerNeedsToToggleGipfPieces
     | PlayerNeedsToDisambiguateRemoval
-    | ImpossibleState
 
 
 {-|
@@ -382,6 +381,11 @@ playerWithAction model =
         model.game.currentColor
 
 
+{-|
+
+    viewCurrentAction displays a control in the top right corner that shows the current action.
+
+-}
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
     case currentSelectionState model of
@@ -413,9 +417,18 @@ viewCurrentAction model =
                         , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
                         ]
 
+            else if model.game.state == BlackWon then
+                g []
+                    [ drawPiece (Piece ( 8, 10 ) Black Regular)
+                    , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
+                    ]
+
             else
-                -- TODO: show the winner when the game is over
-                g [] []
+                -- white won
+                g []
+                    [ drawPiece (Piece ( 8, 10 ) White Regular)
+                    , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
+                    ]
 
         PlayerNeedsToDisambiguateRemoval ->
             g []
@@ -436,9 +449,6 @@ viewCurrentAction model =
                 [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
                 , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
                 ]
-
-        _ ->
-            g [] []
 
 
 {-|
