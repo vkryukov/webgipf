@@ -32,6 +32,7 @@ type alias Model =
     , autoSelected : ( List Coord, List Coord )
     , selectedToDisambiguate : Maybe Coord
     , gipfsSelected : List Coord
+    , gipfHovered : Maybe Coord
 
     -- debugging info
     , boardInput : String
@@ -62,6 +63,7 @@ initFromGame game =
       , autoSelected = autoSelectToRemove game
       , selectedToDisambiguate = Nothing
       , gipfsSelected = []
+      , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
       , boardInput = ""
       }
     , Cmd.none
@@ -95,6 +97,9 @@ type Msg
     | RemovalDisambiguationEnter Coord
     | RemovalDisambiguationLeave Coord
     | RemovalDisambiguationClick Coord
+    | GipfEnter Coord
+    | GipfLeave Coord
+    | GipfClicked Coord
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -183,6 +188,19 @@ update msg model =
 
         RemovalDisambiguationClick coord ->
             ( { model | autoSelected = autoSelectToRemoveWithDisambiguation model.game coord }, Cmd.none )
+
+        GipfEnter coord ->
+            ( { model | gipfHovered = Just coord }, Cmd.none )
+
+        GipfLeave _ ->
+            ( { model | gipfHovered = Nothing }, Cmd.none )
+
+        GipfClicked coord ->
+            if List.member coord model.gipfsSelected then
+                ( { model | gipfsSelected = List.filter ((/=) coord) model.gipfsSelected }, Cmd.none )
+
+            else
+                ( { model | gipfsSelected = coord :: model.gipfsSelected }, Cmd.none )
 
 
 
@@ -344,6 +362,8 @@ viewPiecesCounts model =
 -}
 currentSelectionState : Model -> SelectionState
 currentSelectionState model =
+    -- TODO: Handle a case with four Gipf pieces in a row
+    -- If not handled, it will lead to a infinite loop.
     if model.game.state /= WaitingForRemove then
         NothingToSelect
 
@@ -453,55 +473,57 @@ viewCurrentAction model =
 
 {-|
 
-    viewConnectedPieces highlights all the lines with 4+ pieces of the same color in a row, that can be removed.
-
--}
-viewConnectedPieces : Model -> Svg msg
-viewConnectedPieces model =
-    g []
-        (if selected model == [] then
-            List.map drawLightMark (disambiguateRemovalCoords model.game)
-
-         else
-            List.map drawDarkCross (selected model ++ model.gipfsSelected)
-                ++ List.map drawLightMark (snd model.autoSelected)
-        )
-
-
-{-|
-
-    viewMultiGroupSelector is used when there are multiple groups that can be removed.
+    viewSelectionAndRemoval displays any pieces that can be removed from the board, and allows the player to select them.
     It does a few things:
     - Designates each piece that can be used for disambiguation with a light mark.
     - Attaches enter/leave/click events to all these points.
     - Draws dark crosses on all points that will be selected for removal upon hover.
+    - When one of the multiple groups is selected, process click events to select the Gipf pieces to remove.
 
 -}
-viewMultiGroupSelector : Model -> Svg Msg
-viewMultiGroupSelector model =
-    if model.game.state == WaitingForRemove && selected model == [] then
-        g []
-            ((case model.selectedToDisambiguate of
-                Nothing ->
-                    []
+viewSelectionAndRemoval : Model -> Svg Msg
+viewSelectionAndRemoval model =
+    let
+        markedForRemoval =
+            List.map drawDarkCross (selected model ++ model.gipfsSelected)
+                ++ List.map drawLightMark (snd model.autoSelected)
+    in
+    case currentSelectionState model of
+        NothingToSelect ->
+            g [] []
 
-                Just coord ->
-                    let
-                        ( auto, gipfs ) =
-                            autoSelectToRemoveWithDisambiguation model.game coord
-
-                        willBeRemoved =
-                            auto ++ gipfs
-                    in
-                    List.map drawDarkCross willBeRemoved
-             )
-                ++ List.map
-                    (\p -> drawClickPoint p RemovalDisambiguationEnter RemovalDisambiguationLeave RemovalDisambiguationClick)
+        PlayerNeedsToDisambiguateRemoval ->
+            g []
+                (List.map
+                    drawLightMark
                     (disambiguateRemovalCoords model.game)
-            )
+                    ++ List.map
+                        (\p -> drawClickPoint p RemovalDisambiguationEnter RemovalDisambiguationLeave RemovalDisambiguationClick)
+                        (disambiguateRemovalCoords model.game)
+                    ++ (case model.selectedToDisambiguate of
+                            Nothing ->
+                                []
 
-    else
-        g [] []
+                            Just coord ->
+                                let
+                                    ( auto, gipfs ) =
+                                        autoSelectToRemoveWithDisambiguation model.game coord
+
+                                    willBeRemoved =
+                                        auto ++ gipfs
+                                in
+                                List.map drawDarkCross willBeRemoved
+                       )
+                )
+
+        PlayerNeedsToToggleGipfPieces ->
+            g []
+                (markedForRemoval
+                    ++ List.map (\p -> drawClickPoint p GipfEnter GipfEnter GipfClicked) (snd model.autoSelected)
+                )
+
+        PlayerNeedsToConfirmRemoval ->
+            g [] markedForRemoval
 
 
 viewConfirmRemoveButton : Model -> Html Msg
@@ -546,10 +568,7 @@ view model =
             , viewPieces model
             , viewPossibleMoves model
             , viewPiecesCounts model
-
-            -- TODO: maybe join the two below views into one?
-            , viewConnectedPieces model
-            , viewMultiGroupSelector model
+            , viewSelectionAndRemoval model
             ]
         , viewConfirmRemoveButton model
         , div
