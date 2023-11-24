@@ -110,10 +110,11 @@ func handleNewGame(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Generated tokens - White: %s, Black: %s, Viewer: %s\n", whiteToken, blackToken, viewerToken)
 
 	// Create the response
-	response := map[string]string{
-		"white":  fmt.Sprintf("/game/%d?token=%s", id, whiteToken),
-		"black":  fmt.Sprintf("/game/%d?token=%s", id, blackToken),
-		"viewer": fmt.Sprintf("/game/%d?token=%s", id, viewerToken),
+	response := map[string]interface{}{
+		"id":     id,
+		"white":  whiteToken,
+		"black":  blackToken,
+		"viewer": viewerToken,
 	}
 
 	// Convert the response to JSON

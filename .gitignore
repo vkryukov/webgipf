@@ -1,3 +1,4 @@
 client/elm-stuff/
 client/.coverage/
 .DS_Store
+server/main
