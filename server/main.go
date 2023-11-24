@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -15,10 +16,22 @@ import (
 
 var (
 	db               *sql.DB
-	upgrader         = websocket.Upgrader{} // Use default options
 	connectedUsers   = make(map[int][]*websocket.Conn)
 	connectedUsersMu sync.Mutex
 )
+
+var allowedOrigins = map[string]bool{
+	"http://localhost":                true,
+	"https://your-allowed-origin.com": true,
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		// Allow connections with a null origin (for local file testing)
+		origin := r.Header.Get("Origin")
+		return origin == "" || origin == "null" || allowedOrigins[origin]
+	},
+}
 
 type ActionOwner int
 
@@ -140,16 +153,23 @@ func handleGame(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
 
 	// Extract the game id and token from the query parameters
-	gameID := params.Get("id")
+	gameIDStr := params.Get("id")
 	token := params.Get("token")
-	if gameID == "" || token == "" {
+	if gameIDStr == "" || token == "" {
 		http.Error(w, "Missing game id or token", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the game id to an integer
+	gameID, err := strconv.Atoi(gameIDStr)
+	if err != nil {
+		http.Error(w, "Invalid game id", http.StatusBadRequest)
 		return
 	}
 
 	// Check if the game id and token are valid
 	var whiteToken, blackToken, viewerToken string
-	err := db.QueryRow("SELECT white_token, black_token, viewer_token FROM games WHERE id = ?", gameID).Scan(&whiteToken, &blackToken, &viewerToken)
+	err = db.QueryRow("SELECT white_token, black_token, viewer_token FROM games WHERE id = ?", gameID).Scan(&whiteToken, &blackToken, &viewerToken)
 	if err != nil {
 		http.Error(w, "Invalid game id", http.StatusBadRequest)
 		return
@@ -185,9 +205,28 @@ func handleGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set the content type to JSON and send the response
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonResponse)
+	// Upgrade the connection to a WebSocket
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("Failed to upgrade the connection: %v", err)
+		return
+	}
+	// defer conn.Close()
+
+	// Lock the mutex before accessing the shared data
+	connectedUsersMu.Lock()
+
+	// Add the client to the list of connected clients for the game
+	connectedUsers[gameID] = append(connectedUsers[gameID], conn)
+
+	// Unlock the mutex after you're done with the shared data
+	connectedUsersMu.Unlock()
+
+	// Send the JSON response over the WebSocket
+	err = conn.WriteMessage(websocket.TextMessage, jsonResponse)
+	if err != nil {
+		log.Printf("Failed to send JSON response: %v", err)
+	}
 }
 
 type Action struct {
@@ -251,6 +290,32 @@ func handleAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Broadcast the action to all connected clients for the game
+	broadcast(action.GameID, action)
+
 	// Send a 200 OK response
 	w.WriteHeader(http.StatusOK)
+}
+
+func broadcast(gameID int, action Action) {
+	connectedUsersMu.Lock()
+	defer connectedUsersMu.Unlock()
+
+	var activeConnections []*websocket.Conn
+
+	for _, conn := range connectedUsers[gameID] {
+		err := conn.WriteJSON(action)
+		if err != nil {
+			log.Printf("Failed to send action: %v", err)
+			conn.Close() // Close the failed connection
+		} else {
+			activeConnections = append(activeConnections, conn)
+		}
+	}
+
+	connectedUsers[gameID] = activeConnections
+
+	if len(connectedUsers[gameID]) == 0 {
+		delete(connectedUsers, gameID)
+	}
 }
