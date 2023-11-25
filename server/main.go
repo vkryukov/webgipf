@@ -48,8 +48,8 @@ func initDB() {
 		-- white_user_id is the foreign key  of the user who playes as white
 		-- black_user_id is the id of the user who playes as black
 		-- white_user_id and black_user_id can be null if the game is played by a guest
-		white_user_id INTEGER,
-		black_user_id INTEGER,
+		white_user_id INTEGER DEFAULT -1,
+		black_user_id INTEGER DEFAULT -1,
 
 		white_token TEXT,
 		black_token TEXT,
@@ -90,7 +90,6 @@ type User struct {
 	Password string `json:"password"`
 }
 
-// generateAndStoreToken generates a new token, stores it in the database for the given user ID, and returns it.
 func generateAndReturnToken(userID int, w http.ResponseWriter) {
 	token := generateToken()
 
@@ -128,8 +127,6 @@ func comparePasswords(hashedPwd string, plainPwd []byte) bool {
 	return err == nil
 }
 
-// authenticateUser is an HTTP handler that authenticates a user with a given username and password.
-// It returns a token that can be used to authenticate future requests.
 func authenticateUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -150,8 +147,6 @@ func authenticateUser(w http.ResponseWriter, r *http.Request) {
 	generateAndReturnToken(id, w)
 }
 
-// registerUser is an HTTP handler that registers a user with a given username and password.
-// It returns a token that can be used to authenticate future requests.
 func registerUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -180,6 +175,50 @@ func registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	generateAndReturnToken(int(userID), w)
+}
+
+// validPlayerToken checks if the given token is valid player token for the given game, which means that
+// the token belongs to one of the players in the game. A token is valid if:
+//
+//	a) the token is either the white token, the black token or the viewer token (for anonymous users), or
+//	b) the token belongs to the user who is playing as white or black in the game
+func validPlayerToken(gameID int, token string) bool {
+	var whiteToken, blackToken string
+	err := db.QueryRow("SELECT white_token, black_token FROM games WHERE id = ?", gameID).Scan(&whiteToken, &blackToken)
+	if err != nil {
+		return false
+	}
+	if token == whiteToken || token == blackToken {
+		return true
+	}
+
+	var whiteUserID, blackUserID int
+	err = db.QueryRow("SELECT white_user_id, black_user_id FROM games WHERE id = ?", gameID).Scan(&whiteUserID, &blackUserID)
+	if err != nil {
+		return false
+	}
+
+	var userID int
+	err = db.QueryRow("SELECT user_id FROM tokens WHERE token = ?", token).Scan(&userID)
+	if err != nil {
+		return false
+	}
+
+	return userID == whiteUserID || userID == blackUserID
+}
+
+// validViewerToken checks if the given token is a valid viewer token for the given game, which means that
+// the token belongs to the viewer of the game. A token is valid if:
+//
+//	a) the token is the viewer token, or
+//	b) the viewer token associated with the game is "", which means that the game is public and anyone can view it.
+func validViewerToken(gameID int, token string) bool {
+	var viewerToken string
+	err := db.QueryRow("SELECT viewer_token FROM games WHERE id = ?", gameID).Scan(&viewerToken)
+	if err != nil {
+		return false
+	}
+	return token == viewerToken || viewerToken == ""
 }
 
 // WebSockets
