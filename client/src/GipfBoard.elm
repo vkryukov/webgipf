@@ -1,4 +1,4 @@
-module GipfBoard exposing (..)
+module GipfBoard exposing (Model, Msg, initFromGame, initFromString, update, view)
 
 import Browser
 import Draw exposing (..)
@@ -219,8 +219,8 @@ viewEmptyBoard =
     g []
         [ -- interior polygon
           rect
-            [ x "25"
-            , y "25"
+            [ x "0"
+            , y "0"
             , width "610"
             , height "730"
             , fill "#F0F0F0"
@@ -559,9 +559,9 @@ view : Model -> Html Msg
 view model =
     div [ style "position" "relative" ]
         [ svg
-            [ width "660"
-            , height "780"
-            , viewBox "0 0 660 780"
+            [ width "610"
+            , height "730"
+            , viewBox "0 0 610 730"
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
