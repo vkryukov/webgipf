@@ -400,67 +400,71 @@ playerWithAction model =
 -}
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
-    case currentSelectionState model of
-        NothingToSelect ->
-            if model.game.state == WaitingForMove then
-                if
-                    -- TODO: Move this logic to Gipf.elm
-                    (model.game.currentKind == Regular)
-                        || (not model.game.isBasicGame
-                                -- In the tournament, you have to play at least one Gipf piece
-                                && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
-                                        || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
-                                   )
-                           )
-                then
-                    drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+    if model.allowActions then
+        case currentSelectionState model of
+            NothingToSelect ->
+                if model.game.state == WaitingForMove then
+                    if
+                        -- TODO: Move this logic to Gipf.elm
+                        (model.game.currentKind == Regular)
+                            || (not model.game.isBasicGame
+                                    -- In the tournament, you have to play at least one Gipf piece
+                                    && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
+                                            || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
+                                       )
+                               )
+                    then
+                        drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
 
-                else
-                    let
-                        pieceLabel =
-                            if model.kind == Regular then
-                                "Gipf"
+                    else
+                        let
+                            pieceLabel =
+                                if model.kind == Regular then
+                                    "Gipf"
 
-                            else
-                                "Regular"
-                    in
+                                else
+                                    "Regular"
+                        in
+                        g []
+                            [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
+                            , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                            ]
+
+                else if model.game.state == BlackWon then
                     g []
-                        [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
-                        , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                        [ drawPiece (Piece ( 8, 10 ) Black Regular)
+                        , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
                         ]
 
-            else if model.game.state == BlackWon then
+                else
+                    -- white won
+                    g []
+                        [ drawPiece (Piece ( 8, 10 ) White Regular)
+                        , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
+                        ]
+
+            PlayerNeedsToDisambiguateRemoval ->
                 g []
-                    [ drawPiece (Piece ( 8, 10 ) Black Regular)
-                    , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
+                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
+                    , drawLightMark ( 8, 10 )
+                    , drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
                     ]
 
-            else
-                -- white won
+            PlayerNeedsToToggleGipfPieces ->
                 g []
-                    [ drawPiece (Piece ( 8, 10 ) White Regular)
-                    , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
+                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
+                    , drawLightMark ( 8, 10 )
+                    , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -80 -10 12
                     ]
 
-        PlayerNeedsToDisambiguateRemoval ->
-            g []
-                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
-                , drawLightMark ( 8, 10 )
-                , drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
-                ]
+            PlayerNeedsToConfirmRemoval ->
+                g []
+                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
+                    , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
+                    ]
 
-        PlayerNeedsToToggleGipfPieces ->
-            g []
-                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
-                , drawLightMark ( 8, 10 )
-                , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -80 -10 12
-                ]
-
-        PlayerNeedsToConfirmRemoval ->
-            g []
-                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
-                , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
-                ]
+    else
+        g [] [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular) ]
 
 
 {-|
