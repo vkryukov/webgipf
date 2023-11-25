@@ -1,11 +1,10 @@
-module Board exposing (..)
+module GipfBoard exposing (Model, Msg, initFromGame, initFromString, update, view)
 
 import Browser
 import Draw exposing (..)
 import Gipf exposing (..)
-import Html exposing (Html, button, div, form, input, p, s, text)
-import Html.Attributes exposing (disabled, placeholder, style, type_, value)
-import Html.Events exposing (onInput, onSubmit)
+import Html exposing (Html, button, div, p, s, text)
+import Html.Attributes exposing (style)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, g, rect, svg)
 import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
@@ -33,9 +32,8 @@ type alias Model =
     , selectedToDisambiguate : Maybe Coord
     , gipfsSelected : List Coord
     , gipfHovered : Maybe Coord
-
-    -- debugging info
-    , boardInput : String
+    , allowActions : Bool
+    , showDebug : Bool
     }
 
 
@@ -65,7 +63,8 @@ initFromGame game =
       , selectedToDisambiguate = Nothing
       , gipfsSelected = []
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
-      , boardInput = ""
+      , allowActions = True
+      , showDebug = True
       }
     , Cmd.none
     )
@@ -90,8 +89,6 @@ type Msg
     | MouseLeave Coord
     | PointClicked Coord
     | MoveMade Direction
-    | SaveBoardInput String
-    | UpdateBoard
     | ChangeKind
     | RemovePieces
     | CancelRemovePieces
@@ -143,12 +140,6 @@ update msg model =
                 Nothing ->
                     -- move was invalid
                     ( model, Cmd.none )
-
-        SaveBoardInput str ->
-            ( { model | boardInput = str }, Cmd.none )
-
-        UpdateBoard ->
-            initFromString model.boardInput
 
         ChangeKind ->
             ( { model
@@ -219,8 +210,8 @@ viewEmptyBoard =
     g []
         [ -- interior polygon
           rect
-            [ x "25"
-            , y "25"
+            [ x "0"
+            , y "0"
             , width "610"
             , height "730"
             , fill "#F0F0F0"
@@ -409,67 +400,71 @@ playerWithAction model =
 -}
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
-    case currentSelectionState model of
-        NothingToSelect ->
-            if model.game.state == WaitingForMove then
-                if
-                    -- TODO: Move this logic to Gipf.elm
-                    (model.game.currentKind == Regular)
-                        || (not model.game.isBasicGame
-                                -- In the tournament, you have to play at least one Gipf piece
-                                && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
-                                        || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
-                                   )
-                           )
-                then
-                    drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+    if model.allowActions then
+        case currentSelectionState model of
+            NothingToSelect ->
+                if model.game.state == WaitingForMove then
+                    if
+                        -- TODO: Move this logic to Gipf.elm
+                        (model.game.currentKind == Regular)
+                            || (not model.game.isBasicGame
+                                    -- In the tournament, you have to play at least one Gipf piece
+                                    && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
+                                            || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
+                                       )
+                               )
+                    then
+                        drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
 
-                else
-                    let
-                        pieceLabel =
-                            if model.kind == Regular then
-                                "Gipf"
+                    else
+                        let
+                            pieceLabel =
+                                if model.kind == Regular then
+                                    "Gipf"
 
-                            else
-                                "Regular"
-                    in
+                                else
+                                    "Regular"
+                        in
+                        g []
+                            [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
+                            , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                            ]
+
+                else if model.game.state == BlackWon then
                     g []
-                        [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
-                        , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
+                        [ drawPiece (Piece ( 8, 10 ) Black Regular)
+                        , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
                         ]
 
-            else if model.game.state == BlackWon then
+                else
+                    -- white won
+                    g []
+                        [ drawPiece (Piece ( 8, 10 ) White Regular)
+                        , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
+                        ]
+
+            PlayerNeedsToDisambiguateRemoval ->
                 g []
-                    [ drawPiece (Piece ( 8, 10 ) Black Regular)
-                    , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
+                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
+                    , drawLightMark ( 8, 10 )
+                    , drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
                     ]
 
-            else
-                -- white won
+            PlayerNeedsToToggleGipfPieces ->
                 g []
-                    [ drawPiece (Piece ( 8, 10 ) White Regular)
-                    , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
+                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
+                    , drawLightMark ( 8, 10 )
+                    , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -80 -10 12
                     ]
 
-        PlayerNeedsToDisambiguateRemoval ->
-            g []
-                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
-                , drawLightMark ( 8, 10 )
-                , drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
-                ]
+            PlayerNeedsToConfirmRemoval ->
+                g []
+                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
+                    , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
+                    ]
 
-        PlayerNeedsToToggleGipfPieces ->
-            g []
-                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
-                , drawLightMark ( 8, 10 )
-                , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -80 -10 12
-                ]
-
-        PlayerNeedsToConfirmRemoval ->
-            g []
-                [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
-                , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
-                ]
+    else
+        g [] [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular) ]
 
 
 {-|
@@ -536,16 +531,16 @@ viewConfirmRemoveButton model =
         div []
             [ button
                 [ style "position" "absolute"
-                , style "top" "100px"
-                , style "left" "570px"
+                , style "top" "75px"
+                , style "left" "543px"
                 , onClick RemovePieces
                 ]
                 [ text "Remove" ]
             , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
                 button
                     [ style "position" "absolute"
-                    , style "top" "125px"
-                    , style "left" "570px"
+                    , style "top" "100px"
+                    , style "left" "543px"
                     , onClick CancelRemovePieces
                     ]
                     [ text "Cancel" ]
@@ -559,46 +554,43 @@ view : Model -> Html Msg
 view model =
     div [ style "position" "relative" ]
         [ svg
-            [ width "660"
-            , height "780"
-            , viewBox "0 0 660 780"
+            [ width "610"
+            , height "730"
+            , viewBox "0 0 610 730"
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
+            , viewPiecesCounts model
             , viewCurrentAction model
             , viewPieces model
-            , viewPossibleMoves model
-            , viewPiecesCounts model
-            , viewSelectionAndRemoval model
+            , if model.allowActions then
+                viewPossibleMoves model
+
+              else
+                g [] []
+            , if model.allowActions then
+                viewSelectionAndRemoval model
+
+              else
+                g [] []
             ]
-        , viewConfirmRemoveButton model
-        , div
-            [ style "text-align" "left"
-            , style "padding-left" "25px"
-            , style "width" "610px"
-            , style "word-wrap" "break-word"
-            ]
-            [ p [] [ text (actionsToString model.game.actionHistory) ]
-            , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
-            , p
-                []
-                [ form
-                    [ onSubmit UpdateBoard
-                    ]
-                    [ div []
-                        [ input
-                            [ type_ "text"
-                            , placeholder "Enter new game..."
-                            , value model.boardInput
-                            , onInput SaveBoardInput
-                            , style "width" "520px"
-                            ]
-                            []
-                        , button [ disabled (String.isEmpty model.boardInput) ] [ text "Update" ]
-                        ]
-                    ]
+        , if model.allowActions then
+            viewConfirmRemoveButton model
+
+          else
+            div [] []
+        , if model.showDebug then
+            div
+                [ style "text-align" "left"
+                , style "width" "610px"
+                , style "word-wrap" "break-word"
                 ]
-            ]
+                [ p [] [ text (actionsToString model.game.actionHistory) ]
+                , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
+                ]
+
+          else
+            div [] []
         ]
 
 
