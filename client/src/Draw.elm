@@ -42,12 +42,12 @@ sin30 =
 
 offsetX : Int
 offsetX =
-    50
+    27
 
 
 offsetY : Int
 offsetY =
-    550
+    525
 
 
 scale : Float
