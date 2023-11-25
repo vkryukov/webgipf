@@ -126,28 +126,30 @@ board model =
 
 viewAction : Int -> Maybe Int -> Int -> String -> Html Msg
 viewAction current hover i a =
-    div
-        ([ style "display" "inline-block"
-         , style "padding-left" "5px"
-         , style "cursor" "pointer"
-         , onClick (Click i)
-         , onMouseEnter (MouseEnter i)
-         , onMouseLeave MouseLeave
-         ]
-            ++ (if i == current then
-                    [ style "background-color" "#ffff99" ]
+    div [ style "display" "inline-block" ]
+        [ div
+            ([ style "display" "inline-block"
+             , style "cursor" "pointer"
+             , onClick (Click i)
+             , onMouseEnter (MouseEnter i)
+             , onMouseLeave MouseLeave
+             ]
+                ++ (if i == current then
+                        [ style "background-color" "#ffff99" ]
 
-                else
-                    []
-               )
-            ++ (if i == Maybe.withDefault -1 hover then
-                    [ style "background-color" "#ffffdd" ]
+                    else
+                        []
+                   )
+                ++ (if i == Maybe.withDefault -1 hover then
+                        [ style "background-color" "#ffffdd" ]
 
-                else
-                    []
-               )
-        )
-        [ text a ]
+                    else
+                        []
+                   )
+            )
+            [ text a ]
+        , div [ style "width" "5px", style "display" "inline-block" ] []
+        ]
 
 
 view : Model -> Html Msg
