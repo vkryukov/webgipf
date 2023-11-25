@@ -562,7 +562,6 @@ view model =
         , viewConfirmRemoveButton model
         , div
             [ style "text-align" "left"
-            , style "padding-left" "25px"
             , style "width" "610px"
             , style "word-wrap" "break-word"
             ]
