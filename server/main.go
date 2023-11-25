@@ -12,10 +12,182 @@ import (
 
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
+// Database initialization
+
+var db *sql.DB
+
+func initDB() {
+	var err error
+	db, err = sql.Open("sqlite3", "./games.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sqlStmt := `
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT UNIQUE,
+		password TEXT,
+		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS tokens (
+		user_id INTEGER,
+		token TEXT,
+		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY (user_id, token)
+	);
+
+    CREATE TABLE IF NOT EXISTS games (
+		id INTEGER PRIMARY KEY AUTOINCREMENT, 
+		type TEXT, -- type of the game (such as Gipf, ...)
+
+		-- white_user_id is the foreign key  of the user who playes as white
+		-- black_user_id is the id of the user who playes as black
+		-- white_user_id and black_user_id can be null if the game is played by a guest
+		white_user_id INTEGER,
+		black_user_id INTEGER,
+
+		white_token TEXT,
+		black_token TEXT,
+		viewer_token TEXT,
+		current_action INTEGER,
+		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS actions (
+		game_id INTEGER, 
+		action_id INTEGER, 
+		action TEXT, 
+		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP, 
+		PRIMARY KEY (game_id, action_id)
+	);
+    `
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Fatalf("%q: %s\n", err, sqlStmt)
+		return
+	}
+}
+
+// Utility functions
+
+func generateToken() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
+}
+
+// Authentication
+
+// User is a struct that represents a user in the database.
+type User struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// generateAndStoreToken generates a new token, stores it in the database for the given user ID, and returns it.
+func generateAndReturnToken(userID int, w http.ResponseWriter) {
+	token := generateToken()
+
+	_, err := db.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"token": token,
+	}
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
+
+}
+
+func hashAndSalt(pwd []byte) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+func comparePasswords(hashedPwd string, plainPwd []byte) bool {
+	byteHash := []byte(hashedPwd)
+	err := bcrypt.CompareHashAndPassword(byteHash, plainPwd)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// authenticateUser is an HTTP handler that authenticates a user with a given username and password.
+// It returns a token that can be used to authenticate future requests.
+func authenticateUser(w http.ResponseWriter, r *http.Request) {
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check if the username and password are valid
+	var id int
+	var hashedPassword string
+	err = db.QueryRow("SELECT id, password FROM users WHERE username = ?", user.Username).Scan(&id, &hashedPassword)
+	if err != nil || !comparePasswords(hashedPassword, []byte(user.Password)) {
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	generateAndReturnToken(id, w)
+}
+
+// registerUser is an HTTP handler that registers a user with a given username and password.
+// It returns a token that can be used to authenticate future requests.
+func registerUser(w http.ResponseWriter, r *http.Request) {
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, err := hashAndSalt([]byte(user.Password))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result, err := db.Exec("INSERT INTO users(username, password) VALUES(?, ?)", user.Username, hashedPassword)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the ID of the inserted user
+	userID, err := result.LastInsertId()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	generateAndReturnToken(int(userID), w)
+}
+
+// WebSockets
+
 var (
-	db               *sql.DB
 	connectedUsers   = make(map[int][]*websocket.Conn)
 	connectedUsersMu sync.Mutex
 )
@@ -39,50 +211,6 @@ const (
 	WhiteAction ActionOwner = iota
 	BlackAction
 )
-
-func initDB() {
-	var err error
-	db, err = sql.Open("sqlite3", "./games.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sqlStmt := `
-    CREATE TABLE IF NOT EXISTS games (
-		id INTEGER PRIMARY KEY AUTOINCREMENT, 
-		type TEXT,
-		white_token TEXT,
-		black_token TEXT,
-		viewer_token TEXT,
-		current_action INTEGER,
-		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS actions (
-		game_id INTEGER, 
-		action_id INTEGER, 
-		action TEXT, 
-		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP, 
-		PRIMARY KEY (game_id, action_id)
-	);
-    `
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
-	}
-}
-
-func main() {
-	initDB()
-	defer db.Close()
-
-	http.HandleFunc("/newgame", handleNewGame)
-	http.HandleFunc("/game/", handleGame)
-	http.HandleFunc("/action", handleAction)
-	log.Println("Starting the server on port 8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
 
 func handleNewGame(w http.ResponseWriter, r *http.Request) {
 	// Parse the URL query parameters
@@ -140,12 +268,6 @@ func handleNewGame(w http.ResponseWriter, r *http.Request) {
 	// Set the content type to JSON and send the response
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
-}
-
-func generateToken() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
 }
 
 func handleGame(w http.ResponseWriter, r *http.Request) {
@@ -318,4 +440,19 @@ func broadcast(gameID int, action Action) {
 	if len(connectedUsers[gameID]) == 0 {
 		delete(connectedUsers, gameID)
 	}
+}
+
+func main() {
+	initDB()
+	defer db.Close()
+
+	http.HandleFunc("/authenticate", authenticateUser)
+	http.HandleFunc("/register", registerUser)
+
+	http.HandleFunc("/newgame", handleNewGame)
+	http.HandleFunc("/game/", handleGame)
+	http.HandleFunc("/action", handleAction)
+
+	log.Println("Starting the server on port 8080...")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
