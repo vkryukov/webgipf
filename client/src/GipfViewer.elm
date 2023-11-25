@@ -127,14 +127,14 @@ board model =
         ( m, _ ) =
             GipfBoard.initFromString str
 
-        prevMove =
+        curMove =
             lastElement (List.take (model.currentAction + 1) model.actions)
 
-        prevAction =
-            Maybe.andThen Gipf.stringToAction prevMove
+        curAction =
+            Maybe.andThen Gipf.stringToAction curMove
 
-        lastMove =
-            case prevAction of
+        curDirection =
+            case curAction of
                 Just (Gipf.MoveAction move) ->
                     Just move.direction
 
@@ -155,7 +155,7 @@ board model =
                 _ ->
                     []
     in
-    { m | allowActions = False, showDebug = False, highlightActions = True, lastMove = lastMove, willBeRemoved = willBeRemoved }
+    { m | allowActions = False, showDebug = False, highlightActions = True, lastMove = curDirection, willBeRemoved = willBeRemoved }
 
 
 viewAction : Int -> Maybe Int -> Int -> String -> Html Msg
