@@ -102,7 +102,7 @@ update msg model =
             ( { model | currentAction = min (List.length model.actions - 1) (model.currentAction + 1) }, Cmd.none )
 
         GoToEnd ->
-            ( { model | currentAction = List.length model.actions - 1 }, Cmd.none )
+            ( { model | currentAction = max 0 (List.length model.actions - 1) }, Cmd.none )
 
         BoardMsg _ ->
             ( model, Cmd.none )
