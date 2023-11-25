@@ -86,7 +86,7 @@ board model =
         ( m, _ ) =
             GipfBoard.initFromString str
     in
-    m
+    { m | allowActions = False, showDebug = False }
 
 
 view : Model -> Html Msg
@@ -98,7 +98,10 @@ view model =
         [ div []
             [ Html.map BoardMsg (GipfBoard.view (board model))
             ]
-        , div [ style "width" "610px" ]
+        , div
+            [ style "width" "610px"
+            , style "padding-top" "10px"
+            ]
             [ input
                 [ onInput SaveBoardInput
                 , style "width" "530px"

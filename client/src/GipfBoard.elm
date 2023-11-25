@@ -3,9 +3,8 @@ module GipfBoard exposing (Model, Msg, initFromGame, initFromString, update, vie
 import Browser
 import Draw exposing (..)
 import Gipf exposing (..)
-import Html exposing (Html, button, div, form, input, p, s, text)
-import Html.Attributes exposing (disabled, placeholder, style, type_, value)
-import Html.Events exposing (onInput, onSubmit)
+import Html exposing (Html, button, div, p, s, text)
+import Html.Attributes exposing (style)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, g, rect, svg)
 import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
@@ -33,6 +32,8 @@ type alias Model =
     , selectedToDisambiguate : Maybe Coord
     , gipfsSelected : List Coord
     , gipfHovered : Maybe Coord
+    , allowActions : Bool
+    , showDebug : Bool
     }
 
 
@@ -62,6 +63,8 @@ initFromGame game =
       , selectedToDisambiguate = Nothing
       , gipfsSelected = []
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
+      , allowActions = True
+      , showDebug = True
       }
     , Cmd.none
     )
@@ -524,16 +527,16 @@ viewConfirmRemoveButton model =
         div []
             [ button
                 [ style "position" "absolute"
-                , style "top" "100px"
-                , style "left" "570px"
+                , style "top" "75px"
+                , style "left" "543px"
                 , onClick RemovePieces
                 ]
                 [ text "Remove" ]
             , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
                 button
                     [ style "position" "absolute"
-                    , style "top" "125px"
-                    , style "left" "570px"
+                    , style "top" "100px"
+                    , style "left" "543px"
                     , onClick CancelRemovePieces
                     ]
                     [ text "Cancel" ]
@@ -553,21 +556,37 @@ view model =
             , Svg.Attributes.style "user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"
             ]
             [ viewEmptyBoard
+            , viewPiecesCounts model
             , viewCurrentAction model
             , viewPieces model
-            , viewPossibleMoves model
-            , viewPiecesCounts model
-            , viewSelectionAndRemoval model
+            , if model.allowActions then
+                viewPossibleMoves model
+
+              else
+                g [] []
+            , if model.allowActions then
+                viewSelectionAndRemoval model
+
+              else
+                g [] []
             ]
-        , viewConfirmRemoveButton model
-        , div
-            [ style "text-align" "left"
-            , style "width" "610px"
-            , style "word-wrap" "break-word"
-            ]
-            [ p [] [ text (actionsToString model.game.actionHistory) ]
-            , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
-            ]
+        , if model.allowActions then
+            viewConfirmRemoveButton model
+
+          else
+            div [] []
+        , if model.showDebug then
+            div
+                [ style "text-align" "left"
+                , style "width" "610px"
+                , style "word-wrap" "break-word"
+                ]
+                [ p [] [ text (actionsToString model.game.actionHistory) ]
+                , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
+                ]
+
+          else
+            div [] []
         ]
 
 
