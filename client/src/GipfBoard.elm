@@ -1,4 +1,4 @@
-module Board exposing (..)
+module GipfBoard exposing (..)
 
 import Browser
 import Draw exposing (..)
