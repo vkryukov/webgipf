@@ -33,9 +33,6 @@ type alias Model =
     , selectedToDisambiguate : Maybe Coord
     , gipfsSelected : List Coord
     , gipfHovered : Maybe Coord
-
-    -- debugging info
-    , boardInput : String
     }
 
 
@@ -65,7 +62,6 @@ initFromGame game =
       , selectedToDisambiguate = Nothing
       , gipfsSelected = []
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
-      , boardInput = ""
       }
     , Cmd.none
     )
@@ -90,8 +86,6 @@ type Msg
     | MouseLeave Coord
     | PointClicked Coord
     | MoveMade Direction
-    | SaveBoardInput String
-    | UpdateBoard
     | ChangeKind
     | RemovePieces
     | CancelRemovePieces
@@ -143,12 +137,6 @@ update msg model =
                 Nothing ->
                     -- move was invalid
                     ( model, Cmd.none )
-
-        SaveBoardInput str ->
-            ( { model | boardInput = str }, Cmd.none )
-
-        UpdateBoard ->
-            initFromString model.boardInput
 
         ChangeKind ->
             ( { model
@@ -580,24 +568,6 @@ view model =
             ]
             [ p [] [ text (actionsToString model.game.actionHistory) ]
             , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
-            , p
-                []
-                [ form
-                    [ onSubmit UpdateBoard
-                    ]
-                    [ div []
-                        [ input
-                            [ type_ "text"
-                            , placeholder "Enter new game..."
-                            , value model.boardInput
-                            , onInput SaveBoardInput
-                            , style "width" "520px"
-                            ]
-                            []
-                        , button [ disabled (String.isEmpty model.boardInput) ] [ text "Update" ]
-                        ]
-                    ]
-                ]
             ]
         ]
 
