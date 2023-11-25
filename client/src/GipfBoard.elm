@@ -32,8 +32,13 @@ type alias Model =
     , selectedToDisambiguate : Maybe Coord
     , gipfsSelected : List Coord
     , gipfHovered : Maybe Coord
+
+    -- useful for the viewer
     , allowActions : Bool
     , showDebug : Bool
+    , highlightActions : Bool -- should we draw the arrows for the moves / mark stones that are to be removed?
+    , lastMove : Maybe Direction
+    , willBeRemoved : List Coord
     }
 
 
@@ -65,6 +70,9 @@ initFromGame game =
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
       , allowActions = True
       , showDebug = True
+      , highlightActions = False
+      , lastMove = Nothing
+      , willBeRemoved = []
       }
     , Cmd.none
     )
@@ -550,6 +558,24 @@ viewConfirmRemoveButton model =
             ]
 
 
+viewActionHighlights : Model -> Svg msg
+viewActionHighlights model =
+    if model.highlightActions then
+        g []
+            ((case model.lastMove of
+                Nothing ->
+                    g [] []
+
+                Just move ->
+                    drawArrow move.from move.to
+             )
+                :: List.map drawDarkMark model.willBeRemoved
+            )
+
+    else
+        g [] []
+
+
 view : Model -> Html Msg
 view model =
     div [ style "position" "relative" ]
@@ -563,6 +589,7 @@ view model =
             , viewPiecesCounts model
             , viewCurrentAction model
             , viewPieces model
+            , viewActionHighlights model
             , if model.allowActions then
                 viewPossibleMoves model
 

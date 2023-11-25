@@ -1,6 +1,7 @@
 module GipfViewer exposing (..)
 
 import Browser
+import Gipf
 import GipfBoard
 import Html exposing (..)
 import Html.Attributes exposing (disabled, placeholder, style, type_, value)
@@ -112,6 +113,11 @@ update msg model =
 -- View
 
 
+lastElement : List a -> Maybe a
+lastElement list =
+    List.head (List.reverse list)
+
+
 board : Model -> GipfBoard.Model
 board model =
     let
@@ -120,8 +126,36 @@ board model =
 
         ( m, _ ) =
             GipfBoard.initFromString str
+
+        prevMove =
+            lastElement (List.take (model.currentAction + 1) model.actions)
+
+        prevAction =
+            Maybe.andThen Gipf.stringToAction prevMove
+
+        lastMove =
+            case prevAction of
+                Just (Gipf.MoveAction move) ->
+                    Just move.direction
+
+                _ ->
+                    Nothing
+
+        nextMove =
+            List.head (List.drop (model.currentAction + 1) model.actions)
+
+        nextAction =
+            Maybe.andThen Gipf.stringToAction nextMove
+
+        willBeRemoved =
+            case nextAction of
+                Just (Gipf.RemoveAction coords) ->
+                    coords
+
+                _ ->
+                    []
     in
-    { m | allowActions = False, showDebug = False }
+    { m | allowActions = False, showDebug = False, highlightActions = True, lastMove = lastMove, willBeRemoved = willBeRemoved }
 
 
 viewAction : Int -> Maybe Int -> Int -> String -> Html Msg
