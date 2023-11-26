@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
@@ -525,6 +527,15 @@ func handleListUsers(w http.ResponseWriter, r *http.Request) {
 	for _, user := range users {
 		usersSlice = append(usersSlice, *user)
 	}
+
+	sort.Slice(usersSlice, func(i, j int) bool {
+		t1, err1 := time.Parse(time.RFC3339, usersSlice[i].CreationTime)
+		t2, err2 := time.Parse(time.RFC3339, usersSlice[j].CreationTime)
+		if err1 != nil || err2 != nil {
+			return false
+		}
+		return t1.After(t2)
+	})
 
 	jsonResponse, err := json.Marshal(usersSlice)
 	if err != nil {
