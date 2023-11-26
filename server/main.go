@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -73,7 +74,7 @@ func initDB() {
 	}
 }
 
-// Utility functions
+// Authentication
 
 func generateToken() string {
 	b := make([]byte, 16)
@@ -81,13 +82,13 @@ func generateToken() string {
 	return fmt.Sprintf("%x", b)
 }
 
-// Authentication
-
 // User is a struct that represents a user in the database.
 type User struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ID           int      `json:"id"`
+	Username     string   `json:"username"`
+	Password     string   `json:"password"`
+	CreationTime string   `json:"creation_time"`
+	Tokens       []string `json:"tokens"`
 }
 
 func generateAndReturnToken(userID int, w http.ResponseWriter) {
@@ -478,16 +479,100 @@ func broadcast(gameID int, action Action) {
 	}
 }
 
+// Functions for server administration
+
+func handleListUsers(w http.ResponseWriter, r *http.Request) {
+	// Query to join users and tokens tables
+	query := `
+        SELECT u.id, u.username, u.creation_time, t.token
+        FROM users u
+        LEFT JOIN tokens t ON u.id = t.user_id
+    `
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	users := make(map[int]*User)
+	for rows.Next() {
+		var token sql.NullString
+		var user User
+
+		if err := rows.Scan(&user.ID, &user.Username, &user.CreationTime, &token); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Check if the user already exists in the map
+		if existingUser, exists := users[user.ID]; exists {
+			// Append the token to the existing user's tokens if not null
+			if token.Valid {
+				existingUser.Tokens = append(existingUser.Tokens, token.String)
+			}
+		} else {
+			// If the token is valid, initialize the Tokens slice
+			if token.Valid {
+				user.Tokens = []string{token.String}
+			}
+			users[user.ID] = &user
+		}
+	}
+
+	// Convert the map to a slice of users
+	usersSlice := make([]User, 0, len(users))
+	for _, user := range users {
+		usersSlice = append(usersSlice, *user)
+	}
+
+	jsonResponse, err := json.Marshal(usersSlice)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
+}
+
+// Main functions
+
+func enableCors(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if strings.HasPrefix(origin, "http://localhost") || origin == "" {
+			log.Printf("CORS origin allowed: %s\n", origin)
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			handler(w, r)
+		} else {
+			log.Printf("CORS origin not allowed: %s\n", origin)
+			http.Error(w, "CORS origin not allowed", http.StatusForbidden)
+		}
+	}
+}
+
 func main() {
 	initDB()
 	defer db.Close()
 
-	http.HandleFunc("/authenticate", authenticateUser)
-	http.HandleFunc("/register", registerUser)
+	http.HandleFunc("/authenticate", enableCors(authenticateUser))
+	http.HandleFunc("/register", enableCors(registerUser))
 
-	http.HandleFunc("/newgame", handleNewGame)
-	http.HandleFunc("/game/", handleGame)
-	http.HandleFunc("/action", handleAction)
+	http.HandleFunc("/newgame", enableCors(handleNewGame))
+	http.HandleFunc("/game/", enableCors(handleGame))
+	http.HandleFunc("/action", enableCors(handleAction))
+
+	// Server administration
+	http.HandleFunc("/users", enableCors(handleListUsers))
 
 	log.Println("Starting the server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
