@@ -92,7 +92,7 @@ func authenticateUser(username string, password string) (int, error) {
 	}
 
 	if !comparePasswords(hashedPwd, password) {
-		return -1, fmt.Errorf("Wrong password")
+		return -1, fmt.Errorf("wrong password")
 	}
 
 	return userID, nil
