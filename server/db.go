@@ -19,7 +19,7 @@ var db *sql.DB
 
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite3", "./games.db")
+	db, err = sql.Open("sqlite3", "file:./games.db?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000")
 	if err != nil {
 		log.Fatal(err)
 	}
