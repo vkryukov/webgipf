@@ -1,227 +1,117 @@
 package main
 
 import (
-	"crypto/rand"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 )
 
-// Database initialization
+func main() {
+	initDB()
+	defer db.Close()
 
-var db *sql.DB
+	// HTTP handlers
+	http.HandleFunc("/authenticate", enableCors(authenticateUserHandler))
+	http.HandleFunc("/register", enableCors(registerUserHandler))
+	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
 
-func initDB() {
-	var err error
-	db, err = sql.Open("sqlite3", "./games.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// WebSocket handlers
+	http.HandleFunc("/game", enableCors(handleGame))
 
-	sqlStmt := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE,
-		password TEXT,
-		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
+	// Server administration
+	http.HandleFunc("/users", enableCors(handleListUsers))
 
-	CREATE TABLE IF NOT EXISTS tokens (
-		user_id INTEGER,
-		token TEXT,
-		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-		PRIMARY KEY (user_id, token)
-	);
+	log.Println("Starting the server on port 8080...")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
 
-    CREATE TABLE IF NOT EXISTS games (
-		id INTEGER PRIMARY KEY AUTOINCREMENT, 
-		type TEXT, -- type of the game (such as Gipf, ...)
+// Utilities
 
-		-- white_user_id is the foreign key  of the user who playes as white
-		-- black_user_id is the id of the user who playes as black
-		-- white_user_id and black_user_id can be null if the game is played by a guest
-		white_user_id INTEGER DEFAULT -1,
-		black_user_id INTEGER DEFAULT -1,
+func enableCors(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if strings.HasPrefix(origin, "http://localhost") || origin == "" {
+			log.Printf("CORS origin allowed: %s\n", origin)
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 
-		white_token TEXT,
-		black_token TEXT,
-		viewer_token TEXT,
-		current_action INTEGER,
-		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP
-	);
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 
-	CREATE TABLE IF NOT EXISTS actions (
-		game_id INTEGER, 
-		action_id INTEGER, 
-		action TEXT, 
-		creation_time DATETIME DEFAULT CURRENT_TIMESTAMP, 
-		PRIMARY KEY (game_id, action_id)
-	);
-    `
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		log.Fatalf("%q: %s\n", err, sqlStmt)
-		return
+			handler(w, r)
+		} else {
+			log.Printf("CORS origin not allowed: %s\n", origin)
+			http.Error(w, "CORS origin not allowed", http.StatusForbidden)
+		}
 	}
 }
 
-// Authentication
-
-func generateToken() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
-}
-
-// User is a struct that represents a user in the database.
-type User struct {
-	ID           int      `json:"id"`
-	Username     string   `json:"username"`
-	Password     string   `json:"password"`
-	CreationTime string   `json:"creation_time"`
-	Tokens       []string `json:"tokens"`
-}
-
-func generateAndReturnToken(userID int, w http.ResponseWriter) {
-	token := generateToken()
-
-	_, err := db.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	response := map[string]interface{}{
-		"token": token,
-	}
+func writeJSONResponse(w http.ResponseWriter, response interface{}) {
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
-
 }
 
-func hashAndSalt(pwd []byte) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
-}
+// User authentication and game creation
 
-func comparePasswords(hashedPwd string, plainPwd []byte) bool {
-	byteHash := []byte(hashedPwd)
-	err := bcrypt.CompareHashAndPassword(byteHash, plainPwd)
-	return err == nil
-}
+func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(string, string) (int, error)) {
+	params := r.URL.Query()
+	username := params.Get("username")
+	password := params.Get("password")
 
-func authenticateUser(w http.ResponseWriter, r *http.Request) {
-	var user User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	userID, err := userFunc(username, password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Check if the username and password are valid
-	var id int
-	var hashedPassword string
-	err = db.QueryRow("SELECT id, password FROM users WHERE username = ?", user.Username).Scan(&id, &hashedPassword)
-	if err != nil || !comparePasswords(hashedPassword, []byte(user.Password)) {
-		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+	token, err := addNewTokenToUser(userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	generateAndReturnToken(id, w)
+	writeJSONResponse(w, map[string]interface{}{"token": token})
 }
 
-func registerUser(w http.ResponseWriter, r *http.Request) {
-	var user User
-	err := json.NewDecoder(r.Body).Decode(&user)
+func authenticateUserHandler(w http.ResponseWriter, r *http.Request) {
+	handleUser(w, r, authenticateUser)
+}
+
+func registerUserHandler(w http.ResponseWriter, r *http.Request) {
+	handleUser(w, r, registerUser)
+}
+
+func createNewGameHandler(w http.ResponseWriter, r *http.Request) {
+	// extract NewGameRequest from request body
+	var request NewGameRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	hashedPassword, err := hashAndSalt([]byte(user.Password))
+	// create new game
+	newGame, err := createGame(request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	result, err := db.Exec("INSERT INTO users(username, password) VALUES(?, ?)", user.Username, hashedPassword)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Get the ID of the inserted user
-	userID, err := result.LastInsertId()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	generateAndReturnToken(int(userID), w)
-}
-
-// validPlayerToken checks if the given token is valid player token for the given game, which means that
-// the token belongs to one of the players in the game. A token is valid if:
-//
-//	a) the token is either the white token, the black token or the viewer token (for anonymous users), or
-//	b) the token belongs to the user who is playing as white or black in the game
-func validPlayerToken(gameID int, token string) bool {
-	var whiteToken, blackToken string
-	err := db.QueryRow("SELECT white_token, black_token FROM games WHERE id = ?", gameID).Scan(&whiteToken, &blackToken)
-	if err != nil {
-		return false
-	}
-	if token == whiteToken || token == blackToken {
-		return true
-	}
-
-	var whiteUserID, blackUserID int
-	err = db.QueryRow("SELECT white_user_id, black_user_id FROM games WHERE id = ?", gameID).Scan(&whiteUserID, &blackUserID)
-	if err != nil {
-		return false
-	}
-
-	var userID int
-	err = db.QueryRow("SELECT user_id FROM tokens WHERE token = ?", token).Scan(&userID)
-	if err != nil {
-		return false
-	}
-
-	return userID == whiteUserID || userID == blackUserID
-}
-
-// validViewerToken checks if the given token is a valid viewer token for the given game, which means that
-// the token belongs to the viewer of the game. A token is valid if:
-//
-//	a) the token is the viewer token, or
-//	b) the viewer token associated with the game is "", which means that the game is public and anyone can view it.
-func validViewerToken(gameID int, token string) bool {
-	var viewerToken string
-	err := db.QueryRow("SELECT viewer_token FROM games WHERE id = ?", gameID).Scan(&viewerToken)
-	if err != nil {
-		return false
-	}
-	return token == viewerToken || viewerToken == ""
+	writeJSONResponse(w, newGame)
 }
 
 // WebSockets
@@ -244,125 +134,26 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type ActionOwner int
-
-const (
-	WhiteAction ActionOwner = iota
-	BlackAction
-)
-
-func handleNewGame(w http.ResponseWriter, r *http.Request) {
-	// Parse the URL query parameters
-	params := r.URL.Query()
-
-	// Extract the game type from the query parameters
-	gameType := params.Get("type")
-	if gameType == "" {
-		http.Error(w, "Missing game type", http.StatusBadRequest)
-		return
-	}
-
-	// Generate three pseudo-random tokens
-	whiteToken := generateToken()
-	blackToken := generateToken()
-	viewerToken := generateToken()
-
-	// Create a new game record in the database
-	stmt, err := db.Prepare("INSERT INTO games(type, white_token, black_token, viewer_token, current_action) VALUES(?, ?, ?, ?, ?)")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	res, err := stmt.Exec(gameType, whiteToken, blackToken, viewerToken, WhiteAction)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Get the ID of the new game record
-	id, err := res.LastInsertId()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("Created a new game with ID %d and type %s\n", id, gameType)
-	log.Printf("Generated tokens - White: %s, Black: %s, Viewer: %s\n", whiteToken, blackToken, viewerToken)
-
-	// Create the response
-	response := map[string]interface{}{
-		"id":     id,
-		"white":  whiteToken,
-		"black":  blackToken,
-		"viewer": viewerToken,
-	}
-
-	// Convert the response to JSON
-	jsonResponse, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Set the content type to JSON and send the response
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonResponse)
+type WebSocketMessage struct {
+	GameID    int    `json:"game_id"`
+	Token     Token  `json:"token"`
+	Type      string `json:"action_type,omitempty"`
+	Message   string `json:"action,omitempty"`
+	Signature string `json:"signature,omitempty"`
+	MoveNum   int    `json:"action_num,omitempty"`
 }
 
 func handleGame(w http.ResponseWriter, r *http.Request) {
-	// Parse the URL query parameters
-	params := r.URL.Query()
-
-	// Extract the game id and token from the query parameters
-	gameIDStr := params.Get("id")
-	token := params.Get("token")
-	if gameIDStr == "" || token == "" {
-		http.Error(w, "Missing game id or token", http.StatusBadRequest)
-		return
-	}
-
-	// Convert the game id to an integer
-	gameID, err := strconv.Atoi(gameIDStr)
+	var message WebSocketMessage
+	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
-		http.Error(w, "Invalid game id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// Check if the game id and token are valid
-	var whiteToken, blackToken, viewerToken string
-	err = db.QueryRow("SELECT white_token, black_token, viewer_token FROM games WHERE id = ?", gameID).Scan(&whiteToken, &blackToken, &viewerToken)
-	if err != nil {
-		http.Error(w, "Invalid game id", http.StatusBadRequest)
-		return
-	}
-	if token != whiteToken && token != blackToken && token != viewerToken {
-		http.Error(w, "Invalid token", http.StatusBadRequest)
-		return
-	}
-
-	// Get the list of actions for the game
-	rows, err := db.Query("SELECT action FROM actions WHERE game_id = ? ORDER BY creation_time", gameID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
-
-	// Convert the actions to a slice of Action structs
-	actions := make([]string, 0)
-	for rows.Next() {
-		var action string
-		if err := rows.Scan(&action); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		actions = append(actions, action)
-	}
-
-	// Convert the actions to JSON
-	jsonResponse, err := json.Marshal(actions)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Check that the game id and token are valid
+	playerType, _ := validateGameToken(message.GameID, message.Token)
+	if playerType == InvalidPlayer {
+		http.Error(w, "Invalid game id or token", http.StatusBadRequest)
 		return
 	}
 
@@ -372,93 +163,102 @@ func handleGame(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to upgrade the connection: %v", err)
 		return
 	}
-	// defer conn.Close()
 
-	// Lock the mutex before accessing the shared data
+	// Add the WebSocket connection to the connected users
+	addConnection(message.GameID, conn)
+
+	// Start listening for messages on this connection
+	go listenForWebSocketMessages(conn)
+}
+
+func addConnection(gameID int, conn *websocket.Conn) {
 	connectedUsersMu.Lock()
+	defer connectedUsersMu.Unlock()
 
-	// Add the client to the list of connected clients for the game
+	// You might want to use a different identifier for each connection
 	connectedUsers[gameID] = append(connectedUsers[gameID], conn)
+}
 
-	// Unlock the mutex after you're done with the shared data
-	connectedUsersMu.Unlock()
+func listenForWebSocketMessages(conn *websocket.Conn) {
+	defer conn.Close()
 
-	// Send the JSON response over the WebSocket
-	err = conn.WriteMessage(websocket.TextMessage, jsonResponse)
-	if err != nil {
-		log.Printf("Failed to send JSON response: %v", err)
+	for {
+		messageType, messageData, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("Error reading message: %v", err)
+			return
+		}
+
+		switch messageType {
+		case websocket.TextMessage:
+			// Handle text message
+			var message WebSocketMessage
+			err := json.Unmarshal(messageData, &message)
+			if err != nil {
+				log.Printf("Error unmarshalling message: %v", err)
+				return
+			}
+			playerType, token := validateGameToken(message.GameID, message.Token)
+			if playerType == InvalidPlayer {
+				log.Printf("Invalid game id or token: %d %s", message.GameID, message.Token)
+				return
+			}
+			processMessage(conn, message, playerType, token)
+		case websocket.BinaryMessage:
+			log.Printf("Error: received non-supported binary message %s", messageData)
+			return
+		}
 	}
 }
 
-type Action struct {
-	GameID          int    `json:"game_id"`
-	Token           string `json:"token"`
-	Action          string `json:"action"`
-	ActionNumber    int    `json:"action_number"`
-	NextActionOwner int    `json:"next_action_owner"`
+func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
+	switch message.Type {
+	case "UpgradeToken":
+		// We send the game token to the client so that it can be used to sign moves
+		if playerType == WhitePlayer {
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "White"})
+		} else if playerType == BlackPlayer {
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "Black"})
+		} else if playerType == Viewer {
+			// there is never a need to upgrade a viewer token, but we send it anyway
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "Viewer"})
+		}
+	case "Move":
+		// Check if the move number is correct
+		numMoves, err := getNumberOfMoves(message.GameID)
+		if err != nil {
+			log.Printf("Error getting number of moves for the game %d: %v", message.GameID, err)
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Error getting number of moves for the game"})
+			return
+		}
+		if message.MoveNum != numMoves+1 {
+			log.Printf("Invalid move number: %d, expected %d", message.MoveNum, numMoves+1)
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error",
+				Message: fmt.Sprintf("Invalid move number: got %d, expected %d", message.MoveNum, numMoves+1)})
+			return
+		}
+		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "Move", Message: message.Message, MoveNum: message.MoveNum, Signature: message.Signature})
+	case "SendFullGame":
+		allMoves, err := getAllMoves(message.GameID)
+		if err != nil {
+			log.Printf("Error getting all moves for the game %d: %v", message.GameID, err)
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Error getting all moves for the game"})
+			return
+		}
+		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allMoves})
+	}
 }
 
-func handleAction(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Decode the request body into an Action struct
-	var action Action
-	err := json.NewDecoder(r.Body).Decode(&action)
+func sendJSONMessage(conn *websocket.Conn, data interface{}) error {
+	err := conn.WriteJSON(data)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		log.Printf("Error sending JSON message: %v", err)
+		return err
 	}
-
-	// Check if the game id and token are valid
-	var whiteToken, blackToken, viewerToken string
-	var currentAction int
-	err = db.QueryRow("SELECT white_token, black_token, viewer_token, current_action FROM games WHERE id = ?", action.GameID).Scan(&whiteToken, &blackToken, &viewerToken, &currentAction)
-	if err != nil {
-		http.Error(w, "Invalid game id", http.StatusBadRequest)
-		return
-	}
-	if action.Token == viewerToken || (currentAction == int(WhiteAction) && action.Token != whiteToken) || (currentAction == int(BlackAction) && action.Token != blackToken) {
-		http.Error(w, "Invalid token", http.StatusBadRequest)
-		return
-	}
-
-	// Check if the action number is valid
-	var actionCount int
-	err = db.QueryRow("SELECT COUNT(*) FROM actions WHERE game_id = ?", action.GameID).Scan(&actionCount)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if action.ActionNumber != actionCount+1 {
-		http.Error(w, "Invalid action number", http.StatusBadRequest)
-		return
-	}
-
-	// Add the new action to the database
-	_, err = db.Exec("INSERT INTO actions(game_id, action_id, action) VALUES(?, ?, ?)", action.GameID, action.ActionNumber, action.Action)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Update the game's current action
-	_, err = db.Exec("UPDATE games SET current_action = ? WHERE id = ?", action.NextActionOwner, action.GameID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Broadcast the action to all connected clients for the game
-	broadcast(action.GameID, action)
-
-	// Send a 200 OK response
-	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
-func broadcast(gameID int, action Action) {
+func broadcast(gameID int, action WebSocketMessage) {
 	connectedUsersMu.Lock()
 	defer connectedUsersMu.Unlock()
 
@@ -484,60 +284,13 @@ func broadcast(gameID int, action Action) {
 // Functions for server administration
 
 func handleListUsers(w http.ResponseWriter, r *http.Request) {
-	// Query to join users and tokens tables
-	query := `
-        SELECT u.id, u.username, u.creation_time, t.token
-        FROM users u
-        LEFT JOIN tokens t ON u.id = t.user_id
-    `
-	rows, err := db.Query(query)
+	users, err := listUsers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
 
-	users := make(map[int]*User)
-	for rows.Next() {
-		var token sql.NullString
-		var user User
-
-		if err := rows.Scan(&user.ID, &user.Username, &user.CreationTime, &token); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Check if the user already exists in the map
-		if existingUser, exists := users[user.ID]; exists {
-			// Append the token to the existing user's tokens if not null
-			if token.Valid {
-				existingUser.Tokens = append(existingUser.Tokens, token.String)
-			}
-		} else {
-			// If the token is valid, initialize the Tokens slice
-			if token.Valid {
-				user.Tokens = []string{token.String}
-			}
-			users[user.ID] = &user
-		}
-	}
-
-	// Convert the map to a slice of users
-	usersSlice := make([]User, 0, len(users))
-	for _, user := range users {
-		usersSlice = append(usersSlice, *user)
-	}
-
-	sort.Slice(usersSlice, func(i, j int) bool {
-		t1, err1 := time.Parse(time.RFC3339, usersSlice[i].CreationTime)
-		t2, err2 := time.Parse(time.RFC3339, usersSlice[j].CreationTime)
-		if err1 != nil || err2 != nil {
-			return false
-		}
-		return t1.After(t2)
-	})
-
-	jsonResponse, err := json.Marshal(usersSlice)
+	jsonResponse, err := json.Marshal(users)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -545,46 +298,4 @@ func handleListUsers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
-}
-
-// Main functions
-
-func enableCors(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-		if strings.HasPrefix(origin, "http://localhost") || origin == "" {
-			log.Printf("CORS origin allowed: %s\n", origin)
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-
-			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-
-			handler(w, r)
-		} else {
-			log.Printf("CORS origin not allowed: %s\n", origin)
-			http.Error(w, "CORS origin not allowed", http.StatusForbidden)
-		}
-	}
-}
-
-func main() {
-	initDB()
-	defer db.Close()
-
-	http.HandleFunc("/authenticate", enableCors(authenticateUser))
-	http.HandleFunc("/register", enableCors(registerUser))
-
-	http.HandleFunc("/newgame", enableCors(handleNewGame))
-	http.HandleFunc("/game/", enableCors(handleGame))
-	http.HandleFunc("/action", enableCors(handleAction))
-
-	// Server administration
-	http.HandleFunc("/users", enableCors(handleListUsers))
-
-	log.Println("Starting the server on port 8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }
