@@ -53,7 +53,7 @@ func initDB() {
 		white_token TEXT,
 		black_token TEXT,
 		viewer_token TEXT,
-		current_action INTEGER,
+		game_over INTEGER DEFAULT 0,
 		creation_time INTEGER DEFAULT (strftime('%s', 'now'))
 	);
 
@@ -335,4 +335,18 @@ func listUsers() ([]User, error) {
 	})
 
 	return usersSlice, nil
+}
+
+func markGameAsFinished(gameID int) error {
+	_, err := db.Exec("UPDATE games SET game_over = 1 WHERE id = ?", gameID)
+	return err
+}
+
+func isGameFinished(gameID int) (bool, error) {
+	var gameOver int
+	err := db.QueryRow("SELECT game_over FROM games WHERE id = ?", gameID).Scan(&gameOver)
+	if err != nil {
+		return false, err
+	}
+	return gameOver == 1, nil
 }

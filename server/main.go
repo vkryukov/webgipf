@@ -224,6 +224,17 @@ func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType P
 			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "Viewer"})
 		}
 	case "Move":
+		// Check if the game is finished
+		gameFinished, err := isGameFinished(message.GameID)
+		if err != nil {
+			log.Printf("Error checking if game is finished: %v", err)
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Error checking if game is finished"})
+			return
+		} else if gameFinished {
+			log.Printf("Game %d is finished", message.GameID)
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Game is finished"})
+			return
+		}
 		// Check if the move number is correct
 		numMoves, err := getNumberOfMoves(message.GameID)
 		if err != nil {
@@ -246,6 +257,12 @@ func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType P
 			return
 		}
 		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allMoves})
+	case "RejectMove":
+		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "GameOver", Message: "Rejected move"})
+		if err := markGameAsFinished(message.GameID); err != nil {
+			log.Printf("Error marking game as finished: %v", err)
+		}
+		return
 	}
 }
 
