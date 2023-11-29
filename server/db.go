@@ -29,13 +29,13 @@ func initDB() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT UNIQUE,
 		password TEXT,
-		creation_time INTEGER DEFAULT (strftime('%s', 'now'))
+		creation_time INTEGER DEFAULT DEFAULT round(strftime('%s','now') * 1000 + strftime('%f','now'))
 	);
 
 	CREATE TABLE IF NOT EXISTS tokens (
 		user_id INTEGER,
 		token TEXT,
-		creation_time INTEGER DEFAULT (strftime('%s', 'now')),
+		creation_time INTEGER DEFAULT DEFAULT round(strftime('%s','now') * 1000 + strftime('%f','now')),
 		PRIMARY KEY (user_id, token), 
 		FOREIGN KEY (user_id) REFERENCES users(user_id)
 	);
@@ -55,7 +55,7 @@ func initDB() {
 		viewer_token TEXT,
 		game_over INTEGER DEFAULT 0,
 		game_result TEXT DEFAULT "",
-		creation_time INTEGER DEFAULT (strftime('%s', 'now'))
+		creation_time INTEGER DEFAULT DEFAULT round(strftime('%s','now') * 1000 + strftime('%f','now'))
 	);
 
 	CREATE TABLE IF NOT EXISTS actions (
@@ -66,7 +66,7 @@ func initDB() {
 		action TEXT,
 		-- an MD5 hash of the (game_id, action_num, player_key, action), calculated by the client, for client integrity verification
 		action_signature TEXT, 
-		creation_time INTEGER DEFAULT (strftime('%s', 'now')), 
+		creation_time INTEGER DEFAULT DEFAULT round(strftime('%s','now') * 1000 + strftime('%f','now')), 
 		PRIMARY KEY (game_id, action_id)
 	);
     `
