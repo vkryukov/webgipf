@@ -21,7 +21,7 @@ func main() {
 	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
 
 	// WebSocket handlers
-	http.HandleFunc("/game", enableCors(handleGame))
+	http.HandleFunc("/game", handleWebSocket)
 
 	// Server administration
 	http.HandleFunc("/users", enableCors(handleListUsers))
@@ -142,40 +142,13 @@ type WebSocketMessage struct {
 	MoveNum   int    `json:"action_num,omitempty"`
 }
 
-func handleGame(w http.ResponseWriter, r *http.Request) {
-	var message WebSocketMessage
-	err := json.NewDecoder(r.Body).Decode(&message)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// Check that the game id and token are valid
-	playerType, _ := validateGameToken(message.GameID, message.Token)
-	if playerType == InvalidPlayer {
-		http.Error(w, "Invalid game id or token", http.StatusBadRequest)
-		return
-	}
-
-	// Upgrade the connection to a WebSocket
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade the connection: %v", err)
 		return
 	}
-
-	// Add the WebSocket connection to the connected users
-	addConnection(message.GameID, conn)
-
-	// Start listening for messages on this connection
 	go listenForWebSocketMessages(conn)
-}
-
-func addConnection(gameID int, conn *websocket.Conn) {
-	connectedUsersMu.Lock()
-	defer connectedUsersMu.Unlock()
-
-	// You might want to use a different identifier for each connection
-	connectedUsers[gameID] = append(connectedUsers[gameID], conn)
 }
 
 func listenForWebSocketMessages(conn *websocket.Conn) {
@@ -190,7 +163,6 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 
 		switch messageType {
 		case websocket.TextMessage:
-			// Handle text message
 			var message WebSocketMessage
 			err := json.Unmarshal(messageData, &message)
 			if err != nil {
@@ -212,7 +184,8 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 
 func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
 	switch message.Type {
-	case "UpgradeToken":
+	case "Join":
+		addConnection(message.GameID, conn)
 		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "UpgradeToken", Message: playerType.String()})
 
 	case "Move":
@@ -244,6 +217,12 @@ func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType P
 			log.Printf("Error marking game as finished: %v", err)
 		}
 	}
+}
+
+func addConnection(gameID int, conn *websocket.Conn) {
+	connectedUsersMu.Lock()
+	connectedUsers[gameID] = append(connectedUsers[gameID], conn)
+	connectedUsersMu.Unlock()
 }
 
 // handleError checks if there is an error and sends an appropriate JSON message. Returns true if there was an error.
