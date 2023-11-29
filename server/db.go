@@ -54,6 +54,7 @@ func initDB() {
 		black_token TEXT,
 		viewer_token TEXT,
 		game_over INTEGER DEFAULT 0,
+		game_result TEXT DEFAULT "",
 		creation_time INTEGER DEFAULT (strftime('%s', 'now'))
 	);
 
@@ -144,6 +145,19 @@ const (
 	Viewer
 	InvalidPlayer
 )
+
+func (p PlayerType) String() string {
+	switch p {
+	case WhitePlayer:
+		return "white"
+	case BlackPlayer:
+		return "black"
+	case Viewer:
+		return "viewer"
+	default:
+		return "invalid"
+	}
+}
 
 // validateGameToken checks if the given token is valid player token for the given game, and returns the player type and the game token.
 // Note: the game token is not necessarily the same as the given token (which could just help identify the user).
@@ -277,6 +291,36 @@ func getAllMoves(gameID int) (string, error) {
 	return strings.Join(moves, " "), nil
 }
 
+func markGameAsFinished(gameID int, result string) error {
+	_, err := db.Exec("UPDATE games SET game_over = 1, game_result = ? WHERE id = ?", result, gameID)
+	return err
+}
+
+// checkGameStatus checks the game's status and returns an error if the game is finished or other issues are found.
+func checkGameStatus(gameID int) error {
+	var gameOver int
+	err := db.QueryRow("SELECT game_over FROM games WHERE id = ?", gameID).Scan(&gameOver)
+	if err != nil {
+		return err
+	}
+	if gameOver == 1 {
+		return fmt.Errorf("game is over")
+	}
+	return nil
+}
+
+// checkMoveValidity checks if the move number is correct and returns an error if it's not.
+func checkMoveValidity(gameID int, moveNum int) error {
+	numMoves, err := getNumberOfMoves(gameID)
+	if err != nil {
+		return err
+	}
+	if moveNum != numMoves+1 {
+		return fmt.Errorf("invalid move number: got %d, expected %d", moveNum, numMoves+1)
+	}
+	return nil
+}
+
 // Server administration
 
 // User is a struct that represents a user in the database.
@@ -335,18 +379,4 @@ func listUsers() ([]User, error) {
 	})
 
 	return usersSlice, nil
-}
-
-func markGameAsFinished(gameID int) error {
-	_, err := db.Exec("UPDATE games SET game_over = 1 WHERE id = ?", gameID)
-	return err
-}
-
-func isGameFinished(gameID int) (bool, error) {
-	var gameOver int
-	err := db.QueryRow("SELECT game_over FROM games WHERE id = ?", gameID).Scan(&gameOver)
-	if err != nil {
-		return false, err
-	}
-	return gameOver == 1, nil
 }

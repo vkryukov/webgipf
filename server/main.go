@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -214,56 +213,47 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
 	switch message.Type {
 	case "UpgradeToken":
-		// We send the game token to the client so that it can be used to sign moves
-		if playerType == WhitePlayer {
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "White"})
-		} else if playerType == BlackPlayer {
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "Black"})
-		} else if playerType == Viewer {
-			// there is never a need to upgrade a viewer token, but we send it anyway
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Token: token, Type: "UpgradeToken", Message: "Viewer"})
-		}
+		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "UpgradeToken", Message: playerType.String()})
+
 	case "Move":
-		// Check if the game is finished
-		gameFinished, err := isGameFinished(message.GameID)
-		if err != nil {
-			log.Printf("Error checking if game is finished: %v", err)
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Error checking if game is finished"})
-			return
-		} else if gameFinished {
-			log.Printf("Game %d is finished", message.GameID)
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Game is finished"})
+		if handleError(conn, message.GameID, checkGameStatus(message.GameID)) {
 			return
 		}
-		// Check if the move number is correct
-		numMoves, err := getNumberOfMoves(message.GameID)
-		if err != nil {
-			log.Printf("Error getting number of moves for the game %d: %v", message.GameID, err)
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Error getting number of moves for the game"})
-			return
-		}
-		if message.MoveNum != numMoves+1 {
-			log.Printf("Invalid move number: %d, expected %d", message.MoveNum, numMoves+1)
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error",
-				Message: fmt.Sprintf("Invalid move number: got %d, expected %d", message.MoveNum, numMoves+1)})
+		if handleError(conn, message.GameID, checkMoveValidity(message.GameID, message.MoveNum)) {
 			return
 		}
 		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "Move", Message: message.Message, MoveNum: message.MoveNum, Signature: message.Signature})
+
 	case "SendFullGame":
-		allMoves, err := getAllMoves(message.GameID)
-		if err != nil {
-			log.Printf("Error getting all moves for the game %d: %v", message.GameID, err)
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "Error", Message: "Error getting all moves for the game"})
+		if allMoves, err := getAllMoves(message.GameID); handleError(conn, message.GameID, err) {
 			return
+		} else {
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allMoves})
 		}
-		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allMoves})
+
 	case "RejectMove":
 		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "GameOver", Message: "Rejected move"})
-		if err := markGameAsFinished(message.GameID); err != nil {
+		if err := markGameAsFinished(message.GameID, "Rejected move detected"); err != nil {
 			log.Printf("Error marking game as finished: %v", err)
 		}
 		return
+
+	case "GameOver":
+		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "GameOver", Message: message.Message})
+		if err := markGameAsFinished(message.GameID, message.Message); err != nil {
+			log.Printf("Error marking game as finished: %v", err)
+		}
 	}
+}
+
+// handleError checks if there is an error and sends an appropriate JSON message. Returns true if there was an error.
+func handleError(conn *websocket.Conn, gameID int, err error) bool {
+	if err != nil {
+		log.Printf("Error: %v", err)
+		sendJSONMessage(conn, WebSocketMessage{GameID: gameID, Type: "Error", Message: err.Error()})
+		return true
+	}
+	return false
 }
 
 func sendJSONMessage(conn *websocket.Conn, data interface{}) error {
