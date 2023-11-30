@@ -301,7 +301,7 @@ view : Model -> Html Msg
 view model =
     div [ style "margin" "10px" ]
         [ viewRegisterUser model
-        , h3 [] [ text "List all users" ]
+        , h3 [] [ text "Users" ]
         , table []
             [ thead []
                 [ tr []
