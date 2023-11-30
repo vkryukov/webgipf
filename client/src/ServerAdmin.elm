@@ -26,6 +26,7 @@ main =
 type alias Model =
     { username : String
     , password : String
+    , newPassword : String
     , userResponse : String
     , users : List User
     , zone : Maybe Zone
@@ -36,6 +37,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { username = ""
       , password = ""
+      , newPassword = ""
       , userResponse = ""
       , users = []
       , zone = Nothing
@@ -63,20 +65,11 @@ userRequest model myUrl =
                 (Encode.object
                     [ ( "username", Encode.string model.username )
                     , ( "password", Encode.string model.password )
+                    , ( "new_password", Encode.string model.newPassword )
                     ]
                 )
         , expect = Http.expectJson UserResult tokenDecoder
         }
-
-
-registerRequest : Model -> Cmd Msg
-registerRequest model =
-    userRequest model (serverURL ++ "/register")
-
-
-authenticateRequest : Model -> Cmd Msg
-authenticateRequest model =
-    userRequest model (serverURL ++ "/authenticate")
 
 
 listUsersURL : String
@@ -112,8 +105,10 @@ loadUsersRequest =
 type Msg
     = UpdateUsername String
     | UpdatePassword String
+    | UpdateNewPassword String
     | Register
     | Authenticate
+    | ChangePassword
     | UserResult (Result Http.Error String)
     | LoadUsers
     | LoadUsersResult (Result Http.Error (List User))
@@ -129,13 +124,20 @@ update msg model =
         UpdatePassword password ->
             ( { model | password = password }, Cmd.none )
 
+        UpdateNewPassword newPassword ->
+            ( { model | newPassword = newPassword }, Cmd.none )
+
         Register ->
             -- Here you would send a request to the server to register the user
-            ( { model | userResponse = "" }, registerRequest model )
+            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/register") )
 
         Authenticate ->
             -- Here you would send a request to the server to authorize the user
-            ( { model | userResponse = "" }, authenticateRequest model )
+            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/authenticate") )
+
+        ChangePassword ->
+            -- Here you would send a request to the server to change the user's password
+            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/changepassword") )
 
         UserResult result ->
             case result of
@@ -195,9 +197,13 @@ viewRegisterUser model =
         , vBlock
         , viewInput "Password" UpdatePassword
         , vBlock
+        , viewInput "New Password" UpdateNewPassword
+        , vBlock
         , button [ onClick Register ] [ text "Register" ]
         , hBlock
         , button [ onClick Authenticate ] [ text "Authenticate" ]
+        , hBlock
+        , button [ onClick ChangePassword ] [ text "Change" ]
         , vBlock
         , text model.userResponse
         ]

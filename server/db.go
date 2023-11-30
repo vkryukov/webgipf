@@ -83,31 +83,37 @@ func comparePasswords(hashedPwd string, plainPwd string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd)) == nil
 }
 
-func authenticateUser(username string, password string) (int, error) {
+type UserRequest struct {
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	NewPassword string `json:"new_password,omitempty"`
+}
+
+func authenticateUser(userReq *UserRequest) (int, error) {
 	var userID int
 	var hashedPwd string
 
-	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", username).Scan(&userID, &hashedPwd)
+	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", userReq.Username).Scan(&userID, &hashedPwd)
 	if err != nil {
 		return -1, err
 	}
 
-	if !comparePasswords(hashedPwd, password) {
+	if !comparePasswords(hashedPwd, userReq.Password) {
 		return -1, fmt.Errorf("wrong password")
 	}
 
 	return userID, nil
 }
 
-func registerUser(username string, password string) (int, error) {
-	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func registerUser(userReq *UserRequest) (int, error) {
+	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return -1, err
 	}
 
-	res, err := db.Exec("INSERT INTO users(username, password) VALUES(?, ?)", username, hashedPwd)
+	res, err := db.Exec("INSERT INTO users(username, password) VALUES(?, ?)", userReq.Username, hashedPwd)
 	if err != nil {
-		log.Printf("Error inserting user %s into database: %v", username, err)
+		log.Printf("Error inserting user %s into database: %v", userReq.Username, err)
 		return -1, err
 	}
 
@@ -117,6 +123,49 @@ func registerUser(username string, password string) (int, error) {
 	}
 
 	return int(userID), nil
+}
+
+func changePassword(userReq *UserRequest) (int, error) {
+	var userID int
+	var hashedPwd string
+
+	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", userReq.Username).Scan(&userID, &hashedPwd)
+	if err != nil {
+		return -1, err
+	}
+
+	if !comparePasswords(hashedPwd, userReq.Password) {
+		return -1, fmt.Errorf("wrong password")
+	}
+
+	newHashPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return -1, err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = tx.Exec("DELETE FROM tokens WHERE user_id = ?", userID)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	_, err = tx.Exec("UPDATE users SET password = ? WHERE id = ?", newHashPwd, userID)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return -1, err
+	}
+
+	return userID, nil
 }
 
 type Token string

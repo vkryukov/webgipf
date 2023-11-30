@@ -24,12 +24,13 @@ func main() {
 		}
 	}()
 
-	// HTTP handlers
+	// User management
 	http.HandleFunc("/authenticate", enableCors(authenticateUserHandler))
 	http.HandleFunc("/register", enableCors(registerUserHandler))
-	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
+	http.HandleFunc("/changepassword", enableCors(changePasswordHandler))
 
-	// WebSocket handlers
+	// Game management
+	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
 	http.HandleFunc("/game", handleWebSocket)
 
 	// Server administration
@@ -74,13 +75,7 @@ func writeJSONResponse(w http.ResponseWriter, response interface{}) {
 
 // User authentication and game creation
 
-type UserRequest struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	NewPassword string `json:"new_password,omitempty"`
-}
-
-func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(string, string) (int, error)) {
+func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserRequest) (int, error)) {
 	var userReq UserRequest
 	err := json.NewDecoder(r.Body).Decode(&userReq)
 	if err != nil {
@@ -89,7 +84,7 @@ func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(string, st
 		return
 	}
 
-	userID, err := userFunc(userReq.Username, userReq.Password)
+	userID, err := userFunc(&userReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		log.Printf("Error getting userID: %v", err)
@@ -112,6 +107,10 @@ func authenticateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	handleUser(w, r, registerUser)
+}
+
+func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	handleUser(w, r, changePassword)
 }
 
 func createNewGameHandler(w http.ResponseWriter, r *http.Request) {
