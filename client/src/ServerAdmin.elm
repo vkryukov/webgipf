@@ -1,12 +1,12 @@
 module ServerAdmin exposing (..)
 
 import Browser
+import Debug
 import Fuzz exposing (result)
-import Html exposing (Html, button, div, h3, input, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, button, div, h3, input, label, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (placeholder, style, type_)
 import Html.Events exposing (onClick, onInput)
 import Http
-import Iso8601
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
@@ -23,19 +23,65 @@ main =
     Browser.element { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
 
 
+type alias Model =
+    { username : String
+    , password : String
+    , userResponse : String
+    , users : List User
+    , zone : Maybe Zone
+    }
+
+
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { username = ""
+      , password = ""
+      , userResponse = ""
+      , users = []
+      , zone = Nothing
+      }
+    , Cmd.batch [ loadUsersRequest, Task.perform ReceiveTimeZone Time.here ]
+    )
+
+
 serverURL : String
 serverURL =
     "http://localhost:8080"
 
 
+tokenDecoder : Decode.Decoder String
+tokenDecoder =
+    Decode.field "token" Decode.string
+
+
+userRequest : Model -> String -> Cmd Msg
+userRequest model myUrl =
+    Http.post
+        { url = myUrl
+        , body =
+            Http.jsonBody
+                (Encode.object
+                    [ ( "username", Encode.string model.username )
+                    , ( "password", Encode.string model.password )
+                    ]
+                )
+        , expect = Http.expectJson UserResult tokenDecoder
+        }
+
+
+registerRequest : Model -> Cmd Msg
+registerRequest model =
+    userRequest model (serverURL ++ "/register")
+
+
+authenticateRequest : Model -> Cmd Msg
+authenticateRequest model =
+    userRequest model (serverURL ++ "/authenticate")
+
+
 listUsersURL : String
 listUsersURL =
     serverURL ++ "/users"
-
-
-registerUserURL : String
-registerUserURL =
-    serverURL ++ "/register"
 
 
 type alias User =
@@ -51,80 +97,27 @@ userDecoder =
     Decode.map4 User
         (Decode.field "id" Decode.int)
         (Decode.field "username" Decode.string)
-        (Decode.field "creation_time" (Decode.string |> Decode.andThen parseTime))
+        (Decode.field "creation_time" (Decode.int |> Decode.map (Just << Time.millisToPosix)))
         (Decode.field "tokens" (Decode.list Decode.string))
 
 
-parseTime : String -> Decode.Decoder (Maybe Time.Posix)
-parseTime timeString =
-    case Iso8601.toTime timeString of
-        Ok posixTime ->
-            Decode.succeed (Just posixTime)
-
-        Err _ ->
-            Decode.succeed Nothing
-
-
-type alias Model =
-    { username : String
-    , password : String
-    , token : String
-    , error : String
-    , users : List User
-    , zone : Maybe Zone
-    }
-
-
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { username = ""
-      , password = ""
-      , token = ""
-      , error = ""
-      , users = []
-      , zone = Nothing
-      }
-    , Cmd.batch [ loadUsersRequest, Task.perform ReceiveTimeZone Time.here ]
-    )
+loadUsersRequest : Cmd Msg
+loadUsersRequest =
+    Http.get
+        { url = serverURL ++ "/users"
+        , expect = Http.expectJson LoadUsersResult (Decode.list userDecoder)
+        }
 
 
 type Msg
     = UpdateUsername String
     | UpdatePassword String
     | Register
-    | RegisterResult (Result Http.Error String)
+    | Authenticate
+    | UserResult (Result Http.Error String)
     | LoadUsers
     | LoadUsersResult (Result Http.Error (List User))
     | ReceiveTimeZone Zone
-
-
-tokenDecoder : Decode.Decoder String
-tokenDecoder =
-    Decode.field "token" Decode.string
-
-
-registerRequest : Model -> Cmd Msg
-registerRequest model =
-    let
-        body =
-            Encode.object
-                [ ( "username", Encode.string model.username )
-                , ( "password", Encode.string model.password )
-                ]
-    in
-    Http.post
-        { url = registerUserURL
-        , body = Http.jsonBody body
-        , expect = Http.expectJson RegisterResult tokenDecoder
-        }
-
-
-loadUsersRequest : Cmd Msg
-loadUsersRequest =
-    Http.get
-        { url = listUsersURL
-        , expect = Http.expectJson LoadUsersResult (Decode.list userDecoder)
-        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -138,17 +131,21 @@ update msg model =
 
         Register ->
             -- Here you would send a request to the server to register the user
-            ( { model | token = "", error = "" }, registerRequest model )
+            ( { model | userResponse = "" }, registerRequest model )
 
-        RegisterResult result ->
+        Authenticate ->
+            -- Here you would send a request to the server to authorize the user
+            ( { model | userResponse = "" }, authenticateRequest model )
+
+        UserResult result ->
             case result of
                 Ok token ->
                     -- Registration was successful, update the token
-                    ( { model | token = token }, loadUsersRequest )
+                    ( { model | userResponse = "token: " ++ token }, loadUsersRequest )
 
-                Err _ ->
+                Err error ->
                     -- An error occurred, update the error message
-                    ( { model | error = "Registration failed" }, Cmd.none )
+                    ( { model | userResponse = "error: " ++ Debug.toString error }, Cmd.none )
 
         LoadUsers ->
             ( model, loadUsersRequest )
@@ -159,9 +156,9 @@ update msg model =
                     -- Load users was successful
                     ( { model | users = users }, Cmd.none )
 
-                Err _ ->
+                Err error ->
                     -- An error occurred
-                    ( { model | error = "Failed to load users" }, Cmd.none )
+                    ( { model | userResponse = "Failed to load users: " ++ Debug.toString error }, Cmd.none )
 
         ReceiveTimeZone zone ->
             ( { model | zone = Just zone }, Cmd.none )
@@ -171,32 +168,39 @@ update msg model =
 -- VIEW
 
 
+hBlock : Html msg
+hBlock =
+    div [ style "display" "inline-block", style "width" "10px" ] []
+
+
+vBlock : Html msg
+vBlock =
+    div [ style "margin-top" "10px" ] []
+
+
+viewInput : String -> (String -> Msg) -> Html Msg
+viewInput lbl msg =
+    div []
+        [ label [] [ text lbl ]
+        , hBlock
+        , input [ placeholder lbl, type_ "text", onInput msg ] []
+        ]
+
+
 viewRegisterUser : Model -> Html Msg
 viewRegisterUser model =
-    let
-        tokenDiv =
-            if model.token /= "" then
-                [ div [] [ text ("Token: " ++ model.token) ] ]
-
-            else
-                []
-
-        errorDiv =
-            if model.error /= "" then
-                [ div [] [ text ("Error: " ++ model.error) ] ]
-
-            else
-                []
-    in
     div []
-        ([ h3 [] [ text "Register a new user" ]
-         , input [ placeholder "Username", type_ "text", onInput UpdateUsername ] []
-         , input [ placeholder "Password", type_ "password", onInput UpdatePassword ] []
-         , button [ onClick Register ] [ text "Register" ]
-         ]
-            ++ tokenDiv
-            ++ errorDiv
-        )
+        [ h3 [] [ text "User operations" ]
+        , viewInput "Username" UpdateUsername
+        , vBlock
+        , viewInput "Password" UpdatePassword
+        , vBlock
+        , button [ onClick Register ] [ text "Register" ]
+        , hBlock
+        , button [ onClick Authenticate ] [ text "Authenticate" ]
+        , vBlock
+        , text model.userResponse
+        ]
 
 
 monthNumber : Time.Month -> Int

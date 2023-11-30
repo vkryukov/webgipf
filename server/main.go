@@ -13,7 +13,16 @@ import (
 
 func main() {
 	initDB()
-	defer db.Close()
+	defer func() {
+		_, err := db.Exec("PRAGMA wal_checkpoint;")
+		if err != nil {
+			log.Printf("Error executing PRAGMA wal_checkpoint: %v", err)
+		}
+		err = db.Close()
+		if err != nil {
+			log.Printf("Error closing database: %v", err)
+		}
+	}()
 
 	// HTTP handlers
 	http.HandleFunc("/authenticate", enableCors(authenticateUserHandler))
@@ -36,7 +45,6 @@ func enableCors(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if strings.HasPrefix(origin, "http://localhost") || origin == "" {
-			log.Printf("CORS origin allowed: %s\n", origin)
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
@@ -66,20 +74,32 @@ func writeJSONResponse(w http.ResponseWriter, response interface{}) {
 
 // User authentication and game creation
 
-func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(string, string) (int, error)) {
-	params := r.URL.Query()
-	username := params.Get("username")
-	password := params.Get("password")
+type UserRequest struct {
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	NewPassword string `json:"new_password,omitempty"`
+}
 
-	userID, err := userFunc(username, password)
+func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(string, string) (int, error)) {
+	var userReq UserRequest
+	err := json.NewDecoder(r.Body).Decode(&userReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error decoding JSON: %v", err)
+		return
+	}
+
+	userID, err := userFunc(userReq.Username, userReq.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error getting userID: %v", err)
 		return
 	}
 
 	token, err := addNewTokenToUser(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error adding new token to user: %v", err)
 		return
 	}
 
