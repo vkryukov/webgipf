@@ -432,3 +432,53 @@ func listUsers() ([]User, error) {
 
 	return usersSlice, nil
 }
+
+type Game struct {
+	ID           int    `json:"id"`
+	Type         string `json:"type"`
+	WhiteUser    string `json:"white_user"`
+	BlackUser    string `json:"black_user"`
+	WhiteToken   string `json:"white_token"`
+	BlackToken   string `json:"black_token"`
+	ViewerToken  string `json:"viewer_token"`
+	GameOver     bool   `json:"game_over"`
+	GameResult   string `json:"game_result"`
+	CreationTime int    `json:"creation_time"`
+}
+
+func listGames() ([]Game, error) {
+	query := `
+		SELECT g.id, g.type, u1.username, u2.username, g.white_token, g.black_token, g.viewer_token, g.game_over, g.game_result, g.creation_time
+		FROM games g
+		LEFT JOIN users u1 ON g.white_user_id = u1.id
+		LEFT JOIN users u2 ON g.black_user_id = u2.id
+	`
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	games := make([]Game, 0)
+	for rows.Next() {
+		var game Game
+		var whiteUser, blackUser sql.NullString
+		var creationTime float64
+
+		if err := rows.Scan(&game.ID, &game.Type, &whiteUser, &blackUser, &game.WhiteToken, &game.BlackToken, &game.ViewerToken, &game.GameOver, &game.GameResult, &creationTime); err != nil {
+			return nil, err
+		}
+		game.CreationTime = int(creationTime)
+
+		if whiteUser.Valid {
+			game.WhiteUser = whiteUser.String
+		}
+		if blackUser.Valid {
+			game.BlackUser = blackUser.String
+		}
+
+		games = append(games, game)
+	}
+
+	return games, nil
+}

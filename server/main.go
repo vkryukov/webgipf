@@ -35,6 +35,7 @@ func main() {
 
 	// Server administration
 	http.HandleFunc("/users", enableCors(handleListUsers))
+	http.HandleFunc("/games", enableCors(handleListGames))
 
 	log.Println("Starting the server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -295,4 +296,13 @@ func handleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSONResponse(w, users)
+}
+
+func handleListGames(w http.ResponseWriter, r *http.Request) {
+	games, err := listGames()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSONResponse(w, games)
 }
