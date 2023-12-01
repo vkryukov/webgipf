@@ -436,6 +436,7 @@ viewGameOperations model =
             [ input [ type_ "checkbox", onCheck UpdatePublicGame ] []
             , text " Public Game"
             ]
+        , vBlock
         , button [ onClick CreateGame ] [ text "Create" ]
         ]
 
@@ -458,6 +459,7 @@ view model =
             ]
         , h3 [] [ text "Games" ]
         , viewGameOperations model
+        , vBlock
         , table []
             [ thead []
                 [ tr []
