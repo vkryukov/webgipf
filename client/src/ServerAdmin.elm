@@ -127,6 +127,8 @@ type alias Game =
     , gameOver : Bool
     , gameResult : String
     , creationTime : Maybe Time.Posix
+    , numActions : Int
+    , gameRecord : String
     }
 
 
@@ -143,6 +145,8 @@ gameDecoder =
         |> required "game_over" Decode.bool
         |> required "game_result" Decode.string
         |> required "creation_time" (Decode.int |> Decode.map (Just << Time.millisToPosix))
+        |> required "num_actions" Decode.int
+        |> required "game_record" Decode.string
 
 
 required : String -> Decode.Decoder a -> Decode.Decoder (a -> b) -> Decode.Decoder b
@@ -422,6 +426,8 @@ viewGame z game =
         , td [] [ text game.blackToken ]
         , td [] [ text game.viewerToken ]
         , td [] [ text (localTimeString z game.creationTime) ]
+        , td [] [ text (String.fromInt game.numActions) ]
+        , td [] [ text game.gameRecord ]
         ]
 
 
@@ -470,6 +476,8 @@ view model =
                     , th [] [ text "Black token" ]
                     , th [] [ text "Viewer token" ]
                     , th [] [ text "Creation Time" ]
+                    , th [] [ text "Num actions" ]
+                    , th [] [ text "Game record" ]
                     ]
                 ]
             , tbody [] (List.map (viewGame model.zone) model.games)

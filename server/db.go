@@ -463,14 +463,21 @@ type Game struct {
 	GameOver     bool   `json:"game_over"`
 	GameResult   string `json:"game_result"`
 	CreationTime int    `json:"creation_time"`
+	NumActions   int    `json:"num_actions"`
+	GameRecord   string `json:"game_record"`
 }
 
 func listGames() ([]Game, error) {
 	query := `
-		SELECT g.id, g.type, u1.username, u2.username, g.white_token, g.black_token, g.viewer_token, g.game_over, g.game_result, g.creation_time
+		SELECT 
+			g.id, g.type, u1.username, u2.username, g.white_token, g.black_token, g.viewer_token, g.game_over, g.game_result, g.creation_time,
+			COUNT(a.action_id) AS num_actions, 
+            COALESCE(GROUP_CONCAT(a.action ORDER BY a.creation_time, ' '), '')  AS game_record
 		FROM games g
 		LEFT JOIN users u1 ON g.white_user_id = u1.id
 		LEFT JOIN users u2 ON g.black_user_id = u2.id
+		LEFT JOIN actions a ON g.id = a.game_id
+		GROUP BY g.id
 	`
 	rows, err := db.Query(query)
 	if err != nil {
@@ -484,7 +491,8 @@ func listGames() ([]Game, error) {
 		var whiteUser, blackUser sql.NullString
 		var creationTime float64
 
-		if err := rows.Scan(&game.ID, &game.Type, &whiteUser, &blackUser, &game.WhiteToken, &game.BlackToken, &game.ViewerToken, &game.GameOver, &game.GameResult, &creationTime); err != nil {
+		if err := rows.Scan(&game.ID, &game.Type, &whiteUser, &blackUser, &game.WhiteToken, &game.BlackToken, &game.ViewerToken,
+			&game.GameOver, &game.GameResult, &creationTime, &game.NumActions, &game.GameRecord); err != nil {
 			return nil, err
 		}
 		game.CreationTime = int(creationTime)
