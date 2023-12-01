@@ -60,7 +60,7 @@ func initDB() {
 
 	CREATE TABLE IF NOT EXISTS actions (
 		game_id INTEGER, 
-		action_id INTEGER,
+		action_id INTEGER, -- TODO: maybe remove?
 		-- the number of the action in the sequence (starting from 1)
 		action_num INTEGER,
 		action TEXT,
@@ -293,9 +293,28 @@ func createGame(request NewGameRequest) (*NewGame, error) {
 		viewerToken = generateToken()
 	}
 
+	var whiteUserID, blackUserID int
+	var err error
+	if request.WhiteUsername == "" {
+		whiteUserID = -1
+	} else {
+		whiteUserID, err = getUserIDFromUsername(request.WhiteUsername)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if request.BlackUsername == "" {
+		blackUserID = -1
+	} else {
+		blackUserID, err = getUserIDFromUsername(request.BlackUsername)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	res, err := db.Exec(
-		"INSERT INTO games(type, white_username, black_username, white_token, black_token, viewer_token) VALUES(?, ?, ?, ?, ?, ?)",
-		request.Type, request.WhiteUsername, request.BlackUsername, whiteToken, blackToken, viewerToken)
+		"INSERT INTO games(type, white_user_id, black_user_id, white_token, black_token, viewer_token) VALUES(?, ?, ?, ?, ?, ?)",
+		request.Type, whiteUserID, blackUserID, whiteToken, blackToken, viewerToken)
 	if err != nil {
 		return nil, err
 	}
@@ -479,6 +498,10 @@ func listGames() ([]Game, error) {
 
 		games = append(games, game)
 	}
+
+	sort.Slice(games, func(i, j int) bool {
+		return games[i].CreationTime > games[j].CreationTime
+	})
 
 	return games, nil
 }

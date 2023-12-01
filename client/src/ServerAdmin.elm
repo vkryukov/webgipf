@@ -5,7 +5,7 @@ import Debug
 import Fuzz exposing (result)
 import Html exposing (Html, button, div, h3, input, label, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (placeholder, style, type_)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onCheck, onClick, onInput)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -31,6 +31,9 @@ type alias Model =
     , users : List User
     , games : List Game
     , zone : Maybe Zone
+    , whiteUser : String
+    , blackUser : String
+    , isPublic : Bool
     }
 
 
@@ -43,6 +46,9 @@ init _ =
       , users = []
       , games = []
       , zone = Nothing
+      , whiteUser = ""
+      , blackUser = ""
+      , isPublic = False
       }
     , Cmd.batch
         [ loadUsersRequest
@@ -124,41 +130,6 @@ type alias Game =
     }
 
 
-
--- gameDecoder : Decode.Decoder Game
--- gameDecoder =
---     Decode.map4
---         (\field1 field2 field3 field4 ->
---             Decode.map4
---                 (\field5 field6 field7 field8 ->
---                     Decode.map2
---                         (\field9 field10 ->
---                             { field1 = field1
---                             , field2 = field2
---                             , field3 = field3
---                             , field4 = field4
---                             , field5 = field5
---                             , field6 = field6
---                             , field7 = field7
---                             , field8 = field8
---                             , field9 = field9
---                             , field10 = field10
---                             }
---                         )
---                         (Decode.field "game_result" Decode.string)
---                         (Decode.field "creation_time" (Decode.nullable (Decode.int |> Decode.map (Just << Time.millisToPosix))))
---                 )
---                 (Decode.field "white_token" Decode.string)
---                 (Decode.field "black_token" Decode.string)
---                 (Decode.field "viewer_token" Decode.string)
---                 (Decode.field "game_over" Decode.bool)
---         )
---         (Decode.field "white_token" Decode.int)
---         (Decode.field "type" Decode.string)
---         (Decode.field "white_user" Decode.string)
---         (Decode.field "black_user" Decode.string)
-
-
 gameDecoder : Decode.Decoder Game
 gameDecoder =
     Decode.succeed Game
@@ -202,8 +173,13 @@ type Msg
     | ChangePassword
     | UserResult (Result Http.Error String)
     | LoadUsersResult (Result Http.Error (List User))
+    | UpdateWhiteUser String
+    | UpdateBlackUser String
     | LoadGamesResult (Result Http.Error (List Game))
     | ReceiveTimeZone Zone
+    | CreateGame
+    | UpdatePublicGame Bool
+    | CreatedGame (Result Http.Error ())
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -263,6 +239,47 @@ update msg model =
         ReceiveTimeZone zone ->
             ( { model | zone = Just zone }, Cmd.none )
 
+        UpdateWhiteUser whiteUser ->
+            ( { model | whiteUser = whiteUser }, Cmd.none )
+
+        UpdateBlackUser blackUser ->
+            ( { model | blackUser = blackUser }, Cmd.none )
+
+        CreateGame ->
+            let
+                game =
+                    { whiteUser = model.whiteUser
+                    , blackUser = model.blackUser
+                    , isPublic = model.isPublic
+                    }
+            in
+            ( model
+            , Http.post
+                { url = serverURL ++ "/newgame"
+                , body =
+                    Http.jsonBody
+                        (Encode.object
+                            [ ( "type", Encode.string "standard" )
+                            , ( "white_username", Encode.string game.whiteUser )
+                            , ( "black_username", Encode.string game.blackUser )
+                            , ( "public", Encode.bool game.isPublic )
+                            ]
+                        )
+                , expect = Http.expectWhatever CreatedGame
+                }
+            )
+
+        UpdatePublicGame isPublic ->
+            ( { model | isPublic = isPublic }, Cmd.none )
+
+        CreatedGame result ->
+            case result of
+                Ok _ ->
+                    ( model, loadGamesRequest )
+
+                Err error ->
+                    ( { model | userResponse = "Failed to create game: " ++ Debug.toString error }, Cmd.none )
+
 
 
 -- VIEW
@@ -287,11 +304,10 @@ viewInput lbl msg =
         ]
 
 
-viewRegisterUser : Model -> Html Msg
-viewRegisterUser model =
+viewUserOperations : Model -> Html Msg
+viewUserOperations model =
     div []
-        [ h3 [] [ text "User operations" ]
-        , viewInput "Username" UpdateUsername
+        [ viewInput "Username" UpdateUsername
         , vBlock
         , viewInput "Password" UpdatePassword
         , vBlock
@@ -391,8 +407,8 @@ viewUser z user =
     tr []
         [ td [] [ text (String.fromInt user.id) ]
         , td [] [ text user.username ]
-        , td [] [ text (localTimeString z user.creation_time) ]
         , td [] [ text (String.join ", " user.tokens) ]
+        , td [] [ text (localTimeString z user.creation_time) ]
         ]
 
 
@@ -400,38 +416,58 @@ viewGame : Maybe Zone -> Game -> Html Msg
 viewGame z game =
     tr []
         [ td [] [ text (String.fromInt game.id) ]
-        , td [] [ text (localTimeString z game.creationTime) ]
+        , td [] [ text game.whiteUser ]
+        , td [] [ text game.blackUser ]
         , td [] [ text game.whiteToken ]
         , td [] [ text game.blackToken ]
         , td [] [ text game.viewerToken ]
+        , td [] [ text (localTimeString z game.creationTime) ]
+        ]
+
+
+viewGameOperations : Model -> Html Msg
+viewGameOperations model =
+    div []
+        [ viewInput "White user" UpdateWhiteUser
+        , vBlock
+        , viewInput "Black user" UpdateBlackUser
+        , vBlock
+        , div []
+            [ input [ type_ "checkbox", onCheck UpdatePublicGame ] []
+            , text " Public Game"
+            ]
+        , button [ onClick CreateGame ] [ text "Create" ]
         ]
 
 
 view : Model -> Html Msg
 view model =
     div [ style "margin" "10px" ]
-        [ viewRegisterUser model
-        , h3 [] [ text "Users" ]
+        [ h3 [] [ text "Users" ]
+        , viewUserOperations model
         , table []
             [ thead []
                 [ tr []
                     [ th [] [ text "ID" ]
                     , th [] [ text "Username" ]
-                    , th [] [ text "Creation Time" ]
                     , th [] [ text "Tokens" ]
+                    , th [] [ text "Creation Time" ]
                     ]
                 ]
             , tbody [] (List.map (viewUser model.zone) model.users)
             ]
         , h3 [] [ text "Games" ]
+        , viewGameOperations model
         , table []
             [ thead []
                 [ tr []
                     [ th [] [ text "ID" ]
-                    , th [] [ text "Creation Time" ]
+                    , th [] [ text "White user" ]
+                    , th [] [ text "Black user" ]
                     , th [] [ text "White token" ]
                     , th [] [ text "Black token" ]
                     , th [] [ text "Viewer token" ]
+                    , th [] [ text "Creation Time" ]
                     ]
                 ]
             , tbody [] (List.map (viewGame model.zone) model.games)
