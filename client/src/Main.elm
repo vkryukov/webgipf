@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Browser
 import GipfBoard
-import Html exposing (Html)
+import Html exposing (Html, div, text)
 import Json.Decode as Decode
 import Json.Encode as Encode
 
@@ -17,6 +17,7 @@ type alias Model =
     { board : GipfBoard.Model
     , gameId : Int
     , token : String
+    , error : Maybe String
     }
 
 
@@ -30,6 +31,7 @@ initWithGameIdToken gameId token =
             { board = board
             , gameId = gameId
             , token = token
+            , error = Nothing
             }
     in
     ( model
@@ -78,6 +80,15 @@ type Msg
     | WebSocketMessageReceived String
 
 
+webSocketMessageDecoder : Decode.Decoder WebSocketMessage
+webSocketMessageDecoder =
+    Decode.map4 WebSocketMessage
+        (Decode.field "game_id" Decode.int)
+        (Decode.field "token" Decode.string)
+        (Decode.field "message_type" Decode.string)
+        (Decode.field "message" Decode.string)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -89,16 +100,12 @@ update msg model =
             ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
 
         WebSocketMessageReceived message ->
-            let
-                webSocketMessageDecoder =
-                    Decode.map4 WebSocketMessage
-                        (Decode.field "game_id" Decode.int)
-                        (Decode.field "token" Decode.string)
-                        (Decode.field "message_type" Decode.string)
-                        (Decode.field "message" Decode.string)
-            in
             case Decode.decodeString webSocketMessageDecoder message of
                 Ok webSocketMessage ->
+                    let
+                        _ =
+                            Debug.log "WebSocketMessageReceived" webSocketMessage
+                    in
                     case webSocketMessage.messageType of
                         "Join" ->
                             let
@@ -110,13 +117,26 @@ update msg model =
                         _ ->
                             ( model, Cmd.none )
 
-                Err _ ->
-                    ( model, Cmd.none )
+                Err err ->
+                    ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
+
+
+viewError : Model -> Html Msg
+viewError model =
+    case model.error of
+        Just error ->
+            div [] [ text error ]
+
+        Nothing ->
+            div [] []
 
 
 view : Model -> Html Msg
 view model =
-    Html.map GipfBoardMsg (GipfBoard.view model.board)
+    div []
+        [ viewError model
+        , Html.map GipfBoardMsg (GipfBoard.view model.board)
+        ]
 
 
 main =
