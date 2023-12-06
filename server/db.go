@@ -332,17 +332,17 @@ func createGame(request NewGameRequest) (*NewGame, error) {
 	}, nil
 }
 
-func getNumberOfMoves(gameID int) (int, error) {
-	var numMoves int
-	err := db.QueryRow("SELECT COUNT(*) FROM actions WHERE game_id = ?", gameID).Scan(&numMoves)
+func getNumberOfActions(gameID int) (int, error) {
+	var numActions int
+	err := db.QueryRow("SELECT COUNT(*) FROM actions WHERE game_id = ?", gameID).Scan(&numActions)
 	if err != nil {
 		return -1, err
 	}
-	return numMoves, nil
+	return numActions, nil
 }
 
-func getAllMoves(gameID int) (string, error) {
-	var moves []string
+func getAllActions(gameID int) (string, error) {
+	var actions []string
 	rows, err := db.Query("SELECT action FROM actions WHERE game_id = ? ORDER BY creation_time", gameID)
 	if err != nil {
 		return "", err
@@ -350,14 +350,14 @@ func getAllMoves(gameID int) (string, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var move string
-		if err := rows.Scan(&move); err != nil {
+		var action string
+		if err := rows.Scan(&action); err != nil {
 			return "", err
 		}
-		moves = append(moves, move)
+		actions = append(actions, action)
 	}
 
-	return strings.Join(moves, " "), nil
+	return strings.Join(actions, " "), nil
 }
 
 func markGameAsFinished(gameID int, result string) error {
@@ -378,14 +378,14 @@ func checkGameStatus(gameID int) error {
 	return nil
 }
 
-// checkMoveValidity checks if the move number is correct and returns an error if it's not.
-func checkMoveValidity(gameID int, moveNum int) error {
-	numMoves, err := getNumberOfMoves(gameID)
+// checkActionValidity checks if the action number is correct and returns an error if it's not.
+func checkActionValidity(gameID int, actionNum int) error {
+	numActions, err := getNumberOfActions(gameID)
 	if err != nil {
 		return err
 	}
-	if moveNum != numMoves+1 {
-		return fmt.Errorf("invalid move number: got %d, expected %d", moveNum, numMoves+1)
+	if actionNum != numActions+1 {
+		return fmt.Errorf("invalid action number: got %d, expected %d", actionNum, numActions+1)
 	}
 	return nil
 }

@@ -205,11 +205,11 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 	}
 }
 
-// Move Message is encoded as JSON: {"move_num": 1, "move": "i1-h2", signaute: "0x1234"}
+// ActionMessage is encoded as JSON: {"action_num": 1, "action": "i1-h2", signature: "0x1234"}
 type ActionMessage struct {
 	ActionNum int    `json:"action_num"`
 	Action    string `json:"action"`
-	Signaute  string `json:"signature"`
+	Signature string `json:"signature"`
 }
 
 func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
@@ -231,27 +231,27 @@ func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType P
 			log.Printf("Game %d is not in progress", message.GameID)
 			return
 		}
-		if handleError(conn, message.GameID, checkMoveValidity(message.GameID, action.ActionNum)) {
-			log.Printf("Invalid move number %d for game %d", action.ActionNum, message.GameID)
+		if handleError(conn, message.GameID, checkActionValidity(message.GameID, action.ActionNum)) {
+			log.Printf("Invalid action number %d for game %d", action.ActionNum, message.GameID)
 			return
 		}
 		// Save the action to the database
-		if err := saveAction(message.GameID, action.ActionNum, action.Action, action.Signaute); handleError(conn, message.GameID, err) {
+		if err := saveAction(message.GameID, action.ActionNum, action.Action, action.Signature); handleError(conn, message.GameID, err) {
 			log.Printf("Error saving action: %v", err)
 			return
 		}
 		broadcast(message.GameID, message)
 
 	case "SendFullGame":
-		if allMoves, err := getAllMoves(message.GameID); handleError(conn, message.GameID, err) {
+		if allActions, err := getAllActions(message.GameID); handleError(conn, message.GameID, err) {
 			return
 		} else {
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allMoves})
+			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allActions})
 		}
 
-	case "RejectMove":
-		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "GameOver", Message: "Rejected move"})
-		if err := markGameAsFinished(message.GameID, "Rejected move detected"); err != nil {
+	case "RejectAction":
+		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "GameOver", Message: "Rejected action"})
+		if err := markGameAsFinished(message.GameID, "Rejected action detected"); err != nil {
 			log.Printf("Error marking game as finished: %v", err)
 		}
 		return
