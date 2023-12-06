@@ -1,10 +1,12 @@
 port module Main exposing (..)
 
 import Browser
+import Gipf
 import GipfBoard
 import Html exposing (Html, div, text)
 import Json.Decode as Decode
 import Json.Encode as Encode
+import MD5
 
 
 port sendMessage : Encode.Value -> Cmd msg
@@ -75,6 +77,38 @@ joinGame model =
     sendMessage (webSocketMessageEncoder message)
 
 
+messageSignature : ( Int, String ) -> String -> String
+messageSignature a token =
+    let
+        ( actionNum, action ) =
+            a
+    in
+    MD5.hex (String.fromInt actionNum ++ action ++ token)
+
+
+sendAction : Model -> ( Int, String ) -> Cmd Msg
+sendAction model a =
+    let
+        ( actionNum, action ) =
+            a
+
+        signedAction =
+            Encode.object
+                [ ( "action_num", Encode.int actionNum )
+                , ( "action", Encode.string action )
+                , ( "signature", Encode.string (messageSignature a model.token) )
+                ]
+
+        message =
+            { gameId = model.gameId
+            , token = model.token
+            , messageType = "Action"
+            , message = Encode.encode 0 signedAction
+            }
+    in
+    sendMessage (webSocketMessageEncoder message)
+
+
 type Msg
     = GipfBoardMsg GipfBoard.Msg
     | WebSocketMessageReceived String
@@ -96,8 +130,19 @@ update msg model =
             let
                 ( newGipfBoard, gipfBoardCmd ) =
                     GipfBoard.update gipfBoardMsg model.board
+
+                lastAction =
+                    Gipf.lastAction newGipfBoard.game
             in
-            ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
+            case gipfBoardMsg of
+                GipfBoard.MoveMade _ ->
+                    ( { model | board = newGipfBoard }, sendAction model lastAction )
+
+                GipfBoard.RemovePieces ->
+                    ( { model | board = newGipfBoard }, sendAction model lastAction )
+
+                _ ->
+                    ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
 
         WebSocketMessageReceived message ->
             case Decode.decodeString webSocketMessageDecoder message of

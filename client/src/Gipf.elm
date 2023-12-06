@@ -504,6 +504,16 @@ dominantColor group =
         White
 
 
+lastAction : Game -> ( Int, String )
+lastAction game =
+    case game.actionHistory of
+        [] ->
+            ( 0, "" )
+
+        action :: _ ->
+            ( List.length game.actionHistory, actionToString action )
+
+
 currentAndOtherFourStones : BoardPieces -> Color -> ( List (List Piece), List (List Piece) )
 currentAndOtherFourStones board color =
     splitByPredicate
@@ -904,32 +914,35 @@ stringToActions str =
     List.map stringToAction (String.split " " str)
 
 
+actionToString : Action -> String
+actionToString action =
+    case action of
+        MoveAction move ->
+            (if move.kind == Gipf then
+                "G"
+
+             else
+                ""
+            )
+                ++ (if move.color == Black then
+                        "K"
+
+                    else
+                        "W"
+                   )
+                ++ coordToName move.direction.from
+                ++ "-"
+                ++ coordToName move.direction.to
+
+        RemoveAction coords ->
+            "x"
+                ++ String.join "," (List.map coordToName coords)
+
+
 actionsToString : List Action -> String
 actionsToString actions =
     List.map
-        (\action ->
-            case action of
-                MoveAction move ->
-                    (if move.kind == Gipf then
-                        "G"
-
-                     else
-                        ""
-                    )
-                        ++ (if move.color == Black then
-                                "K"
-
-                            else
-                                "W"
-                           )
-                        ++ coordToName move.direction.from
-                        ++ "-"
-                        ++ coordToName move.direction.to
-
-                RemoveAction coords ->
-                    "x"
-                        ++ String.join "," (List.map coordToName coords)
-        )
+        actionToString
         (List.reverse actions)
         |> String.join " "
 

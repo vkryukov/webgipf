@@ -1,4 +1,4 @@
-module GipfBoard exposing (Model, Msg, initFromGame, initFromString, update, view)
+module GipfBoard exposing (Model, Msg(..), initFromGame, initFromString, update, view)
 
 import Browser
 import Draw exposing (..)
