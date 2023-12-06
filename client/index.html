@@ -28,8 +28,8 @@
         var bufferedMessages = [];
 
         app.ports.sendMessage.subscribe(function (value) {
+            console.log('Sending message:', value);
             var message = JSON.stringify(value);
-
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(message);
             } else {
