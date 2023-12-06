@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/sha1"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -58,7 +60,7 @@ func enableCors(handler http.HandlerFunc) http.HandlerFunc {
 
 			handler(w, r)
 		} else {
-			log.Printf("CORS origin not allowed: %s\n", origin)
+			log.Printf("CORS origin not allowed: %s", origin)
 			http.Error(w, "CORS origin not allowed", http.StatusForbidden)
 		}
 	}
@@ -167,7 +169,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to upgrade the connection: %v", err)
 		return
 	}
-	log.Println("Upgraded connection")
+	log.Printf("Upgraded connection %s", connId(conn))
 	go listenForWebSocketMessages(conn)
 }
 
@@ -180,7 +182,7 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 			log.Printf("Error reading message: %v", err)
 			return
 		}
-		log.Printf("Received message: %s\n", messageData)
+		log.Printf("Received message from %s: %s", connId(conn), messageData)
 
 		switch messageType {
 		case websocket.TextMessage:
@@ -211,7 +213,7 @@ type ActionMessage struct {
 }
 
 func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
-	log.Printf("Processing message: %v", message)
+	log.Printf("Processing message from %v: %v", connId(conn), message)
 	switch message.Type {
 	case "Join":
 		log.Printf("Player %s joined game %d with token %s", playerType, message.GameID, message.Token)
@@ -278,7 +280,14 @@ func handleError(conn *websocket.Conn, gameID int, err error) bool {
 	return false
 }
 
+func connId(conn *websocket.Conn) string {
+	hash := sha1.New()
+	fmt.Fprintf(hash, "%p", conn)
+	return fmt.Sprintf("%x", hash.Sum(nil))
+}
+
 func sendJSONMessage(conn *websocket.Conn, data interface{}) error {
+	log.Printf("Sending JSON message to %v: %v", connId(conn), data)
 	err := conn.WriteJSON(data)
 	if err != nil {
 		log.Printf("Error sending JSON message: %v", err)
