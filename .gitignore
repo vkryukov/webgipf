@@ -3,3 +3,4 @@ client/.coverage/
 .DS_Store
 server/main
 server/*.db*
+client/*.js

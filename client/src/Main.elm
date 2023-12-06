@@ -1,8 +1,16 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import GipfBoard
 import Html exposing (Html)
+import Json.Decode as Decode
+import Json.Encode as Encode
+
+
+port sendMessage : Encode.Value -> Cmd msg
+
+
+port messageReceiver : (String -> msg) -> Sub msg
 
 
 type alias Model =
@@ -17,12 +25,15 @@ initWithGameIdToken gameId token =
     let
         ( board, _ ) =
             GipfBoard.initFromString ""
+
+        model =
+            { board = board
+            , gameId = gameId
+            , token = token
+            }
     in
-    ( { board = board
-      , gameId = gameId
-      , token = token
-      }
-    , Cmd.none
+    ( model
+    , joinGame model
     )
 
 
@@ -31,9 +42,40 @@ init _ =
     initWithGameIdToken 1 "faa71988e5c4b226cd7607a7746e644a"
 
 
+type alias WebSocketMessage =
+    { gameId : Int
+    , token : String
+    , messageType : String
+    , message : String
+    }
+
+
+webSocketMessageEncoder : WebSocketMessage -> Encode.Value
+webSocketMessageEncoder message =
+    Encode.object
+        [ ( "game_id", Encode.int message.gameId )
+        , ( "token", Encode.string message.token )
+        , ( "message_type", Encode.string message.messageType )
+        , ( "message", Encode.string message.message )
+        ]
+
+
+joinGame : Model -> Cmd Msg
+joinGame model =
+    let
+        message =
+            { gameId = model.gameId
+            , token = model.token
+            , messageType = "Join"
+            , message = ""
+            }
+    in
+    sendMessage (webSocketMessageEncoder message)
+
+
 type Msg
     = GipfBoardMsg GipfBoard.Msg
-    | NoOp
+    | WebSocketMessageReceived String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -46,8 +88,30 @@ update msg model =
             in
             ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
 
-        NoOp ->
-            ( model, Cmd.none )
+        WebSocketMessageReceived message ->
+            let
+                webSocketMessageDecoder =
+                    Decode.map4 WebSocketMessage
+                        (Decode.field "game_id" Decode.int)
+                        (Decode.field "token" Decode.string)
+                        (Decode.field "message_type" Decode.string)
+                        (Decode.field "message" Decode.string)
+            in
+            case Decode.decodeString webSocketMessageDecoder message of
+                Ok webSocketMessage ->
+                    case webSocketMessage.messageType of
+                        "Join" ->
+                            let
+                                ( newGipfBoard, gipfBoardCmd ) =
+                                    GipfBoard.initFromString webSocketMessage.message
+                            in
+                            ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -60,5 +124,5 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \_ -> messageReceiver WebSocketMessageReceived
         }

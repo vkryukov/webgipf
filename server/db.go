@@ -221,7 +221,7 @@ func validateGameToken(gameID int, token Token) (PlayerType, Token) {
 	var whiteToken, blackToken, viewerToken Token
 	var whiteUserID, blackUserID int
 	err := db.QueryRow(
-		"SELECT white_token, black_token, viewerToken, white_user_id, black_user_id FROM games WHERE id = ?",
+		"SELECT white_token, black_token, viewer_token, white_user_id, black_user_id FROM games WHERE id = ?",
 		gameID).Scan(&whiteToken, &blackToken, &viewerToken, &whiteUserID, &blackUserID)
 	if err != nil {
 		return InvalidPlayer, "" // the game does not exist
@@ -512,4 +512,10 @@ func listGames() ([]Game, error) {
 	})
 
 	return games, nil
+}
+
+func saveAction(gameID int, actionNum int, action string, signature string) error {
+	_, err := db.Exec("INSERT INTO actions(game_id, action_num, action, action_signature) VALUES(?, ?, ?, ?)",
+		gameID, actionNum, action, signature)
+	return err
 }

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Elm and WebSocket</title>
+    <script src="main.js"></script>
+</head>
+
+<body>
+    <div id="elm-node"></div>
+    <script>
+        // Initialize the Elm application
+        var app = Elm.Main.init({ node: document.getElementById('elm-node') });
+
+        // Create a new WebSocket connection
+        var socket = new WebSocket('ws://localhost:8080/ws');
+
+        socket.onopen = function (event) {
+            console.log('WebSocket connection established');
+
+            // Now that the connection is open, send any buffered messages
+            bufferedMessages.forEach(function (message) {
+                socket.send(message);
+            });
+            bufferedMessages = []; // Clear the buffer
+        };
+
+        var bufferedMessages = [];
+
+        app.ports.sendMessage.subscribe(function (value) {
+            var message = JSON.stringify(value);
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(message);
+            } else {
+                // Buffer the message if the connection is not open
+                bufferedMessages.push(message);
+            }
+        });
+
+        // Receive messages from the WebSocket server and send them to Elm
+        socket.onmessage = function (event) {
+            var message = event.data;
+            app.ports.messageReceiver.send(message);
+        };
+
+        // Handle WebSocket errors
+        socket.onerror = function (error) {
+            console.error('WebSocket Error:', error);
+        };
+
+        // Handle WebSocket connection close
+        socket.onclose = function (event) {
+            console.log('WebSocket connection closed');
+        };
+    </script>
+</body>
+
+</html>

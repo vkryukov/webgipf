@@ -31,7 +31,7 @@ func main() {
 
 	// Game management
 	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
-	http.HandleFunc("/game", handleWebSocket)
+	http.HandleFunc("/ws", handleWebSocket)
 
 	// Server administration
 	http.HandleFunc("/users", enableCors(handleListUsers))
@@ -154,20 +154,20 @@ var upgrader = websocket.Upgrader{
 }
 
 type WebSocketMessage struct {
-	GameID    int    `json:"game_id"`
-	Token     Token  `json:"token"`
-	Type      string `json:"action_type,omitempty"`
-	Message   string `json:"action,omitempty"`
-	Signature string `json:"signature,omitempty"`
-	MoveNum   int    `json:"action_num,omitempty"`
+	GameID  int    `json:"game_id"`
+	Token   Token  `json:"token"`
+	Type    string `json:"message_type,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	log.Println("Handling websocket connection")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade the connection: %v", err)
 		return
 	}
+	log.Println("Upgraded connection")
 	go listenForWebSocketMessages(conn)
 }
 
@@ -180,6 +180,7 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 			log.Printf("Error reading message: %v", err)
 			return
 		}
+		log.Printf("Received message: %s\n", messageData)
 
 		switch messageType {
 		case websocket.TextMessage:
@@ -202,20 +203,42 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 	}
 }
 
+// Move Message is encoded as JSON: {"move_num": 1, "move": "i1-h2", signaute: "0x1234"}
+type ActionMessage struct {
+	ActionNum int    `json:"action_num"`
+	Action    string `json:"action"`
+	Signaute  string `json:"signature"`
+}
+
 func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
+	log.Printf("Processing message: %v", message)
 	switch message.Type {
 	case "Join":
+		log.Printf("Player %s joined game %d with token %s", playerType, message.GameID, message.Token)
 		addConnection(message.GameID, conn)
 		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "UpgradeToken", Message: playerType.String()})
 
-	case "Move":
+	case "Action":
+		var action ActionMessage
+		err := json.Unmarshal([]byte(message.Message), &action)
+		if err != nil {
+			log.Printf("Error unmarshalling action message: %v", err)
+			return
+		}
 		if handleError(conn, message.GameID, checkGameStatus(message.GameID)) {
+			log.Printf("Game %d is not in progress", message.GameID)
 			return
 		}
-		if handleError(conn, message.GameID, checkMoveValidity(message.GameID, message.MoveNum)) {
+		if handleError(conn, message.GameID, checkMoveValidity(message.GameID, action.ActionNum)) {
+			log.Printf("Invalid move number %d for game %d", action.ActionNum, message.GameID)
 			return
 		}
-		broadcast(message.GameID, WebSocketMessage{GameID: message.GameID, Type: "Move", Message: message.Message, MoveNum: message.MoveNum, Signature: message.Signature})
+		// Save the action to the database
+		if err := saveAction(message.GameID, action.ActionNum, action.Action, action.Signaute); handleError(conn, message.GameID, err) {
+			log.Printf("Error saving action: %v", err)
+			return
+		}
+		broadcast(message.GameID, message)
 
 	case "SendFullGame":
 		if allMoves, err := getAllMoves(message.GameID); handleError(conn, message.GameID, err) {
