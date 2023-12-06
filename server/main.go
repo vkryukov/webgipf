@@ -72,6 +72,7 @@ func writeJSONResponse(w http.ResponseWriter, response interface{}) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Sending JSON response: %s", jsonResponse)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
 }
@@ -332,6 +333,7 @@ func handleListUsers(w http.ResponseWriter, r *http.Request) {
 
 func handleListGames(w http.ResponseWriter, r *http.Request) {
 	games, err := listGames()
+	log.Printf("Games: %v", games)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

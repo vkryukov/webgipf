@@ -60,14 +60,13 @@ func initDB() {
 
 	CREATE TABLE IF NOT EXISTS actions (
 		game_id INTEGER, 
-		action_id INTEGER, -- TODO: maybe remove?
 		-- the number of the action in the sequence (starting from 1)
 		action_num INTEGER,
 		action TEXT,
 		-- an MD5 hash of the (game_id, action_num, player_key, action), calculated by the client, for client integrity verification
 		action_signature TEXT, 
 		creation_time REAL DEFAULT ((julianday('now') - 2440587.5)*86400000), 
-		PRIMARY KEY (game_id, action_id)
+		PRIMARY KEY (game_id, action_num)
 	);
     `
 	_, err = db.Exec(sqlStmt)
@@ -471,8 +470,8 @@ func listGames() ([]Game, error) {
 	query := `
 		SELECT 
 			g.id, g.type, u1.username, u2.username, g.white_token, g.black_token, g.viewer_token, g.game_over, g.game_result, g.creation_time,
-			COUNT(a.action_id) AS num_actions, 
-            COALESCE(GROUP_CONCAT(a.action ORDER BY a.creation_time, ' '), '')  AS game_record
+			COUNT(a.action_num) AS num_actions, 
+            COALESCE(GROUP_CONCAT(a.action ORDER BY a.creation_time, ', '), '')  AS game_record
 		FROM games g
 		LEFT JOIN users u1 ON g.white_user_id = u1.id
 		LEFT JOIN users u2 ON g.black_user_id = u2.id
