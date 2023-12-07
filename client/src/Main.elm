@@ -37,7 +37,7 @@ initWithGameIdToken : Int -> String -> ( Model, Cmd Msg )
 initWithGameIdToken gameId token =
     let
         ( board, _ ) =
-            GipfBoard.initFromString ""
+            GipfBoard.initEmpty
 
         model =
             { board = board
@@ -182,6 +182,9 @@ update msg model =
                 ( newGipfBoard, gipfBoardCmd ) =
                     GipfBoard.update gipfBoardMsg model.board
 
+                newGipfBoard1 =
+                    { newGipfBoard | allowActions = GipfBoard.actionAllowed newGipfBoard model.thisPlayer }
+
                 lastAction =
                     Gipf.lastAction newGipfBoard.game
             in
@@ -215,7 +218,7 @@ update msg model =
                                             String.join " " (List.map (\a -> a.action) gameResponse.actions)
 
                                         ( newGipfBoard, cmd ) =
-                                            GipfBoard.initFromString actions
+                                            GipfBoard.initFromStringWithPlayer actions gameResponse.player
                                     in
                                     ( { model
                                         | gameToken = gameResponse.game_token
@@ -248,6 +251,17 @@ viewError model =
             div [] []
 
 
+viewGameInfo : Model -> Html Msg
+viewGameInfo model =
+    div []
+        [ div [] [ text ("Game ID: " ++ String.fromInt model.gameId) ]
+        , div [] [ text ("Game token: " ++ model.gameToken) ]
+        , div [] [ text ("White player: " ++ model.whitePlayer) ]
+        , div [] [ text ("Black player: " ++ model.blackPlayer) ]
+        , div [] [ text ("This player: " ++ model.thisPlayer) ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -256,7 +270,10 @@ view model =
             div [] [ text "Waiting to join" ]
 
           else
-            Html.map GipfBoardMsg (GipfBoard.view model.board)
+            div []
+                [ viewGameInfo model
+                , Html.map GipfBoardMsg (GipfBoard.view model.board)
+                ]
         ]
 
 

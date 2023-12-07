@@ -1,4 +1,14 @@
-module GipfBoard exposing (Model, Msg(..), initFromGame, initFromString, update, view)
+module GipfBoard exposing
+    ( Model
+    , Msg(..)
+    , actionAllowed
+    , initEmpty
+    , initFromGame
+    , initFromString
+    , initFromStringWithPlayer
+    , update
+    , view
+    )
 
 import Browser
 import Draw exposing (..)
@@ -81,6 +91,29 @@ initFromGame game =
 initFromString : String -> ( Model, Cmd msg )
 initFromString s =
     initFromGame (stringToGameWithDefault s)
+
+
+actionAllowed : Model -> String -> Bool
+actionAllowed model player =
+    let
+        actionPlayer =
+            playerWithAction model
+    in
+    (player == "white" && actionPlayer == White) || (player == "black" && actionPlayer == Black)
+
+
+initFromStringWithPlayer : String -> String -> ( Model, Cmd msg )
+initFromStringWithPlayer s player =
+    let
+        ( model, cmd ) =
+            initFromString s
+    in
+    ( { model | allowActions = actionAllowed model player }, cmd )
+
+
+initEmpty : ( Model, Cmd msg )
+initEmpty =
+    initFromGame emptyGame
 
 
 selected : Model -> List Coord
