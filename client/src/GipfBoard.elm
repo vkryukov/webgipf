@@ -6,6 +6,7 @@ module GipfBoard exposing
     , initFromGame
     , initFromString
     , initFromStringWithPlayer
+    , receiveAction
     , update
     , view
     )
@@ -114,6 +115,20 @@ initFromStringWithPlayer s player =
 initEmpty : ( Model, Cmd msg )
 initEmpty =
     initFromGame emptyGame
+
+
+receiveAction : Model -> String -> ( Model, Cmd msg )
+receiveAction model action =
+    let
+        g =
+            performAction (stringToAction action) (Just model.game)
+    in
+    case g of
+        Just g1 ->
+            initFromGame g1
+
+        Nothing ->
+            ( model, Cmd.none )
 
 
 selected : Model -> List Coord

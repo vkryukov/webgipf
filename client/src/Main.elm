@@ -219,17 +219,17 @@ update msg model =
                     { newGipfBoard | allowActions = GipfBoard.actionAllowed newGipfBoard model.thisPlayer }
 
                 lastAction =
-                    Gipf.lastAction newGipfBoard.game
+                    Gipf.lastAction newGipfBoard1.game
             in
             case gipfBoardMsg of
                 GipfBoard.MoveMade _ ->
-                    ( { model | board = newGipfBoard }, sendAction model lastAction )
+                    ( { model | board = newGipfBoard1 }, sendAction model lastAction )
 
                 GipfBoard.RemovePieces ->
-                    ( { model | board = newGipfBoard }, sendAction model lastAction )
+                    ( { model | board = newGipfBoard1 }, sendAction model lastAction )
 
                 _ ->
-                    ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
+                    ( { model | board = newGipfBoard1 }, Cmd.map GipfBoardMsg gipfBoardCmd )
 
         WebSocketMessageReceived message ->
             case Decode.decodeString webSocketMessageDecoder message of
@@ -263,6 +263,22 @@ update msg model =
                                       }
                                     , Cmd.map GipfBoardMsg cmd
                                     )
+
+                                Err err ->
+                                    ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
+
+                        "Action" ->
+                            let
+                                actionResult =
+                                    Decode.decodeString actionDecoder webSocketMessage.message
+                            in
+                            case actionResult of
+                                Ok action ->
+                                    let
+                                        ( newGipfBoard, cmd ) =
+                                            GipfBoard.receiveAction model.board action.action
+                                    in
+                                    ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg cmd )
 
                                 Err err ->
                                     ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
