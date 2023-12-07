@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -331,34 +330,6 @@ func createGame(request NewGameRequest) (*NewGame, error) {
 	}, nil
 }
 
-func getNumberOfActions(gameID int) (int, error) {
-	var numActions int
-	err := db.QueryRow("SELECT COUNT(*) FROM actions WHERE game_id = ?", gameID).Scan(&numActions)
-	if err != nil {
-		return -1, err
-	}
-	return numActions, nil
-}
-
-func getAllActions(gameID int) (string, error) {
-	var actions []string
-	rows, err := db.Query("SELECT action FROM actions WHERE game_id = ? ORDER BY creation_time", gameID)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var action string
-		if err := rows.Scan(&action); err != nil {
-			return "", err
-		}
-		actions = append(actions, action)
-	}
-
-	return strings.Join(actions, " "), nil
-}
-
 func markGameAsFinished(gameID int, result string) error {
 	_, err := db.Exec("UPDATE games SET game_over = 1, game_result = ? WHERE id = ?", result, gameID)
 	return err
@@ -373,18 +344,6 @@ func checkGameStatus(gameID int) error {
 	}
 	if gameOver == 1 {
 		return fmt.Errorf("game is over")
-	}
-	return nil
-}
-
-// checkActionValidity checks if the action number is correct and returns an error if it's not.
-func checkActionValidity(gameID int, actionNum int) error {
-	numActions, err := getNumberOfActions(gameID)
-	if err != nil {
-		return err
-	}
-	if actionNum != numActions+1 {
-		return fmt.Errorf("invalid action number: got %d, expected %d", actionNum, numActions+1)
 	}
 	return nil
 }
@@ -511,10 +470,4 @@ func listGames() ([]Game, error) {
 	})
 
 	return games, nil
-}
-
-func saveAction(gameID int, actionNum int, action string, signature string) error {
-	_, err := db.Exec("INSERT INTO actions(game_id, action_num, action, action_signature) VALUES(?, ?, ?, ?)",
-		gameID, actionNum, action, signature)
-	return err
 }

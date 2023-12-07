@@ -4,16 +4,42 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Define ANSI color codes
+const (
+	LightGrey = "\033[37m"
+	Cyan      = "\033[36m"
+	Blue      = "\033[34m"
+	Reset     = "\033[0m"
+)
+
+// customWriter is an io.Writer that adds color to log output
+type customWriter struct {
+	logFile io.Writer
+}
+
+// Write adds color codes to the log output
+func (cw customWriter) Write(p []byte) (n int, err error) {
+	timeStamp := time.Now().Format("01/02 15:04:05")
+	coloredOutput := fmt.Sprintf("%s%s%s %s", LightGrey, timeStamp, Reset, string(p))
+	return cw.logFile.Write([]byte(coloredOutput))
+}
+
 func main() {
+	log.SetFlags(0)
+	log.SetOutput(&customWriter{logFile: os.Stdout})
+
 	initDB()
 	defer func() {
 		_, err := db.Exec("PRAGMA wal_checkpoint;")
@@ -67,12 +93,12 @@ func enableCors(handler http.HandlerFunc) http.HandlerFunc {
 }
 
 func writeJSONResponse(w http.ResponseWriter, response interface{}) {
-	jsonResponse, err := json.Marshal(response)
+	jsonResponse, err := json.MarshalIndent(response, "", "  ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Sending JSON response: %s", jsonResponse)
+	log.Printf("Sending JSON response:\n%s%s%s", Cyan, string(jsonResponse), Reset)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
 }
@@ -206,23 +232,16 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 	}
 }
 
-// ActionMessage is encoded as JSON: {"action_num": 1, "action": "i1-h2", signature: "0x1234"}
-type ActionMessage struct {
-	ActionNum int    `json:"action_num"`
-	Action    string `json:"action"`
-	Signature string `json:"signature"`
-}
-
 func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
 	log.Printf("Processing message from %v: %v", connId(conn), message)
 	switch message.Type {
 	case "Join":
 		log.Printf("Player %s joined game %d with token %s", playerType, message.GameID, message.Token)
 		addConnection(message.GameID, conn)
-		sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "UpgradeToken", Message: playerType.String()})
+		sendJSONMessage(conn, message.GameID, "UpgradeToken", playerType.String())
 
 	case "Action":
-		var action ActionMessage
+		var action Action
 		err := json.Unmarshal([]byte(message.Message), &action)
 		if err != nil {
 			log.Printf("Error unmarshalling action message: %v", err)
@@ -247,7 +266,7 @@ func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType P
 		if allActions, err := getAllActions(message.GameID); handleError(conn, message.GameID, err) {
 			return
 		} else {
-			sendJSONMessage(conn, WebSocketMessage{GameID: message.GameID, Type: "FullGame", Message: allActions})
+			sendJSONMessage(conn, message.GameID, "FullGame", allActions)
 		}
 
 	case "RejectAction":
@@ -275,7 +294,7 @@ func addConnection(gameID int, conn *websocket.Conn) {
 func handleError(conn *websocket.Conn, gameID int, err error) bool {
 	if err != nil {
 		log.Printf("Error: %v", err)
-		sendJSONMessage(conn, WebSocketMessage{GameID: gameID, Type: "Error", Message: err.Error()})
+		sendJSONMessage(conn, gameID, "Error", err.Error())
 		return true
 	}
 	return false
@@ -287,9 +306,14 @@ func connId(conn *websocket.Conn) string {
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
-func sendJSONMessage(conn *websocket.Conn, data interface{}) error {
-	log.Printf("Sending JSON message to %v: %v", connId(conn), data)
-	err := conn.WriteJSON(data)
+func sendJSONMessage(conn *websocket.Conn, gameId int, messageType string, data any) error {
+	prettyJson, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		log.Printf("Error marshalling JSON: %v", err)
+		return err
+	}
+	log.Printf("Sending JSON message to conn=%s%v%s:\n%s%s%s", Blue, connId(conn), Reset, Cyan, prettyJson, Reset)
+	err = conn.WriteJSON(WebSocketMessage{GameID: gameId, Type: messageType, Message: string(prettyJson)})
 	if err != nil {
 		log.Printf("Error sending JSON message: %v", err)
 		return err
