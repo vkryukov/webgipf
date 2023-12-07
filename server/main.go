@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,14 +38,6 @@ func (cw customWriter) Write(p []byte) (n int, err error) {
 	return cw.logFile.Write([]byte(coloredOutput))
 }
 
-type Conn struct {
-	*websocket.Conn
-}
-
-func (c Conn) String() string {
-	return fmt.Sprintf("%s%p%s", Blue, c.Conn, Reset)
-}
-
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(&customWriter{logFile: os.Stdout})
@@ -70,6 +61,8 @@ func main() {
 
 	// Game management
 	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
+
+	// WebSockets
 	http.HandleFunc("/ws", handleWebSocket)
 
 	// Server administration
@@ -174,6 +167,14 @@ func createNewGameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // WebSockets
+
+type Conn struct {
+	*websocket.Conn
+}
+
+func (c Conn) String() string {
+	return fmt.Sprintf("%s%p%s", Blue, c.Conn, Reset)
+}
 
 var (
 	connectedUsers   = make(map[int][]Conn)
@@ -310,12 +311,6 @@ func handleError(conn Conn, gameID int, err error) bool {
 		return true
 	}
 	return false
-}
-
-func connId(conn *websocket.Conn) string {
-	hash := sha1.New()
-	fmt.Fprintf(hash, "%p", conn)
-	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
 func sendJSONMessage(conn Conn, gameId int, messageType string, data any) error {

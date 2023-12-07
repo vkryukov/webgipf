@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-// Action is encoded as JSON: {"action_num": 1, "action": "i1-h2", signature: "0x1234"}
 type Action struct {
 	ActionNum int    `json:"action_num"`
 	Action    string `json:"action"`
@@ -17,7 +16,6 @@ func saveAction(gameID int, actionNum int, action string, signature string) erro
 	return err
 }
 
-// checkActionValidity checks if the action number is correct and returns an error if it's not.
 func checkActionValidity(gameID int, actionNum int) error {
 	numActions, err := getNumberOfActions(gameID)
 	if err != nil {
