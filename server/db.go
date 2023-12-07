@@ -425,6 +425,40 @@ type Game struct {
 	GameRecord   string `json:"game_record"`
 }
 
+func getGame(id int) (*Game, error) {
+	query := `
+		SELECT 
+			g.id, g.type, u1.username, u2.username, g.white_token, g.black_token, g.viewer_token, g.game_over, g.game_result, g.creation_time,
+			COUNT(a.action_num) AS num_actions, 
+			COALESCE(GROUP_CONCAT(a.action ORDER BY a.creation_time, ', '), '')  AS game_record
+		FROM games g
+		LEFT JOIN users u1 ON g.white_user_id = u1.id
+		LEFT JOIN users u2 ON g.black_user_id = u2.id
+		LEFT JOIN actions a ON g.id = a.game_id
+		WHERE g.id = ?
+		GROUP BY g.id
+	`
+	var game Game
+	var whiteUser, blackUser sql.NullString
+	var creationTime float64
+
+	err := db.QueryRow(query, id).Scan(&game.ID, &game.Type, &whiteUser, &blackUser, &game.WhiteToken, &game.BlackToken, &game.ViewerToken,
+		&game.GameOver, &game.GameResult, &creationTime, &game.NumActions, &game.GameRecord)
+	if err != nil {
+		return nil, err
+	}
+	game.CreationTime = int(creationTime)
+
+	if whiteUser.Valid {
+		game.WhiteUser = whiteUser.String
+	}
+	if blackUser.Valid {
+		game.BlackUser = blackUser.String
+	}
+
+	return &game, nil
+}
+
 func listGames() ([]Game, error) {
 	query := `
 		SELECT 

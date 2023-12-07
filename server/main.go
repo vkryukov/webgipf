@@ -229,12 +229,12 @@ func listenForWebSocketMessages(conn Conn) {
 			var message WebSocketMessage
 			err := json.Unmarshal(messageData, &message)
 			if err != nil {
-				log.Printf("Error unmarshalling message: %v", err)
+				log.Printf("Error unmarshalling message for %s: %v", conn, err)
 				return
 			}
 			playerType, token := validateGameToken(message.GameID, message.Token)
 			if playerType == InvalidPlayer {
-				log.Printf("Invalid game id or token: %d %s", message.GameID, message.Token)
+				log.Printf("Invalid game id or token for %s: %d %s", conn, message.GameID, message.Token)
 				return
 			}
 			processMessage(conn, message, playerType, token)
@@ -250,8 +250,22 @@ func processMessage(conn Conn, message WebSocketMessage, playerType PlayerType, 
 	switch message.Type {
 	case "Join":
 		log.Printf("Player %s joined game %d with token %s", playerType, message.GameID, message.Token)
+		game, err := getGame(message.GameID)
+		if handleError(conn, message.GameID, err) {
+			return
+		}
+		actions, err := getAllActions(message.GameID)
+		if handleError(conn, message.GameID, err) {
+			return
+		}
 		addConnection(message.GameID, conn)
-		sendJSONMessage(conn, message.GameID, "UpgradeToken", playerType.String())
+		sendJSONMessage(conn, message.GameID, "GameJoined", map[string]interface{}{
+			"player":       playerType.String(),
+			"game_token":   token,
+			"white_player": game.WhiteUser,
+			"black_player": game.BlackUser,
+			"actions":      actions,
+		})
 
 	case "Action":
 		var action Action
