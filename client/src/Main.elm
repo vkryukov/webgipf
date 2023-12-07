@@ -215,8 +215,14 @@ update msg model =
                 ( newGipfBoard, gipfBoardCmd ) =
                     GipfBoard.update gipfBoardMsg model.board
 
+                allowed =
+                    GipfBoard.actionAllowed newGipfBoard model.thisPlayer
+
+                _ =
+                    Debug.log "allowed" ( newGipfBoard, model.thisPlayer, allowed )
+
                 newGipfBoard1 =
-                    { newGipfBoard | allowActions = GipfBoard.actionAllowed newGipfBoard model.thisPlayer }
+                    { newGipfBoard | allowActions = allowed }
 
                 lastAction =
                     Gipf.lastAction newGipfBoard1.game
@@ -277,8 +283,14 @@ update msg model =
                                     let
                                         ( newGipfBoard, cmd ) =
                                             GipfBoard.receiveAction model.board action.action
+
+                                        allowed =
+                                            GipfBoard.actionAllowed newGipfBoard model.thisPlayer
+
+                                        newGipfBoard1 =
+                                            { newGipfBoard | allowActions = allowed }
                                     in
-                                    ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg cmd )
+                                    ( { model | board = newGipfBoard1 }, Cmd.map GipfBoardMsg cmd )
 
                                 Err err ->
                                     ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
