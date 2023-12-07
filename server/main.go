@@ -16,12 +16,15 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Pretty printing
+
 // Define ANSI color codes
 const (
-	LightGrey = "\033[37m"
-	Cyan      = "\033[36m"
-	Blue      = "\033[34m"
-	Reset     = "\033[0m"
+	LightGrey  = "\033[37m"
+	BrightBlue = "\033[94m"
+	Cyan       = "\033[36m"
+	Blue       = "\033[34m"
+	Reset      = "\033[0m"
 )
 
 // customWriter is an io.Writer that adds color to log output
@@ -32,8 +35,16 @@ type customWriter struct {
 // Write adds color codes to the log output
 func (cw customWriter) Write(p []byte) (n int, err error) {
 	timeStamp := time.Now().Format("01/02 15:04:05")
-	coloredOutput := fmt.Sprintf("%s%s%s %s", LightGrey, timeStamp, Reset, string(p))
+	coloredOutput := fmt.Sprintf("%s%s%s %s", BrightBlue, timeStamp, Reset, string(p))
 	return cw.logFile.Write([]byte(coloredOutput))
+}
+
+type Conn struct {
+	*websocket.Conn
+}
+
+func (c Conn) String() string {
+	return fmt.Sprintf("%s%p%s", Blue, c.Conn, Reset)
 }
 
 func main() {
@@ -165,7 +176,7 @@ func createNewGameHandler(w http.ResponseWriter, r *http.Request) {
 // WebSockets
 
 var (
-	connectedUsers   = make(map[int][]*websocket.Conn)
+	connectedUsers   = make(map[int][]Conn)
 	connectedUsersMu sync.Mutex
 )
 
@@ -191,16 +202,17 @@ type WebSocketMessage struct {
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling websocket connection")
-	conn, err := upgrader.Upgrade(w, r, nil)
+	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade the connection: %v", err)
 		return
 	}
-	log.Printf("Upgraded connection %s", connId(conn))
+	conn := Conn{c}
+	log.Printf("Upgraded connection %s", conn)
 	go listenForWebSocketMessages(conn)
 }
 
-func listenForWebSocketMessages(conn *websocket.Conn) {
+func listenForWebSocketMessages(conn Conn) {
 	defer conn.Close()
 
 	for {
@@ -209,7 +221,7 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 			log.Printf("Error reading message: %v", err)
 			return
 		}
-		log.Printf("Received message from %s: %s", connId(conn), messageData)
+		log.Printf("Received message from %s: %s", conn, messageData)
 
 		switch messageType {
 		case websocket.TextMessage:
@@ -232,8 +244,8 @@ func listenForWebSocketMessages(conn *websocket.Conn) {
 	}
 }
 
-func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType PlayerType, token Token) {
-	log.Printf("Processing message from %v: %v", connId(conn), message)
+func processMessage(conn Conn, message WebSocketMessage, playerType PlayerType, token Token) {
+	log.Printf("Processing message from %v: %v", conn, message)
 	switch message.Type {
 	case "Join":
 		log.Printf("Player %s joined game %d with token %s", playerType, message.GameID, message.Token)
@@ -284,14 +296,14 @@ func processMessage(conn *websocket.Conn, message WebSocketMessage, playerType P
 	}
 }
 
-func addConnection(gameID int, conn *websocket.Conn) {
+func addConnection(gameID int, conn Conn) {
 	connectedUsersMu.Lock()
 	connectedUsers[gameID] = append(connectedUsers[gameID], conn)
 	connectedUsersMu.Unlock()
 }
 
 // handleError checks if there is an error and sends an appropriate JSON message. Returns true if there was an error.
-func handleError(conn *websocket.Conn, gameID int, err error) bool {
+func handleError(conn Conn, gameID int, err error) bool {
 	if err != nil {
 		log.Printf("Error: %v", err)
 		sendJSONMessage(conn, gameID, "Error", err.Error())
@@ -306,13 +318,13 @@ func connId(conn *websocket.Conn) string {
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
-func sendJSONMessage(conn *websocket.Conn, gameId int, messageType string, data any) error {
+func sendJSONMessage(conn Conn, gameId int, messageType string, data any) error {
 	prettyJson, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		log.Printf("Error marshalling JSON: %v", err)
 		return err
 	}
-	log.Printf("Sending JSON message to conn=%s%v%s:\n%s%s%s", Blue, connId(conn), Reset, Cyan, prettyJson, Reset)
+	log.Printf("Sending JSON message to conn=%s:\n%s%s%s", conn, Cyan, prettyJson, Reset)
 	err = conn.WriteJSON(WebSocketMessage{GameID: gameId, Type: messageType, Message: string(prettyJson)})
 	if err != nil {
 		log.Printf("Error sending JSON message: %v", err)
@@ -325,7 +337,7 @@ func broadcast(gameID int, action WebSocketMessage) {
 	connectedUsersMu.Lock()
 	defer connectedUsersMu.Unlock()
 
-	var activeConnections []*websocket.Conn
+	var activeConnections []Conn
 
 	for _, conn := range connectedUsers[gameID] {
 		err := conn.WriteJSON(action)
