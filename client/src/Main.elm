@@ -15,10 +15,20 @@ port sendMessage : Encode.Value -> Cmd msg
 port messageReceiver : (String -> msg) -> Sub msg
 
 
+type GameState
+    = WaitingToJoin
+    | Joined
+
+
 type alias Model =
     { board : GipfBoard.Model
     , gameId : Int
-    , token : String
+    , playerToken : String
+    , gameToken : String
+    , whitePlayer : String
+    , blackPlayer : String
+    , thisPlayer : String
+    , state : GameState
     , error : Maybe String
     }
 
@@ -32,7 +42,12 @@ initWithGameIdToken gameId token =
         model =
             { board = board
             , gameId = gameId
-            , token = token
+            , playerToken = token
+            , gameToken = ""
+            , whitePlayer = ""
+            , blackPlayer = ""
+            , thisPlayer = ""
+            , state = WaitingToJoin
             , error = Nothing
             }
     in
@@ -69,7 +84,7 @@ joinGame model =
     let
         message =
             { gameId = model.gameId
-            , token = model.token
+            , token = model.playerToken
             , messageType = "Join"
             , message = ""
             }
@@ -96,12 +111,12 @@ sendAction model a =
             Encode.object
                 [ ( "action_num", Encode.int actionNum )
                 , ( "action", Encode.string action )
-                , ( "signature", Encode.string (messageSignature a model.token) )
+                , ( "signature", Encode.string (messageSignature a model.playerToken) )
                 ]
 
         message =
             { gameId = model.gameId
-            , token = model.token
+            , token = model.playerToken
             , messageType = "Action"
             , message = Encode.encode 0 signedAction
             }
@@ -121,6 +136,42 @@ webSocketMessageDecoder =
         (Decode.field "token" Decode.string)
         (Decode.field "message_type" Decode.string)
         (Decode.field "message" Decode.string)
+
+
+{-| Processing actions
+-}
+type alias Action =
+    { actionNum : Int
+    , action : String
+    , signature : String
+    }
+
+
+actionDecoder : Decode.Decoder Action
+actionDecoder =
+    Decode.map3 Action
+        (Decode.field "action_num" Decode.int)
+        (Decode.field "action" Decode.string)
+        (Decode.field "signature" Decode.string)
+
+
+type alias JoinGameResponse =
+    { player : String
+    , game_token : String
+    , white_player : String
+    , black_player : String
+    , actions : List Action
+    }
+
+
+gameResponseDecoder : Decode.Decoder JoinGameResponse
+gameResponseDecoder =
+    Decode.map5 JoinGameResponse
+        (Decode.field "player" Decode.string)
+        (Decode.field "game_token" Decode.string)
+        (Decode.field "white_player" Decode.string)
+        (Decode.field "black_player" Decode.string)
+        (Decode.field "actions" (Decode.list actionDecoder))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -152,12 +203,33 @@ update msg model =
                             Debug.log "WebSocketMessageReceived" webSocketMessage
                     in
                     case webSocketMessage.messageType of
-                        "Join" ->
+                        "GameJoined" ->
                             let
-                                ( newGipfBoard, gipfBoardCmd ) =
-                                    GipfBoard.initFromString webSocketMessage.message
+                                gameResult =
+                                    Decode.decodeString gameResponseDecoder webSocketMessage.message
                             in
-                            ( { model | board = newGipfBoard }, Cmd.map GipfBoardMsg gipfBoardCmd )
+                            case gameResult of
+                                Ok gameResponse ->
+                                    let
+                                        actions =
+                                            String.join " " (List.map (\a -> a.action) gameResponse.actions)
+
+                                        ( newGipfBoard, cmd ) =
+                                            GipfBoard.initFromString actions
+                                    in
+                                    ( { model
+                                        | gameToken = gameResponse.game_token
+                                        , whitePlayer = gameResponse.white_player
+                                        , blackPlayer = gameResponse.black_player
+                                        , thisPlayer = gameResponse.player
+                                        , state = Joined
+                                        , board = newGipfBoard
+                                      }
+                                    , Cmd.map GipfBoardMsg cmd
+                                    )
+
+                                Err err ->
+                                    ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
 
                         _ ->
                             ( model, Cmd.none )
@@ -180,7 +252,11 @@ view : Model -> Html Msg
 view model =
     div []
         [ viewError model
-        , Html.map GipfBoardMsg (GipfBoard.view model.board)
+        , if model.state == WaitingToJoin then
+            div [] [ text "Waiting to join" ]
+
+          else
+            Html.map GipfBoardMsg (GipfBoard.view model.board)
         ]
 
 
