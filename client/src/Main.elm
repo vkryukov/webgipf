@@ -43,7 +43,7 @@ initWithGameIdToken gameId token =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    initWithGameIdToken 1 "faa71988e5c4b226cd7607a7746e644a"
+    initWithGameIdToken 1 "f0077ae4f67ecb3aeb6e477865e71ea8"
 
 
 type alias WebSocketMessage =
