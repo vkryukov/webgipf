@@ -343,15 +343,17 @@ func sendJSONMessage(conn Conn, gameId int, messageType string, data any) error 
 }
 
 func broadcast(gameID int, action WebSocketMessage) {
+	log.Printf("Broadcasting action %v to game %d", action, gameID)
 	connectedUsersMu.Lock()
 	defer connectedUsersMu.Unlock()
 
 	var activeConnections []Conn
 
 	for _, conn := range connectedUsers[gameID] {
+		log.Printf("Sending action to conn %s", conn)
 		err := conn.WriteJSON(action)
 		if err != nil {
-			log.Printf("Failed to send action: %v", err)
+			log.Printf("Failed to send action to conn %s: %v", conn, err)
 			conn.Close() // Close the failed connection
 		} else {
 			activeConnections = append(activeConnections, conn)
