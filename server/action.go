@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 )
 
 type Action struct {
@@ -41,7 +43,12 @@ func getAllActions(gameID int) ([]Action, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Printf("error closing rows: %v", err)
+		}
+	}(rows)
 
 	var allActions []Action
 	for rows.Next() {
