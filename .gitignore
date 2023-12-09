@@ -4,3 +4,4 @@ client/.coverage/
 server/main
 server/*.db*
 client/*.js
+server/config.json
