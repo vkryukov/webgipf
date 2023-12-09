@@ -25,6 +25,9 @@ func initDB() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT UNIQUE,
 		password TEXT,
+		email TEXT,
+		email_verified INTEGER DEFAULT 0,
+		is_admin INTEGER DEFAULT 0,
 		creation_time REAL DEFAULT ((julianday('now') - 2440587.5)*86400000)
 	);
 

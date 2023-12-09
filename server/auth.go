@@ -70,6 +70,7 @@ func getUserFromContext(ctx context.Context) string {
 type UserRequest struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
+	Email       string `json:"email,omitempty"`
 	NewPassword string `json:"new_password,omitempty"`
 }
 
@@ -143,7 +144,7 @@ func registerUser(userReq *UserRequest) (int, error) {
 		return -1, err
 	}
 
-	res, err := db.Exec("INSERT INTO users(username, password) VALUES(?, ?)", userReq.Username, hashedPwd)
+	res, err := db.Exec("INSERT INTO users(username, password, email) VALUES(?, ?, ?)", userReq.Username, hashedPwd, userReq.Email)
 	if err != nil {
 		log.Printf("Error inserting user %s into database: %v", userReq.Username, err)
 		return -1, err
