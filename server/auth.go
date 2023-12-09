@@ -17,7 +17,7 @@ import (
 
 func RegisterAuthHandlers() {
 	http.HandleFunc("/auth/register", enableCors(registerUserHandler))
-	http.HandleFunc("/auth/verify", enableCors(verifyHandler))
+	http.HandleFunc("/auth/verify", enableCors(verificationHandler))
 	http.HandleFunc("/auth/login", enableCors(loginHandler))
 	http.HandleFunc("/auth/changepassword", enableCors(changePasswordHandler))
 }
