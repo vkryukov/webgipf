@@ -3,10 +3,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -14,8 +16,9 @@ import (
 )
 
 func RegisterAuthHandlers() {
-	http.HandleFunc("/auth/login", enableCors(loginHandler))
 	http.HandleFunc("/auth/register", enableCors(registerUserHandler))
+	http.HandleFunc("/auth/verify", enableCors(verifyHandler))
+	http.HandleFunc("/auth/login", enableCors(loginHandler))
 	http.HandleFunc("/auth/changepassword", enableCors(changePasswordHandler))
 }
 
@@ -97,11 +100,13 @@ func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserReque
 		return
 	}
 
+	setSessionCookie(w, token)
+}
+
+func setSessionCookie(w http.ResponseWriter, token Token) {
 	http.SetCookie(w, &http.Cookie{
-		Name:  "session_token",
-		Value: string(token),
-		// TODO: Set Secure to true when using HTTPS
-		// Secure:   true,
+		Name:     "session_token",
+		Value:    string(token),
 		HttpOnly: true,
 	})
 }
@@ -138,6 +143,31 @@ func authenticateUser(userReq *UserRequest) (int, error) {
 	return userID, nil
 }
 
+var emailTmpl *template.Template
+
+func init() {
+	const emailTemplate = `
+    Hello Gipf player,
+
+    Thank you for registering for our game server! Here are the details 
+    that we have recorded:
+        - your username is {{.Username}}
+        - your email is {{.Email}}
+
+    IMPORTANT: Your email address is used to reset your password, and 
+    needs to be verified. Please click on the following link to verify it:
+
+    {{.VerificationLink}}
+
+    If you did not register for our game server, please ignore this email.
+
+    Regards,
+    The Gipf Game Master.
+    `
+
+	emailTmpl = template.Must(template.New("email").Parse(emailTemplate))
+}
+
 func registerUser(userReq *UserRequest) (int, error) {
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -152,10 +182,66 @@ func registerUser(userReq *UserRequest) (int, error) {
 
 	userID, err := res.LastInsertId()
 	if err != nil {
+		log.Printf("Error getting last insert ID: %v", err)
 		return -1, err
 	}
 
+	verificationLink, err := createVerificationLink(userID)
+	if err != nil {
+		log.Printf("Error creating verification link: %v", err)
+		return -1, err
+	}
+
+	sendRegistrationEmail(userReq.Username, userReq.Email, verificationLink)
 	return int(userID), nil
+}
+
+func createVerificationLink(userID int64) (string, error) {
+	token, err := addNewTokenToUser(int(userID))
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s/auth/verify?token=%s", baseURL, token), nil
+}
+
+func sendRegistrationEmail(username, email, verificationLink string) {
+	var buf bytes.Buffer
+	if err := emailTmpl.Execute(&buf, struct {
+		Username         string
+		Email            string
+		VerificationLink string
+	}{username, email, verificationLink}); err != nil {
+		log.Printf("Error executing email template: %v", err)
+	}
+
+	err := sendMessage(email, "Gipf Game Server Registration", buf.String())
+	if err != nil {
+		log.Printf("Error sending registration email to %s: %v", email, err)
+	}
+}
+
+func verificationHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "missing token", http.StatusBadRequest)
+		return
+	}
+
+	username, err := checkUserToken(Token(token))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err = db.Exec("UPDATE users SET verified = 1 WHERE username = ?", username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	setSessionCookie(w, Token(token))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func changePassword(userReq *UserRequest) (int, error) {

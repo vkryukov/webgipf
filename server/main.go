@@ -38,6 +38,15 @@ func (cw customWriter) Write(p []byte) (n int, err error) {
 	return cw.logFile.Write([]byte(coloredOutput))
 }
 
+var baseURL string
+
+func init() {
+	baseURL = "http://playgipf.com" // TODO: Enable HTTPS
+	if os.Getenv("APP_ENV") == "development" {
+		baseURL = "http://localhost:8080"
+	}
+}
+
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(&customWriter{logFile: os.Stdout})
