@@ -54,13 +54,10 @@ func main() {
 		}
 	}()
 
-	// User management
-	http.HandleFunc("/authenticate", enableCors(authenticateUserHandler))
-	http.HandleFunc("/register", enableCors(registerUserHandler))
-	http.HandleFunc("/changepassword", enableCors(changePasswordHandler))
-
 	// Game management
 	http.HandleFunc("/newgame", enableCors(createNewGameHandler))
+
+	RegisterAuthHandlers()
 
 	// WebSockets
 	http.HandleFunc("/ws", handleWebSocket)
@@ -105,46 +102,6 @@ func writeJSONResponse(w http.ResponseWriter, response interface{}) {
 	log.Printf("Sending JSON response:\n%s%s%s", Cyan, string(jsonResponse), Reset)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonResponse)
-}
-
-// User authentication and game creation
-
-func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserRequest) (int, error)) {
-	var userReq UserRequest
-	err := json.NewDecoder(r.Body).Decode(&userReq)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Printf("Error decoding JSON: %v", err)
-		return
-	}
-
-	userID, err := userFunc(&userReq)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Printf("Error getting userID: %v", err)
-		return
-	}
-
-	token, err := addNewTokenToUser(userID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error adding new token to user: %v", err)
-		return
-	}
-
-	writeJSONResponse(w, map[string]interface{}{"token": token})
-}
-
-func authenticateUserHandler(w http.ResponseWriter, r *http.Request) {
-	handleUser(w, r, authenticateUser)
-}
-
-func registerUserHandler(w http.ResponseWriter, r *http.Request) {
-	handleUser(w, r, registerUser)
-}
-
-func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
-	handleUser(w, r, changePassword)
 }
 
 func createNewGameHandler(w http.ResponseWriter, r *http.Request) {

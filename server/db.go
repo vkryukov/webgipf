@@ -3,13 +3,10 @@
 package main
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log"
 	"sort"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // Database initialization
@@ -73,116 +70,6 @@ func initDB() {
 		log.Fatalf("%q: %s\n", err, sqlStmt)
 		return
 	}
-}
-
-// Authentication
-
-func comparePasswords(hashedPwd string, plainPwd string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd)) == nil
-}
-
-type UserRequest struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	NewPassword string `json:"new_password,omitempty"`
-}
-
-func authenticateUser(userReq *UserRequest) (int, error) {
-	var userID int
-	var hashedPwd string
-
-	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", userReq.Username).Scan(&userID, &hashedPwd)
-	if err != nil {
-		return -1, err
-	}
-
-	if !comparePasswords(hashedPwd, userReq.Password) {
-		return -1, fmt.Errorf("wrong password")
-	}
-
-	return userID, nil
-}
-
-func registerUser(userReq *UserRequest) (int, error) {
-	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return -1, err
-	}
-
-	res, err := db.Exec("INSERT INTO users(username, password) VALUES(?, ?)", userReq.Username, hashedPwd)
-	if err != nil {
-		log.Printf("Error inserting user %s into database: %v", userReq.Username, err)
-		return -1, err
-	}
-
-	userID, err := res.LastInsertId()
-	if err != nil {
-		return -1, err
-	}
-
-	return int(userID), nil
-}
-
-func changePassword(userReq *UserRequest) (int, error) {
-	var userID int
-	var hashedPwd string
-
-	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", userReq.Username).Scan(&userID, &hashedPwd)
-	if err != nil {
-		return -1, err
-	}
-
-	if !comparePasswords(hashedPwd, userReq.Password) {
-		return -1, fmt.Errorf("wrong password")
-	}
-
-	newHashPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return -1, err
-	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return -1, err
-	}
-
-	_, err = tx.Exec("DELETE FROM tokens WHERE user_id = ?", userID)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-
-	_, err = tx.Exec("UPDATE users SET password = ? WHERE id = ?", newHashPwd, userID)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return -1, err
-	}
-
-	return userID, nil
-}
-
-type Token string
-
-func generateToken() Token {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return Token(fmt.Sprintf("%x", b))
-}
-
-func addNewTokenToUser(userID int) (Token, error) {
-	token := generateToken()
-
-	_, err := db.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
 }
 
 type PlayerType int
