@@ -1,9 +1,11 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -47,6 +49,9 @@ func init() {
 	}
 }
 
+//go:embed static/*
+var staticFiles embed.FS
+
 func main() {
 	log.SetFlags(0)
 	log.SetOutput(&customWriter{logFile: os.Stdout})
@@ -74,6 +79,28 @@ func main() {
 	// Server administration
 	http.HandleFunc("/users", enableCors(handleListUsers))
 	http.HandleFunc("/games", enableCors(handleListGames))
+
+	fileServer := http.FileServer(http.FS(staticFiles))
+	http.Handle("/static/", fileServer)
+
+	fs.WalkDir(staticFiles, ".", func(path string, d fs.DirEntry, err error) error {
+		fmt.Println(path)
+		return nil
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		// Serve index.html for the root path
+		data, err := staticFiles.ReadFile("static/index.html")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		w.Write(data)
+	})
 
 	log.Println("Starting the server on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -148,14 +175,15 @@ var (
 )
 
 var allowedOrigins = map[string]bool{
-	"http://localhost":                true,
-	"https://your-allowed-origin.com": true,
+	"http://localhost:8080": true,
+	"https://playgipf.com":  true,
 }
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		// Allow connections with a null origin (for local file testing)
 		origin := r.Header.Get("Origin")
+		log.Printf("Origin in WS upgrader: %s", origin)
 		return origin == "" || origin == "null" || allowedOrigins[origin]
 	},
 }
