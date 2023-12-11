@@ -20,6 +20,7 @@ func RegisterAuthHandlers() {
 	http.HandleFunc("/auth/verify", enableCors(verificationHandler))
 	http.HandleFunc("/auth/login", enableCors(loginHandler))
 	http.HandleFunc("/auth/changepassword", enableCors(changePasswordHandler))
+	http.Handle("/auth/check", AuthMiddleware(enableCors(checkAuthHandler)))
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -285,6 +286,44 @@ func changePassword(userReq *UserRequest) (int, error) {
 	}
 
 	return userID, nil
+}
+
+func checkAuthHandler(w http.ResponseWriter, r *http.Request) {
+	username := getUserFromContext(r.Context())
+	if username == "" {
+		http.Error(w, "no username found", http.StatusInternalServerError)
+		log.Printf("Error getting username from context that sits behind auth middleware")
+		return
+	}
+	user, err := getUserFromUsername(username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error getting user from username %s: %v", username, err)
+		return
+	}
+	writeJSONResponse(w, user)
+}
+
+type User struct {
+	ID            int      `json:"id,omitempty"`
+	Username      string   `json:"username"`
+	Email         string   `json:"email"`
+	EmailVerified bool     `json:"email_verified"`
+	CreationTime  int      `json:"creation_time"`
+	Tokens        []string `json:"tokens,omitempty"`
+}
+
+func getUserFromUsername(username string) (*User, error) {
+	var user User
+
+	err := db.QueryRow(
+		"SELECT username, email, verified, creation_time FROM users WHERE username = ?",
+		username).Scan(&user.Username, &user.Email, &user.EmailVerified, &user.CreationTime)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 type Token string
