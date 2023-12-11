@@ -26,6 +26,7 @@ main =
 type alias Model =
     { username : String
     , password : String
+    , email : String
     , newPassword : String
     , userResponse : String
     , users : List User
@@ -41,6 +42,7 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { username = ""
       , password = ""
+      , email = ""
       , newPassword = ""
       , userResponse = ""
       , users = []
@@ -79,6 +81,7 @@ userRequest model myUrl =
                 (Encode.object
                     [ ( "username", Encode.string model.username )
                     , ( "password", Encode.string model.password )
+                    , ( "email", Encode.string model.email )
                     , ( "new_password", Encode.string model.newPassword )
                     ]
                 )
@@ -171,6 +174,7 @@ loadGamesRequest =
 type Msg
     = UpdateUsername String
     | UpdatePassword String
+    | UpdateEmail String
     | UpdateNewPassword String
     | Register
     | Authenticate
@@ -198,9 +202,12 @@ update msg model =
         UpdateNewPassword newPassword ->
             ( { model | newPassword = newPassword }, Cmd.none )
 
+        UpdateEmail email ->
+            ( { model | email = email }, Cmd.none )
+
         Register ->
             -- Here you would send a request to the server to register the user
-            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/register") )
+            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/auth/register") )
 
         Authenticate ->
             -- Here you would send a request to the server to authorize the user
@@ -208,7 +215,7 @@ update msg model =
 
         ChangePassword ->
             -- Here you would send a request to the server to change the user's password
-            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/changepassword") )
+            ( { model | userResponse = "" }, userRequest model (serverURL ++ "/auth/changepassword") )
 
         UserResult result ->
             case result of
@@ -314,6 +321,8 @@ viewUserOperations model =
         [ viewInput "Username" UpdateUsername
         , vBlock
         , viewInput "Password" UpdatePassword
+        , vBlock
+        , viewInput "Email" UpdateEmail
         , vBlock
         , viewInput "New Password" UpdateNewPassword
         , vBlock

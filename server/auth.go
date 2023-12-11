@@ -11,6 +11,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -25,7 +26,7 @@ func RegisterAuthHandlers() {
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionCookie, err := r.Cookie("session_token")
+		sessionCookie, err := r.Cookie("persistent_session_token")
 		if err != nil {
 			if err == http.ErrNoCookie {
 				w.WriteHeader(http.StatusUnauthorized)
@@ -42,7 +43,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "usernane", username)
+		ctx := context.WithValue(r.Context(), "username", username)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
@@ -101,13 +102,16 @@ func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserReque
 		return
 	}
 
-	setSessionCookie(w, token)
+	setPersistentSessionCookie(w, token)
+	checkAuthHandler(w, r)
 }
 
-func setSessionCookie(w http.ResponseWriter, token Token) {
+func setPersistentSessionCookie(w http.ResponseWriter, token Token) {
+	expirationTime := time.Now().AddDate(1, 0, 0) // 1 year from now
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session_token",
+		Name:     "persistent_session_token",
 		Value:    string(token),
+		Expires:  expirationTime,
 		HttpOnly: true,
 	})
 }
@@ -241,7 +245,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setSessionCookie(w, Token(token))
+	setPersistentSessionCookie(w, Token(token))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

@@ -241,12 +241,6 @@ func checkGameStatus(gameID int) error {
 // Server administration
 
 // User is a struct that represents a user in the database.
-type User struct {
-	ID           int      `json:"id"`
-	Username     string   `json:"username"`
-	CreationTime int      `json:"creation_time"`
-	Tokens       []string `json:"tokens"`
-}
 
 func listUsers() ([]User, error) {
 	// Query to join users and tokens tables
