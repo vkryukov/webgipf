@@ -79,7 +79,15 @@ type UserRequest struct {
 	NewPassword string `json:"new_password,omitempty"`
 }
 
-func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserRequest) (int, error)) {
+type UserResponse struct {
+	Id            int    `json:"id,omitempty"`
+	Username      string `json:"username"`
+	Email         string `json:"email"`
+	EmailVerified bool   `json:"email_verified"`
+	Token         string `json:"token"`
+}
+
+func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserRequest) (*UserResponse, error)) {
 	var userReq UserRequest
 	err := json.NewDecoder(r.Body).Decode(&userReq)
 	if err != nil {
@@ -88,22 +96,22 @@ func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserReque
 		return
 	}
 
-	userID, err := userFunc(&userReq)
+	user, err := userFunc(&userReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Printf("Error getting userID: %v", err)
+		log.Printf("Error getting user from request: %v", err)
 		return
 	}
 
-	token, err := addNewTokenToUser(userID)
+	token, err := addNewTokenToUser(user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Error adding new token to user: %v", err)
 		return
 	}
 
-	setPersistentSessionCookie(w, token)
-	checkAuthHandler(w, r)
+	user.Token = string(token)
+	writeJSONResponse(w, user)
 }
 
 func setPersistentSessionCookie(w http.ResponseWriter, token Token) {
@@ -132,20 +140,21 @@ func comparePasswords(hashedPwd string, plainPwd string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd)) == nil
 }
 
-func authenticateUser(userReq *UserRequest) (int, error) {
-	var userID int
+func authenticateUser(userReq *UserRequest) (*UserResponse, error) {
 	var hashedPwd string
+	var user UserResponse
 
-	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", userReq.Username).Scan(&userID, &hashedPwd)
+	err := db.QueryRow("SELECT id, password, email, email_verified FROM users WHERE username = ?", userReq.Username).Scan(&user.Id, &hashedPwd, &user.Email, &user.EmailVerified)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	if !comparePasswords(hashedPwd, userReq.Password) {
-		return -1, fmt.Errorf("wrong password")
+		return nil, fmt.Errorf("wrong password")
 	}
 
-	return userID, nil
+	user.Username = userReq.Username
+	return &user, nil
 }
 
 var emailTmpl *template.Template
@@ -173,32 +182,37 @@ func init() {
 	emailTmpl = template.Must(template.New("email").Parse(emailTemplate))
 }
 
-func registerUser(userReq *UserRequest) (int, error) {
+func registerUser(userReq *UserRequest) (*UserResponse, error) {
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	res, err := db.Exec("INSERT INTO users(username, password, email) VALUES(?, ?, ?)", userReq.Username, hashedPwd, userReq.Email)
 	if err != nil {
 		log.Printf("Error inserting user %s into database: %v", userReq.Username, err)
-		return -1, err
+		return nil, err
 	}
 
 	userID, err := res.LastInsertId()
 	if err != nil {
 		log.Printf("Error getting last insert ID: %v", err)
-		return -1, err
+		return nil, err
 	}
 
 	verificationLink, err := createVerificationLink(userID)
 	if err != nil {
 		log.Printf("Error creating verification link: %v", err)
-		return -1, err
+		return nil, err
 	}
 
 	sendRegistrationEmail(userReq.Username, userReq.Email, verificationLink)
-	return int(userID), nil
+	return &UserResponse{
+		Id:            int(userID),
+		Username:      userReq.Username,
+		Email:         userReq.Email,
+		EmailVerified: false,
+	}, nil
 }
 
 func createVerificationLink(userID int64) (string, error) {
@@ -249,47 +263,48 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func changePassword(userReq *UserRequest) (int, error) {
-	var userID int
+func changePassword(userReq *UserRequest) (*UserResponse, error) {
 	var hashedPwd string
+	var user UserResponse
 
-	err := db.QueryRow("SELECT id, password FROM users WHERE username = ?", userReq.Username).Scan(&userID, &hashedPwd)
+	err := db.QueryRow("SELECT id, password, email, emailVerified FROM users WHERE username = ?", userReq.Username).Scan(&user.Id, &hashedPwd, &user.Email, &user.EmailVerified)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	if !comparePasswords(hashedPwd, userReq.Password) {
-		return -1, fmt.Errorf("wrong password")
+		return nil, fmt.Errorf("wrong password")
 	}
 
 	newHashPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
-	_, err = tx.Exec("DELETE FROM tokens WHERE user_id = ?", userID)
+	_, err = tx.Exec("DELETE FROM tokens WHERE user_id = ?", user.Id)
 	if err != nil {
 		tx.Rollback()
-		return -1, err
+		return nil, err
 	}
 
-	_, err = tx.Exec("UPDATE users SET password = ? WHERE id = ?", newHashPwd, userID)
+	_, err = tx.Exec("UPDATE users SET password = ? WHERE id = ?", newHashPwd, user.Id)
 	if err != nil {
 		tx.Rollback()
-		return -1, err
+		return nil, err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
-	return userID, nil
+	user.Username = userReq.Username
+	return &user, nil
 }
 
 func checkAuthHandler(w http.ResponseWriter, r *http.Request) {

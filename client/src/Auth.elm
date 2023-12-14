@@ -1,4 +1,4 @@
-module Auth exposing (..)
+port module Auth exposing (..)
 
 import Browser
 import Html exposing (Html, button, div, input, p, text)
@@ -15,6 +15,7 @@ type alias Model =
     , newPasswordInput : String
     , emailInput : String
     , user : Maybe User
+    , userStatus : UserStatus
     , error : Maybe String
     }
 
@@ -33,15 +34,28 @@ type alias User =
     { username : String
     , email : String
     , emailVerified : Bool
+    , token : String
     }
 
 
 userDecoder : Decode.Decoder User
 userDecoder =
-    Decode.map3 User
+    Decode.map4 User
         (Decode.field "username" Decode.string)
         (Decode.field "email" Decode.string)
-        (Decode.field "emailVerified" Decode.bool)
+        (Decode.field "email_verified" Decode.bool)
+        (Decode.field "token" Decode.string)
+
+
+type alias UserStatus =
+    { token : String
+    }
+
+
+userStatusDecoder : Decode.Decoder UserStatus
+userStatusDecoder =
+    Decode.map UserStatus
+        (Decode.field "token" Decode.string)
 
 
 checkUserStatus : Cmd Msg
@@ -69,9 +83,19 @@ login model =
         }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( Model "" "" "" "" Nothing Nothing, Cmd.none )
+port setStorage : Encode.Value -> Cmd msg
+
+
+init : Encode.Value -> ( Model, Cmd Msg )
+init flags =
+    ( case Decode.decodeValue userStatusDecoder flags of
+        Ok status ->
+            Model "" "" "" "" Nothing status Nothing
+
+        Err _ ->
+            Model "" "" "" "" Nothing { token = "" } Nothing
+    , Cmd.none
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -156,6 +180,7 @@ boolToString bool =
         "False"
 
 
+main : Program Encode.Value Model Msg
 main =
     Browser.element
         { init = init
