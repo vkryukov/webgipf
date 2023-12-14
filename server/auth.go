@@ -40,6 +40,7 @@ func checkUserToken(token Token) (string, error) {
 	return username, nil
 }
 
+// TODO: Marge UserRequest and UserResponse with User.
 type UserRequest struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`

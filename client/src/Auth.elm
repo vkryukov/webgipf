@@ -7,6 +7,7 @@ import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Tools exposing (boolToString, errorToString)
 
 
 type alias Model =
@@ -25,7 +26,7 @@ type Msg
     | PasswordInput String
     | NewPasswordInput String
     | EmailInput String
-    | Login
+    | SignIn
     | LoginReceived (Result Http.Error User)
     | Logout
 
@@ -113,6 +114,7 @@ init flags =
 
 updateModelWithUserStatus : Result Http.Error User -> Model -> Model
 updateModelWithUserStatus result model =
+    -- TODO: updateModelWithUserStatus has a confusing name with userStatus that we save in preferences. Need to rename it.
     case result of
         Ok user ->
             { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }
@@ -136,7 +138,7 @@ update msg model =
         EmailInput emailInput ->
             ( { model | emailInput = emailInput }, Cmd.none )
 
-        Login ->
+        SignIn ->
             ( model, login model )
 
         Logout ->
@@ -154,64 +156,38 @@ update msg model =
             ( newModel, savePreferences newModel )
 
 
-errorToString : Http.Error -> String
-errorToString error =
-    case error of
-        Http.BadUrl url ->
-            "Bad URL: " ++ url
-
-        Http.Timeout ->
-            "Request timed out"
-
-        Http.NetworkError ->
-            "Network error"
-
-        Http.BadStatus statusCode ->
-            "Bad status: " ++ String.fromInt statusCode
-
-        Http.BadBody message ->
-            "Bad body: " ++ message
+viewSignIn : Model -> Html Msg
+viewSignIn _ =
+    div []
+        [ input
+            [ type_ "text", placeholder "Username", onInput UsernameInput ]
+            []
+        , input [ type_ "password", placeholder "Password", onInput PasswordInput ] []
+        , button [ onClick SignIn ] [ text "Sign In" ]
+        ]
 
 
-viewUser : Model -> Html Msg
-viewUser model =
-    case model.user of
-        Nothing ->
-            div []
-                [ p [] [ text (Maybe.withDefault "" model.error) ]
-                , p []
-                    [ text "User is not logged in" ]
-                , input
-                    [ type_ "text", placeholder "Username", onInput UsernameInput ]
-                    []
-                , input [ type_ "password", placeholder "Password", onInput PasswordInput ] []
-                , button [ onClick Login ] [ text "Login" ]
-                ]
-
-        Just user ->
-            div []
-                [ div [] [ text ("Username: " ++ user.username) ]
-                , div [] [ text ("Email: " ++ user.email) ]
-                , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
-                , button [ onClick Logout ] [ text "Logout" ]
-                ]
+viewUser : User -> Html Msg
+viewUser user =
+    div []
+        [ div [] [ text ("Username: " ++ user.username) ]
+        , div [] [ text ("Email: " ++ user.email) ]
+        , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
+        , button [ onClick Logout ] [ text "Logout" ]
+        ]
 
 
 view : Model -> Html Msg
 view model =
     div []
         [ p [] [ text (Maybe.withDefault "" model.error) ]
-        , viewUser model
+        , case model.user of
+            Nothing ->
+                viewSignIn model
+
+            Just user ->
+                viewUser user
         ]
-
-
-boolToString : Bool -> String
-boolToString bool =
-    if bool then
-        "True"
-
-    else
-        "False"
 
 
 main : Program Encode.Value Model Msg

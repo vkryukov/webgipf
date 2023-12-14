@@ -1,6 +1,7 @@
 module Tools exposing (..)
 
 import Dict exposing (Dict)
+import Http
 
 
 dictSlice : Dict comparable v -> List comparable -> List (Maybe v)
@@ -183,3 +184,31 @@ fst ( a, _ ) =
 snd : ( a, b ) -> b
 snd ( _, b ) =
     b
+
+
+boolToString : Bool -> String
+boolToString bool =
+    if bool then
+        "True"
+
+    else
+        "False"
+
+
+errorToString : Http.Error -> String
+errorToString error =
+    case error of
+        Http.BadUrl url ->
+            "Bad URL: " ++ url
+
+        Http.Timeout ->
+            "Request timed out"
+
+        Http.NetworkError ->
+            "Network error"
+
+        Http.BadStatus statusCode ->
+            "Bad status: " ++ String.fromInt statusCode
+
+        Http.BadBody message ->
+            "Bad body: " ++ message
