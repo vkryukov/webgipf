@@ -20,6 +20,11 @@ func RegisterAuthHandlers() {
 	http.HandleFunc("/auth/verify", enableCors(verificationHandler))
 	http.HandleFunc("/auth/register", enableCors(registerUserHandler))
 	http.HandleFunc("/auth/changepassword", enableCors(changePasswordHandler))
+
+	// We need to implement the following endpoints:
+	// TODO: resend the verification email
+	// TODO: reset the password
+	// TODO: change the email address
 }
 
 func checkUserToken(token Token) (string, error) {
@@ -239,6 +244,7 @@ func checkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.Username = username
+	user.Token = token
 	writeJSONResponse(w, user)
 }
 

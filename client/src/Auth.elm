@@ -25,7 +25,6 @@ type Msg
     | PasswordInput String
     | NewPasswordInput String
     | EmailInput String
-    | UserStatusReceived (Result Http.Error User)
     | Login
     | LoginReceived (Result Http.Error User)
     | Logout
@@ -67,7 +66,7 @@ checkUserStatus token =
     else
         Http.get
             { url = "http://localhost:8080/auth/check?token=" ++ token
-            , expect = Http.expectJson UserStatusReceived userDecoder
+            , expect = Http.expectJson LoginReceived userDecoder
             }
 
 
@@ -112,6 +111,16 @@ init flags =
             )
 
 
+updateModelWithUserStatus : Result Http.Error User -> Model -> Model
+updateModelWithUserStatus result model =
+    case result of
+        Ok user ->
+            { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }
+
+        Err error ->
+            { model | user = Nothing, userStatus = UserStatus "", error = Just (errorToString error) }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -127,12 +136,6 @@ update msg model =
         EmailInput emailInput ->
             ( { model | emailInput = emailInput }, Cmd.none )
 
-        UserStatusReceived (Ok user) ->
-            ( { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }, savePreferences model )
-
-        UserStatusReceived (Err error) ->
-            ( { model | error = Just (errorToString error) }, Cmd.none )
-
         Login ->
             ( model, login model )
 
@@ -143,15 +146,12 @@ update msg model =
             in
             ( newModel, savePreferences newModel )
 
-        LoginReceived (Ok user) ->
+        LoginReceived result ->
             let
                 newModel =
-                    { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }
+                    updateModelWithUserStatus result model
             in
             ( newModel, savePreferences newModel )
-
-        LoginReceived (Err error) ->
-            ( { model | error = Just (errorToString error) }, Cmd.none )
 
 
 errorToString : Http.Error -> String
@@ -173,8 +173,8 @@ errorToString error =
             "Bad body: " ++ message
 
 
-view : Model -> Html Msg
-view model =
+viewUser : Model -> Html Msg
+viewUser model =
     case model.user of
         Nothing ->
             div []
@@ -195,6 +195,14 @@ view model =
                 , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
                 , button [ onClick Logout ] [ text "Logout" ]
                 ]
+
+
+view : Model -> Html Msg
+view model =
+    div []
+        [ p [] [ text (Maybe.withDefault "" model.error) ]
+        , viewUser model
+        ]
 
 
 boolToString : Bool -> String
