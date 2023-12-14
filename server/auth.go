@@ -4,7 +4,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -17,36 +16,11 @@ import (
 )
 
 func RegisterAuthHandlers() {
-	http.HandleFunc("/auth/register", enableCors(registerUserHandler))
-	http.HandleFunc("/auth/verify", enableCors(verificationHandler))
 	http.HandleFunc("/auth/login", enableCors(loginHandler))
+	http.HandleFunc("/auth/check", enableCors(checkHandler))
+	http.HandleFunc("/auth/verify", enableCors(verificationHandler))
+	http.HandleFunc("/auth/register", enableCors(registerUserHandler))
 	http.HandleFunc("/auth/changepassword", enableCors(changePasswordHandler))
-	http.Handle("/auth/check", AuthMiddleware(enableCors(checkAuthHandler)))
-}
-
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionCookie, err := r.Cookie("persistent_session_token")
-		if err != nil {
-			if err == http.ErrNoCookie {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		sessionToken := sessionCookie.Value
-		username, err := checkUserToken(Token(sessionToken))
-		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "username", username)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
-	})
 }
 
 func checkUserToken(token Token) (string, error) {
@@ -60,16 +34,6 @@ func checkUserToken(token Token) (string, error) {
 	}
 
 	return username, nil
-}
-
-func getUserFromContext(ctx context.Context) string {
-	userID, ok := ctx.Value("username").(string)
-	if !ok {
-		log.Printf("Error getting userID from context")
-		return ""
-	}
-
-	return userID
 }
 
 type UserRequest struct {
@@ -259,8 +223,33 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setPersistentSessionCookie(w, Token(token))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func checkHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "missing token", http.StatusBadRequest)
+		return
+	}
+
+	username, err := checkUserToken(Token(token))
+	if err != nil {
+		log.Printf("Error checking user token for token %s: %v", token, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var user UserResponse
+	err = db.QueryRow("SELECT id, email, email_verified FROM users WHERE username = ?", username).Scan(&user.Id, &user.Email, &user.EmailVerified)
+	if err != nil {
+		log.Printf("Error getting user %s from database: %v", username, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	user.Username = username
+	writeJSONResponse(w, user)
 }
 
 func changePassword(userReq *UserRequest) (*UserResponse, error) {
@@ -307,22 +296,6 @@ func changePassword(userReq *UserRequest) (*UserResponse, error) {
 	return &user, nil
 }
 
-func checkAuthHandler(w http.ResponseWriter, r *http.Request) {
-	username := getUserFromContext(r.Context())
-	if username == "" {
-		http.Error(w, "no username found", http.StatusInternalServerError)
-		log.Printf("Error getting username from context that sits behind auth middleware")
-		return
-	}
-	user, err := getUserFromUsername(username)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error getting user from username %s: %v", username, err)
-		return
-	}
-	writeJSONResponse(w, user)
-}
-
 type User struct {
 	ID            int      `json:"id,omitempty"`
 	Username      string   `json:"username"`
@@ -330,19 +303,6 @@ type User struct {
 	EmailVerified bool     `json:"email_verified"`
 	CreationTime  int      `json:"creation_time"`
 	Tokens        []string `json:"tokens,omitempty"`
-}
-
-func getUserFromUsername(username string) (*User, error) {
-	var user User
-
-	err := db.QueryRow(
-		"SELECT username, email, verified, creation_time FROM users WHERE username = ?",
-		username).Scan(&user.Username, &user.Email, &user.EmailVerified, &user.CreationTime)
-	if err != nil {
-		return nil, err
-	}
-
-	return &user, nil
 }
 
 type Token string

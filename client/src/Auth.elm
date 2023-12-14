@@ -58,10 +58,10 @@ userStatusDecoder =
         (Decode.field "token" Decode.string)
 
 
-checkUserStatus : Cmd Msg
-checkUserStatus =
+checkUserStatus : String -> Cmd Msg
+checkUserStatus token =
     Http.get
-        { url = "http://localhost:8080/auth/check"
+        { url = "http://localhost:8080/auth/check?token=" ++ token
         , expect = Http.expectJson UserStatusReceived userDecoder
         }
 
@@ -86,16 +86,30 @@ login model =
 port setStorage : Encode.Value -> Cmd msg
 
 
+savePreferences : Model -> Cmd msg
+savePreferences model =
+    case model.user of
+        Nothing ->
+            Cmd.none
+
+        Just user ->
+            setStorage
+                (Encode.object
+                    [ ( "token", Encode.string user.token )
+                    ]
+                )
+
+
 init : Encode.Value -> ( Model, Cmd Msg )
 init flags =
-    ( case Decode.decodeValue userStatusDecoder flags of
+    case Decode.decodeValue userStatusDecoder flags of
         Ok status ->
-            Model "" "" "" "" Nothing status Nothing
+            ( Model "" "" "" "" Nothing status Nothing, checkUserStatus status.token )
 
         Err _ ->
-            Model "" "" "" "" Nothing { token = "" } Nothing
-    , Cmd.none
-    )
+            ( Model "" "" "" "" Nothing { token = "" } Nothing
+            , Cmd.none
+            )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -123,7 +137,11 @@ update msg model =
             ( model, login model )
 
         LoginReceived (Ok user) ->
-            ( { model | user = Just user, error = Nothing }, Cmd.none )
+            let
+                newModel =
+                    { model | user = Just user, error = Nothing }
+            in
+            ( newModel, savePreferences newModel )
 
         LoginReceived (Err error) ->
             ( { model | error = Just (errorToString error) }, Cmd.none )
