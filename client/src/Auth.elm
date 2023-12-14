@@ -28,6 +28,7 @@ type Msg
     | UserStatusReceived (Result Http.Error User)
     | Login
     | LoginReceived (Result Http.Error User)
+    | Logout
 
 
 type alias User =
@@ -60,10 +61,14 @@ userStatusDecoder =
 
 checkUserStatus : String -> Cmd Msg
 checkUserStatus token =
-    Http.get
-        { url = "http://localhost:8080/auth/check?token=" ++ token
-        , expect = Http.expectJson UserStatusReceived userDecoder
-        }
+    if token == "" then
+        Cmd.none
+
+    else
+        Http.get
+            { url = "http://localhost:8080/auth/check?token=" ++ token
+            , expect = Http.expectJson UserStatusReceived userDecoder
+            }
 
 
 login : Model -> Cmd Msg
@@ -88,16 +93,11 @@ port setStorage : Encode.Value -> Cmd msg
 
 savePreferences : Model -> Cmd msg
 savePreferences model =
-    case model.user of
-        Nothing ->
-            Cmd.none
-
-        Just user ->
-            setStorage
-                (Encode.object
-                    [ ( "token", Encode.string user.token )
-                    ]
-                )
+    setStorage
+        (Encode.object
+            [ ( "token", Encode.string model.userStatus.token )
+            ]
+        )
 
 
 init : Encode.Value -> ( Model, Cmd Msg )
@@ -128,7 +128,7 @@ update msg model =
             ( { model | emailInput = emailInput }, Cmd.none )
 
         UserStatusReceived (Ok user) ->
-            ( { model | user = Just user, error = Nothing }, Cmd.none )
+            ( { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }, savePreferences model )
 
         UserStatusReceived (Err error) ->
             ( { model | error = Just (errorToString error) }, Cmd.none )
@@ -136,10 +136,17 @@ update msg model =
         Login ->
             ( model, login model )
 
+        Logout ->
+            let
+                newModel =
+                    { model | user = Nothing, userStatus = UserStatus "", error = Nothing }
+            in
+            ( newModel, savePreferences newModel )
+
         LoginReceived (Ok user) ->
             let
                 newModel =
-                    { model | user = Just user, error = Nothing }
+                    { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }
             in
             ( newModel, savePreferences newModel )
 
@@ -186,6 +193,7 @@ view model =
                 [ div [] [ text ("Username: " ++ user.username) ]
                 , div [] [ text ("Email: " ++ user.email) ]
                 , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
+                , button [ onClick Logout ] [ text "Logout" ]
                 ]
 
 
