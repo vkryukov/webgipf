@@ -10,7 +10,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -48,7 +47,7 @@ type UserResponse struct {
 	Username      string `json:"username"`
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
-	Token         string `json:"token"`
+	Token         string `json:"token"` // TODO: Use Token type.
 }
 
 func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserRequest) (*UserResponse, error)) {
@@ -76,16 +75,6 @@ func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserReque
 
 	user.Token = string(token)
 	writeJSONResponse(w, user)
-}
-
-func setPersistentSessionCookie(w http.ResponseWriter, token Token) {
-	expirationTime := time.Now().AddDate(1, 0, 0) // 1 year from now
-	http.SetCookie(w, &http.Cookie{
-		Name:     "persistent_session_token",
-		Value:    string(token),
-		Expires:  expirationTime,
-		HttpOnly: true,
-	})
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -226,6 +215,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// TODO: This is very similar to verifyHandler. Refactor.
 func checkHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
@@ -296,6 +286,7 @@ func changePassword(userReq *UserRequest) (*UserResponse, error) {
 	return &user, nil
 }
 
+// TODO: This is very similar to UserResponse. Refactor.
 type User struct {
 	ID            int      `json:"id,omitempty"`
 	Username      string   `json:"username"`
