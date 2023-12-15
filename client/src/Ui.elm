@@ -1,4 +1,10 @@
-module Ui exposing (Field, Form, viewForm)
+module Ui exposing
+    ( Field
+    , Form
+    , viewForm
+    , viewPrimaryButton
+    , viewSecondaryButton
+    )
 
 import Html exposing (Html, button, div, h2, input, text)
 import Html.Attributes exposing (class, placeholder, type_, value)
@@ -27,7 +33,6 @@ type alias Field msg =
 viewField : Field msg -> Html msg
 viewField field =
     div [ class "mb-4" ]
-        -- margin bottom
         [ input
             [ class "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             , type_ field.fieldType
@@ -37,6 +42,16 @@ viewField field =
             ]
             []
         ]
+
+
+viewPrimaryButton : ( String, msg ) -> Html msg
+viewPrimaryButton ( label, msg ) =
+    button [ class "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline", onClick msg ] [ text label ]
+
+
+viewSecondaryButton : ( String, msg ) -> Html msg
+viewSecondaryButton ( label, msg ) =
+    button [ class "inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800", onClick msg ] [ text label ]
 
 
 type alias Form msg =
@@ -54,8 +69,8 @@ viewForm form =
         , div [ class "w-full max-w-xs" ]
             (List.map viewField form.fields
                 ++ [ div [ class "flex justify-between mt-4" ]
-                        [ button [ class "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2", onClick (snd form.primaryAction) ] [ text (fst form.primaryAction) ]
-                        , button [ class "inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800", onClick (snd form.secondaryAction) ] [ text (fst form.secondaryAction) ]
+                        [ viewPrimaryButton form.primaryAction
+                        , viewSecondaryButton form.secondaryAction
                         ]
                    ]
             )

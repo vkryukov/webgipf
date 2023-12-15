@@ -9,7 +9,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
 import Tools exposing (boolToString, errorToString)
-import Ui exposing (Field, Form, viewForm)
+import Ui exposing (Field, Form, viewForm, viewPrimaryButton)
 
 
 type alias Model =
@@ -152,6 +152,7 @@ updateModelWithUserStatus result model =
             { model | user = Just user, userStatus = UserStatus user.token, error = Nothing, state = SignedIn }
 
         Err error ->
+            -- TODO: handle error properly, and if we were in sign up, we shouldn't switch to sign in.
             { model | user = Nothing, userStatus = UserStatus "", error = Just (errorToString error), state = SigningIn }
 
 
@@ -185,7 +186,16 @@ update msg model =
         Logout ->
             let
                 newModel =
-                    { model | user = Nothing, userStatus = UserStatus "", error = Nothing, state = SigningIn }
+                    { model
+                        | usernameInput = ""
+                        , passwordInput = ""
+                        , repeatPasswordInput = ""
+                        , emailInput = ""
+                        , user = Nothing
+                        , userStatus = UserStatus ""
+                        , error = Nothing
+                        , state = SigningIn
+                    }
             in
             ( newModel, savePreferences newModel )
 
@@ -245,7 +255,7 @@ viewUser user =
         [ div [] [ text ("Username: " ++ user.username) ]
         , div [] [ text ("Email: " ++ user.email) ]
         , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
-        , button [ onClick Logout ] [ text "Logout" ]
+        , viewPrimaryButton ( "Logout", Logout )
         ]
 
 
