@@ -208,7 +208,8 @@ viewSignIn _ =
 
         form : Form Msg
         form =
-            { fields = fields
+            { title = "Sign In"
+            , fields = fields
             , primaryAction = ( "Sign In", SignIn )
             , secondaryAction = ( "Sign Up", ViewSignUp )
             }
@@ -229,7 +230,8 @@ viewSignUp _ =
 
         form : Form Msg
         form =
-            { fields = fields
+            { title = "Sign Up"
+            , fields = fields
             , primaryAction = ( "Sign Up", SignUp )
             , secondaryAction = ( "Sign In", ViewSignIn )
             }
