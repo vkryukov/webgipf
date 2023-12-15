@@ -9,6 +9,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
 import Tools exposing (boolToString, errorToString)
+import Ui exposing (Field, Form, viewForm)
 
 
 type alias Model =
@@ -198,26 +199,42 @@ update msg model =
 
 viewSignIn : Model -> Html Msg
 viewSignIn _ =
-    div []
-        [ input
-            [ type_ "text", placeholder "Username", onInput UsernameInput ]
-            []
-        , input [ type_ "password", placeholder "Password", onInput PasswordInput ] []
-        , button [ onClick SignIn ] [ text "Sign In" ]
-        , button [ onClick ViewSignUp ] [ text "Sign Up" ]
-        ]
+    let
+        fields : List (Field Msg)
+        fields =
+            [ { label = "Username", fieldType = "text", placeholder = "Username", value = "", onInput = UsernameInput }
+            , { label = "Password", fieldType = "password", placeholder = "Password", value = "", onInput = PasswordInput }
+            ]
+
+        form : Form Msg
+        form =
+            { fields = fields
+            , primaryAction = ( "Sign In", SignIn )
+            , secondaryAction = ( "Sign Up", ViewSignUp )
+            }
+    in
+    viewForm form
 
 
 viewSignUp : Model -> Html Msg
 viewSignUp _ =
-    div []
-        [ input [ type_ "text", placeholder "Username", onInput UsernameInput ] []
-        , input [ type_ "text", placeholder "Email", onInput EmailInput ] []
-        , input [ type_ "password", placeholder "Password", onInput PasswordInput ] []
-        , input [ type_ "repeatpassword", placeholder "Repeat password", onInput RepeatPasswordInput ] []
-        , button [ onClick SignUp ] [ text "Sign Up" ]
-        , button [ onClick ViewSignIn ] [ text "Sign In" ]
-        ]
+    let
+        fields : List (Field Msg)
+        fields =
+            [ { label = "Username", fieldType = "text", placeholder = "Username", value = "", onInput = UsernameInput }
+            , { label = "Email", fieldType = "text", placeholder = "Email", value = "", onInput = EmailInput }
+            , { label = "Password", fieldType = "password", placeholder = "Password", value = "", onInput = PasswordInput }
+            , { label = "Repeat Password", fieldType = "password", placeholder = "Repeat Password", value = "", onInput = RepeatPasswordInput }
+            ]
+
+        form : Form Msg
+        form =
+            { fields = fields
+            , primaryAction = ( "Sign Up", SignUp )
+            , secondaryAction = ( "Sign In", ViewSignIn )
+            }
+    in
+    viewForm form
 
 
 viewUser : User -> Html Msg
