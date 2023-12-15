@@ -6,7 +6,7 @@ module Ui exposing
     , viewSecondaryButton
     )
 
-import Html exposing (Html, button, div, h2, input, text)
+import Html exposing (Html, button, div, h2, input, label, text)
 import Html.Attributes exposing (class, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput)
 
@@ -33,7 +33,8 @@ type alias Field msg =
 viewField : Field msg -> Html msg
 viewField field =
     div [ class "mb-4" ]
-        [ input
+        [ label [ class "block text-gray-700 text-sm font-bold mb-2" ] [ text field.label ]
+        , input
             [ class "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             , type_ field.fieldType
             , placeholder field.placeholder
