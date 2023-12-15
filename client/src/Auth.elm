@@ -1,9 +1,7 @@
 port module Auth exposing (..)
 
 import Browser
-import Html exposing (Html, button, div, input, p, text)
-import Html.Attributes exposing (placeholder, type_)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, div, p, text)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -153,7 +151,17 @@ updateModelWithUserStatus result model =
 
         Err error ->
             -- TODO: handle error properly, and if we were in sign up, we shouldn't switch to sign in.
-            { model | user = Nothing, userStatus = UserStatus "", error = Just (errorToString error), state = SigningIn }
+            { model
+                | user = Nothing
+                , userStatus = UserStatus ""
+                , error = Just (errorToString error)
+                , state =
+                    if model.state == Initializing then
+                        SigningIn
+
+                    else
+                        model.state
+            }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -261,21 +269,31 @@ viewUser user =
 
 view : Model -> Html Msg
 view model =
-    case model.state of
-        Initializing ->
-            text "Initializing..."
+    div []
+        ((case model.error of
+            Just error ->
+                [ p [] [ text error ] ]
 
-        SigningIn ->
-            viewSignIn model
+            Nothing ->
+                []
+         )
+            ++ [ case model.state of
+                    Initializing ->
+                        text "Initializing..."
 
-        SigningUp ->
-            viewSignUp model
+                    SigningIn ->
+                        viewSignIn model
 
-        SignedIn ->
-            viewUser (Maybe.withDefault { username = "", email = "", emailVerified = False, token = "" } model.user)
+                    SigningUp ->
+                        viewSignUp model
 
-        UpdatingDetails ->
-            text "Updating details..."
+                    SignedIn ->
+                        viewUser (Maybe.withDefault { username = "", email = "", emailVerified = False, token = "" } model.user)
+
+                    UpdatingDetails ->
+                        text "Updating details..."
+               ]
+        )
 
 
 main : Program Encode.Value Model Msg
