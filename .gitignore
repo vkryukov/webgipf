@@ -7,3 +7,5 @@ client/*.js
 server/static/*.js
 server/config.json
 server/server
+client/node_modules
+client/gipf.css
