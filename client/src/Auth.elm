@@ -198,12 +198,12 @@ update msg model =
 
 
 viewSignIn : Model -> Html Msg
-viewSignIn _ =
+viewSignIn model =
     let
         fields : List (Field Msg)
         fields =
-            [ { label = "Username", fieldType = "text", placeholder = "Username", value = "", onInput = UsernameInput }
-            , { label = "Password", fieldType = "password", placeholder = "Password", value = "", onInput = PasswordInput }
+            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput }
+            , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput }
             ]
 
         form : Form Msg
@@ -218,14 +218,14 @@ viewSignIn _ =
 
 
 viewSignUp : Model -> Html Msg
-viewSignUp _ =
+viewSignUp model =
     let
         fields : List (Field Msg)
         fields =
-            [ { label = "Username", fieldType = "text", placeholder = "Username", value = "", onInput = UsernameInput }
-            , { label = "Email", fieldType = "text", placeholder = "Email", value = "", onInput = EmailInput }
-            , { label = "Password", fieldType = "password", placeholder = "Password", value = "", onInput = PasswordInput }
-            , { label = "Repeat Password", fieldType = "password", placeholder = "Repeat Password", value = "", onInput = RepeatPasswordInput }
+            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput }
+            , { label = "Email", fieldType = "text", placeholder = "Email", value = model.emailInput, onInput = EmailInput }
+            , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput }
+            , { label = "Repeat Password", fieldType = "password", placeholder = "Repeat Password", value = model.repeatPasswordInput, onInput = RepeatPasswordInput }
             ]
 
         form : Form Msg
