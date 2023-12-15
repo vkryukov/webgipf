@@ -1,4 +1,4 @@
-module Ui exposing (Field, Form, viewField, viewForm)
+module Ui exposing (Field, Form, viewForm)
 
 import Html exposing (Html, button, div, h2, input, text)
 import Html.Attributes exposing (class, placeholder, type_, value)
