@@ -7,26 +7,39 @@ import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Task
 import Tools exposing (boolToString, errorToString)
 
 
 type alias Model =
     { usernameInput : String
     , passwordInput : String
-    , newPasswordInput : String
+    , repeatPasswordInput : String
     , emailInput : String
     , user : Maybe User
     , userStatus : UserStatus
     , error : Maybe String
+    , state : State
     }
+
+
+type State
+    = Initializing
+    | SigningIn
+    | SigningUp
+    | SignedIn
+    | UpdatingDetails
 
 
 type Msg
     = UsernameInput String
     | PasswordInput String
-    | NewPasswordInput String
+    | RepeatPasswordInput String
     | EmailInput String
     | SignIn
+    | ViewSignIn
+    | SignUp
+    | ViewSignUp
     | LoginReceived (Result Http.Error User)
     | Logout
 
@@ -62,7 +75,7 @@ userStatusDecoder =
 checkUserStatus : String -> Cmd Msg
 checkUserStatus token =
     if token == "" then
-        Cmd.none
+        Task.perform identity (Task.succeed ViewSignIn)
 
     else
         Http.get
@@ -88,6 +101,24 @@ login model =
         }
 
 
+signUp : Model -> Cmd Msg
+signUp model =
+    let
+        body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "username", Encode.string model.usernameInput )
+                    , ( "password", Encode.string model.passwordInput )
+                    , ( "email", Encode.string model.emailInput )
+                    ]
+    in
+    Http.post
+        { url = "http://localhost:8080/auth/register"
+        , body = body
+        , expect = Http.expectJson LoginReceived userDecoder
+        }
+
+
 port setStorage : Encode.Value -> Cmd msg
 
 
@@ -104,10 +135,10 @@ init : Encode.Value -> ( Model, Cmd Msg )
 init flags =
     case Decode.decodeValue userStatusDecoder flags of
         Ok status ->
-            ( Model "" "" "" "" Nothing status Nothing, checkUserStatus status.token )
+            ( Model "" "" "" "" Nothing status Nothing Initializing, checkUserStatus status.token )
 
         Err _ ->
-            ( Model "" "" "" "" Nothing { token = "" } Nothing
+            ( Model "" "" "" "" Nothing { token = "" } Nothing SigningIn
             , Cmd.none
             )
 
@@ -117,10 +148,10 @@ updateModelWithUserStatus result model =
     -- TODO: updateModelWithUserStatus has a confusing name with userStatus that we save in preferences. Need to rename it.
     case result of
         Ok user ->
-            { model | user = Just user, userStatus = UserStatus user.token, error = Nothing }
+            { model | user = Just user, userStatus = UserStatus user.token, error = Nothing, state = SignedIn }
 
         Err error ->
-            { model | user = Nothing, userStatus = UserStatus "", error = Just (errorToString error) }
+            { model | user = Nothing, userStatus = UserStatus "", error = Just (errorToString error), state = SigningIn }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -132,8 +163,8 @@ update msg model =
         PasswordInput passwordInput ->
             ( { model | passwordInput = passwordInput }, Cmd.none )
 
-        NewPasswordInput newPasswordInput ->
-            ( { model | newPasswordInput = newPasswordInput }, Cmd.none )
+        RepeatPasswordInput repeatPasswordInput ->
+            ( { model | repeatPasswordInput = repeatPasswordInput }, Cmd.none )
 
         EmailInput emailInput ->
             ( { model | emailInput = emailInput }, Cmd.none )
@@ -141,10 +172,19 @@ update msg model =
         SignIn ->
             ( model, login model )
 
+        ViewSignIn ->
+            ( { model | state = SigningIn }, Cmd.none )
+
+        SignUp ->
+            ( model, signUp model )
+
+        ViewSignUp ->
+            ( { model | state = SigningUp }, Cmd.none )
+
         Logout ->
             let
                 newModel =
-                    { model | user = Nothing, userStatus = UserStatus "", error = Nothing }
+                    { model | user = Nothing, userStatus = UserStatus "", error = Nothing, state = SigningIn }
             in
             ( newModel, savePreferences newModel )
 
@@ -164,6 +204,19 @@ viewSignIn _ =
             []
         , input [ type_ "password", placeholder "Password", onInput PasswordInput ] []
         , button [ onClick SignIn ] [ text "Sign In" ]
+        , button [ onClick ViewSignUp ] [ text "Sign Up" ]
+        ]
+
+
+viewSignUp : Model -> Html Msg
+viewSignUp _ =
+    div []
+        [ input [ type_ "text", placeholder "Username", onInput UsernameInput ] []
+        , input [ type_ "text", placeholder "Email", onInput EmailInput ] []
+        , input [ type_ "password", placeholder "Password", onInput PasswordInput ] []
+        , input [ type_ "repeatpassword", placeholder "Repeat password", onInput RepeatPasswordInput ] []
+        , button [ onClick SignUp ] [ text "Sign Up" ]
+        , button [ onClick ViewSignIn ] [ text "Sign In" ]
         ]
 
 
@@ -179,15 +232,21 @@ viewUser user =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ p [] [ text (Maybe.withDefault "" model.error) ]
-        , case model.user of
-            Nothing ->
-                viewSignIn model
+    case model.state of
+        Initializing ->
+            text "Initializing..."
 
-            Just user ->
-                viewUser user
-        ]
+        SigningIn ->
+            viewSignIn model
+
+        SigningUp ->
+            viewSignUp model
+
+        SignedIn ->
+            viewUser (Maybe.withDefault { username = "", email = "", emailVerified = False, token = "" } model.user)
+
+        UpdatingDetails ->
+            text "Updating details..."
 
 
 main : Program Encode.Value Model Msg
