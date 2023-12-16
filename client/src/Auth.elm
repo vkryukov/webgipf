@@ -18,6 +18,7 @@ type alias Model =
     , user : Maybe User
     , userStatus : UserStatus
     , error : Maybe String
+    , errorFields : List String
     , state : State
     }
 
@@ -134,10 +135,10 @@ init : Encode.Value -> ( Model, Cmd Msg )
 init flags =
     case Decode.decodeValue userStatusDecoder flags of
         Ok status ->
-            ( Model "" "" "" "" Nothing status Nothing Initializing, checkUserStatus status.token )
+            ( Model "" "" "" "" Nothing status Nothing [] Initializing, checkUserStatus status.token )
 
         Err _ ->
-            ( Model "" "" "" "" Nothing { token = "" } Nothing SigningIn
+            ( Model "" "" "" "" Nothing { token = "" } Nothing [] SigningIn
             , Cmd.none
             )
 
@@ -180,16 +181,49 @@ update msg model =
             ( { model | emailInput = emailInput }, Cmd.none )
 
         SignIn ->
-            ( model, login model )
+            if model.usernameInput == "" || model.passwordInput == "" then
+                let
+                    errorFields =
+                        List.filter (\( _, input ) -> input == "")
+                            [ ( "Username", model.usernameInput )
+                            , ( "Password", model.passwordInput )
+                            ]
+                            |> List.map Tuple.first
+                in
+                ( { model | errorFields = errorFields, error = Just "All fields must be filled" }, Cmd.none )
+
+            else
+                ( model, login model )
 
         ViewSignIn ->
-            ( { model | state = SigningIn }, Cmd.none )
+            ( { model | state = SigningIn, errorFields = [], error = Nothing }, Cmd.none )
 
         SignUp ->
-            ( model, signUp model )
+            if model.usernameInput == "" || model.emailInput == "" || model.passwordInput == "" || model.repeatPasswordInput == "" then
+                let
+                    errorFields =
+                        List.filter (\( _, input ) -> input == "")
+                            [ ( "Username", model.usernameInput )
+                            , ( "Email", model.emailInput )
+                            , ( "Password", model.passwordInput )
+                            , ( "Repeat Password", model.repeatPasswordInput )
+                            ]
+                            |> List.map Tuple.first
+                in
+                ( { model | errorFields = errorFields, error = Just "All fields must be filled" }, Cmd.none )
+
+            else if model.passwordInput /= model.repeatPasswordInput then
+                let
+                    errorFields =
+                        [ "Password", "Repeat Password" ]
+                in
+                ( { model | errorFields = errorFields, error = Just "Passwords must match" }, Cmd.none )
+
+            else
+                ( model, signUp model )
 
         ViewSignUp ->
-            ( { model | state = SigningUp }, Cmd.none )
+            ( { model | state = SigningUp, errorFields = [], error = Nothing }, Cmd.none )
 
         Logout ->
             let
@@ -215,21 +249,35 @@ update msg model =
             ( newModel, savePreferences newModel )
 
 
+highlightErrorFields : List String -> List (Field msg) -> List (Field msg)
+highlightErrorFields errorFields fields =
+    List.map
+        (\field ->
+            if List.member field.label errorFields then
+                { field | highlight = True }
+
+            else
+                field
+        )
+        fields
+
+
 viewSignIn : Model -> Html Msg
 viewSignIn model =
     let
         fields : List (Field Msg)
         fields =
-            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput }
-            , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput }
+            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput, highlight = False }
+            , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput, highlight = False }
             ]
 
         form : Form Msg
         form =
             { title = "Sign In"
-            , fields = fields
+            , fields = highlightErrorFields model.errorFields fields
             , primaryAction = ( "Sign In", SignIn )
             , secondaryAction = ( "Sign Up", ViewSignUp )
+            , error = model.error
             }
     in
     viewForm form
@@ -240,18 +288,19 @@ viewSignUp model =
     let
         fields : List (Field Msg)
         fields =
-            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput }
-            , { label = "Email", fieldType = "text", placeholder = "Email", value = model.emailInput, onInput = EmailInput }
-            , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput }
-            , { label = "Repeat Password", fieldType = "password", placeholder = "Repeat Password", value = model.repeatPasswordInput, onInput = RepeatPasswordInput }
+            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput, highlight = False }
+            , { label = "Email", fieldType = "text", placeholder = "Email", value = model.emailInput, onInput = EmailInput, highlight = False }
+            , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput, highlight = False }
+            , { label = "Repeat Password", fieldType = "password", placeholder = "Repeat Password", value = model.repeatPasswordInput, onInput = RepeatPasswordInput, highlight = False }
             ]
 
         form : Form Msg
         form =
             { title = "Sign Up"
-            , fields = fields
+            , fields = highlightErrorFields model.errorFields fields
             , primaryAction = ( "Sign Up", SignUp )
             , secondaryAction = ( "Sign In", ViewSignIn )
+            , error = model.error
             }
     in
     viewForm form
@@ -270,30 +319,22 @@ viewUser user =
 view : Model -> Html Msg
 view model =
     div []
-        ((case model.error of
-            Just error ->
-                [ p [] [ text error ] ]
+        [ case model.state of
+            Initializing ->
+                text "Initializing..."
 
-            Nothing ->
-                []
-         )
-            ++ [ case model.state of
-                    Initializing ->
-                        text "Initializing..."
+            SigningIn ->
+                viewSignIn model
 
-                    SigningIn ->
-                        viewSignIn model
+            SigningUp ->
+                viewSignUp model
 
-                    SigningUp ->
-                        viewSignUp model
+            SignedIn ->
+                viewUser (Maybe.withDefault { username = "", email = "", emailVerified = False, token = "" } model.user)
 
-                    SignedIn ->
-                        viewUser (Maybe.withDefault { username = "", email = "", emailVerified = False, token = "" } model.user)
-
-                    UpdatingDetails ->
-                        text "Updating details..."
-               ]
-        )
+            UpdatingDetails ->
+                text "Updating details..."
+        ]
 
 
 main : Program Encode.Value Model Msg

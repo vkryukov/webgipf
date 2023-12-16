@@ -6,8 +6,8 @@ module Ui exposing
     , viewSecondaryButton
     )
 
-import Html exposing (Html, button, div, h2, input, label, text)
-import Html.Attributes exposing (class, placeholder, type_, value)
+import Html exposing (Html, button, div, h2, input, label, span, text)
+import Html.Attributes exposing (class, classList, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput)
 
 
@@ -27,6 +27,7 @@ type alias Field msg =
     , placeholder : String
     , value : String
     , onInput : String -> msg
+    , highlight : Bool
     }
 
 
@@ -40,6 +41,7 @@ viewField field =
             , placeholder field.placeholder
             , value field.value
             , onInput field.onInput
+            , classList [ ( "border-red-500", field.highlight ) ]
             ]
             []
         ]
@@ -60,6 +62,7 @@ type alias Form msg =
     , fields : List (Field msg)
     , primaryAction : ( String, msg )
     , secondaryAction : ( String, msg )
+    , error : Maybe String
     }
 
 
@@ -68,7 +71,16 @@ viewForm form =
     div [ class "p-4" ]
         [ h2 [ class "text-lg font-bold mb-4" ] [ text form.title ]
         , div [ class "w-full max-w-xs" ]
-            (List.map viewField form.fields
+            ((case form.error of
+                Just errorMsg ->
+                    [ div [ class "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" ]
+                        [ span [ class "block sm:inline" ] [ text errorMsg ] ]
+                    ]
+
+                Nothing ->
+                    []
+             )
+                ++ List.map viewField form.fields
                 ++ [ div [ class "flex justify-between mt-4" ]
                         [ viewPrimaryButton form.primaryAction
                         , viewSecondaryButton form.secondaryAction
