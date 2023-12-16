@@ -242,56 +242,38 @@ func checkGameStatus(gameID int) error {
 
 // User is a struct that represents a user in the database.
 
-func listUsers() ([]User, error) {
-	// Query to join users and tokens tables
+func listUsers() ([]*User, error) {
 	query := `
-        SELECT u.id, u.username, u.creation_time, t.token
-        FROM users u
-        LEFT JOIN tokens t ON u.id = t.user_id
-    `
+    SELECT u.id, u.username, u.creation_time, t.token
+    FROM users u
+    LEFT JOIN (
+        SELECT token, user_id
+        FROM tokens
+        ORDER BY id DESC
+        LIMIT 1
+    ) t ON u.id = t.user_id
+	ORDER BY u.created_time DESC
+`
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	users := make(map[int]*User)
+	var users []*User
 	for rows.Next() {
 		var token sql.NullString
 		var user User
 		var creationTime float64
 
-		if err := rows.Scan(&user.ID, &user.Username, &creationTime, &token); err != nil {
+		if err := rows.Scan(&user.Id, &user.Username, &creationTime, &token); err != nil {
 			return nil, err
 		}
 		user.CreationTime = int(creationTime)
+		users = append(users, &user)
 
-		// Check if the user already exists in the map
-		if existingUser, exists := users[user.ID]; exists {
-			// Append the token to the existing user's tokens if not null
-			if token.Valid {
-				existingUser.Tokens = append(existingUser.Tokens, token.String)
-			}
-		} else {
-			// If the token is valid, initialize the Tokens slice
-			if token.Valid {
-				user.Tokens = []string{token.String}
-			}
-			users[user.ID] = &user
-		}
 	}
-
-	// Convert the map to a slice of users
-	usersSlice := make([]User, 0, len(users))
-	for _, user := range users {
-		usersSlice = append(usersSlice, *user)
-	}
-
-	sort.Slice(usersSlice, func(i, j int) bool {
-		return usersSlice[i].CreationTime > usersSlice[j].CreationTime
-	})
-
-	return usersSlice, nil
+	return users, nil
 }
 
 type Game struct {

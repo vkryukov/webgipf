@@ -7,9 +7,9 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
+	"text/template"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -27,93 +27,152 @@ func RegisterAuthHandlers() {
 	// TODO: change the email address
 }
 
-func checkUserToken(token Token) (string, error) {
-	var username string
+// Tokens
 
-	err := db.QueryRow(
-		"SELECT users.username FROM tokens JOIN users ON tokens.user_id = users.id WHERE tokens.token = ?",
-		token).Scan(&username)
-	if err != nil {
-		return "", err
-	}
+type Token string
 
-	return username, nil
+func generateToken() Token {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return Token(fmt.Sprintf("%x", b))
 }
 
-// TODO: Marge UserRequest and UserResponse with User.
-type UserRequest struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Email       string `json:"email,omitempty"`
-	NewPassword string `json:"new_password,omitempty"`
-}
+// Users
 
-type UserResponse struct {
+type User struct {
 	Id            int    `json:"id,omitempty"`
 	Username      string `json:"username"`
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
-	Token         string `json:"token"` // TODO: Use Token type.
+	Password      string `json:"password,omitempty"`
+	NewPassword   string `json:"new_password,omitempty"`
+	CreationTime  int    `json:"creation_time"`
+	Token         Token  `json:"token"`
 }
 
-func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*UserRequest) (*UserResponse, error)) {
-	var userReq UserRequest
-	err := json.NewDecoder(r.Body).Decode(&userReq)
+func getUserWithToken(token Token) (*User, error) {
+	// TODO: differentiate between a token not found and a general error.
+	var user User
+	err := db.QueryRow(
+		`SELECT users.id, users.username, users.email, users.email_verified, users.password, users.creation_time 
+		FROM tokens 
+		JOIN users ON tokens.user_id = users.id 
+		WHERE tokens.token = ?`,
+		token).Scan(&user.Id, &user.Username, &user.Email, &user.EmailVerified, &user.Password, &user.CreationTime)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Printf("Error decoding JSON: %v", err)
-		return
+		return nil, err
 	}
+	return &user, nil
+}
 
-	user, err := userFunc(&userReq)
+func getUserWithUsername(username string) (*User, error) {
+	// TODO: differentiate between a user not found and a general error.
+	var user User
+	err := db.QueryRow(
+		`SELECT id, username, email, email_verified, password, creation_time 
+		FROM users 
+		WHERE username = ?`,
+		username).Scan(&user.Id, &user.Username, &user.Email, &user.EmailVerified, &user.Password, &user.CreationTime)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Printf("Error getting user from request: %v", err)
-		return
+		return nil, err
 	}
+	return &user, nil
+}
 
-	token, err := addNewTokenToUser(user.Id)
+func addNewTokenToUser(userID int) (Token, error) {
+	token := generateToken()
+	_, err := db.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
+	return token, err
+}
+
+func authenticateUser(userReq *User) (*User, error) {
+	user, err := getUserWithUsername(userReq.Username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error adding new token to user: %v", err)
-		return
+		return nil, fmt.Errorf("user %s not found", userReq.Username)
 	}
-
-	user.Token = string(token)
-	writeJSONResponse(w, user)
-}
-
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	handleUser(w, r, authenticateUser)
-}
-
-func registerUserHandler(w http.ResponseWriter, r *http.Request) {
-	handleUser(w, r, registerUser)
-}
-
-func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
-	handleUser(w, r, changePassword)
+	if !comparePasswords(user.Password, userReq.Password) {
+		return nil, fmt.Errorf("wrong password for user %s", userReq.Username)
+	}
+	return user, nil
 }
 
 func comparePasswords(hashedPwd string, plainPwd string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd)) == nil
 }
 
-func authenticateUser(userReq *UserRequest) (*UserResponse, error) {
-	var hashedPwd string
-	var user UserResponse
+func usernameExists(username string) bool {
+	_, err := getUserWithUsername(username)
+	return err == nil
+}
 
-	err := db.QueryRow("SELECT id, password, email, email_verified FROM users WHERE username = ?", userReq.Username).Scan(&user.Id, &hashedPwd, &user.Email, &user.EmailVerified)
+// serverError logs the detailed error and returns an error message to the client.
+func serverError(message string, err error) error {
+	log.Printf("Server error %s: %v", message, err)
+	return fmt.Errorf("server: " + message)
+}
+
+func registerUser(userReq *User) (*User, error) {
+	if userReq.Username == "" {
+		return nil, fmt.Errorf("missing username")
+	}
+	if userReq.Email == "" {
+		return nil, fmt.Errorf("missing email")
+	}
+	if userReq.Password == "" {
+		return nil, fmt.Errorf("missing password")
+	}
+	if userReq.Password != userReq.NewPassword {
+		return nil, fmt.Errorf("passwords do not match")
+	}
+	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, serverError("cannot hash password", err)
 	}
-
-	if !comparePasswords(hashedPwd, userReq.Password) {
-		return nil, fmt.Errorf("wrong password")
+	if usernameExists(userReq.Username) {
+		return nil, fmt.Errorf("username %s already exists", userReq.Username)
 	}
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, serverError("cannot start transaction", err)
+	}
+	res, err := tx.Exec("INSERT INTO users(username, password, email) VALUES(?, ?, ?)", userReq.Username, hashedPwd, userReq.Email)
+	if err != nil {
+		tx.Rollback()
+		return nil, serverError("cannot insert user", err)
+	}
+	userID, err := res.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return nil, serverError("cannot get last insert ID", err)
+	}
+	verificationLink, err := createVerificationLink(userID)
+	if err != nil {
+		tx.Rollback()
+		return nil, serverError("cannot create verification link", err)
+	}
+	err = sendRegistrationEmail(userReq.Username, userReq.Email, verificationLink)
+	if err != nil {
+		tx.Rollback()
+		return nil, serverError("cannot send registration email; check email address", err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, serverError("cannot commit transaction", err)
+	}
+	return &User{
+		Id:            int(userID),
+		Username:      userReq.Username,
+		Email:         userReq.Email,
+		EmailVerified: false,
+	}, nil
+}
 
-	user.Username = userReq.Username
-	return &user, nil
+func createVerificationLink(userID int64) (string, error) {
+	token, err := addNewTokenToUser(int(userID))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/auth/verify?token=%s", baseURL, token), nil
 }
 
 var emailTmpl *template.Template
@@ -141,183 +200,129 @@ func init() {
 	emailTmpl = template.Must(template.New("email").Parse(emailTemplate))
 }
 
-func registerUser(userReq *UserRequest) (*UserResponse, error) {
-	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := db.Exec("INSERT INTO users(username, password, email) VALUES(?, ?, ?)", userReq.Username, hashedPwd, userReq.Email)
-	if err != nil {
-		log.Printf("Error inserting user %s into database: %v", userReq.Username, err)
-		return nil, err
-	}
-
-	userID, err := res.LastInsertId()
-	if err != nil {
-		log.Printf("Error getting last insert ID: %v", err)
-		return nil, err
-	}
-
-	verificationLink, err := createVerificationLink(userID)
-	if err != nil {
-		log.Printf("Error creating verification link: %v", err)
-		return nil, err
-	}
-
-	sendRegistrationEmail(userReq.Username, userReq.Email, verificationLink)
-	return &UserResponse{
-		Id:            int(userID),
-		Username:      userReq.Username,
-		Email:         userReq.Email,
-		EmailVerified: false,
-	}, nil
-}
-
-func createVerificationLink(userID int64) (string, error) {
-	token, err := addNewTokenToUser(int(userID))
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s/auth/verify?token=%s", baseURL, token), nil
-}
-
-func sendRegistrationEmail(username, email, verificationLink string) {
+func sendRegistrationEmail(username, email, verificationLink string) error {
 	var buf bytes.Buffer
 	if err := emailTmpl.Execute(&buf, struct {
 		Username         string
 		Email            string
 		VerificationLink string
 	}{username, email, verificationLink}); err != nil {
-		log.Printf("Error executing email template: %v", err)
+		return fmt.Errorf("executing email template: %v", err)
 	}
-
-	err := sendMessage(email, "Gipf Game Server Registration", buf.String())
-	if err != nil {
-		log.Printf("Error sending registration email to %s: %v", email, err)
-	}
+	return sendMessage(email, "Gipf Game Server Registration", buf.String())
 }
 
-func verificationHandler(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		http.Error(w, "missing token", http.StatusBadRequest)
-		return
-	}
-
-	username, err := checkUserToken(Token(token))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	_, err = db.Exec("UPDATE users SET verified = 1 WHERE username = ?", username)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-// TODO: This is very similar to verifyHandler. Refactor.
-func checkHandler(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		http.Error(w, "missing token", http.StatusBadRequest)
-		return
-	}
-
-	username, err := checkUserToken(Token(token))
-	if err != nil {
-		log.Printf("Error checking user token for token %s: %v", token, err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var user UserResponse
-	err = db.QueryRow("SELECT id, email, email_verified FROM users WHERE username = ?", username).Scan(&user.Id, &user.Email, &user.EmailVerified)
-	if err != nil {
-		log.Printf("Error getting user %s from database: %v", username, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	user.Username = username
-	user.Token = token
-	writeJSONResponse(w, user)
-}
-
-func changePassword(userReq *UserRequest) (*UserResponse, error) {
-	var hashedPwd string
-	var user UserResponse
-
-	err := db.QueryRow("SELECT id, password, email, emailVerified FROM users WHERE username = ?", userReq.Username).Scan(&user.Id, &hashedPwd, &user.Email, &user.EmailVerified)
+func changePassword(userReq *User) (*User, error) {
+	user, err := authenticateUser(userReq)
 	if err != nil {
 		return nil, err
 	}
-
-	if !comparePasswords(hashedPwd, userReq.Password) {
-		return nil, fmt.Errorf("wrong password")
-	}
-
 	newHashPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, serverError("cannot hash password", err)
 	}
-
 	tx, err := db.Begin()
 	if err != nil {
-		return nil, err
+		return nil, serverError("cannot start transaction", err)
 	}
-
 	_, err = tx.Exec("DELETE FROM tokens WHERE user_id = ?", user.Id)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return nil, serverError("cannot delete old tokens", err)
 	}
-
 	_, err = tx.Exec("UPDATE users SET password = ? WHERE id = ?", newHashPwd, user.Id)
 	if err != nil {
 		tx.Rollback()
-		return nil, err
+		return nil, serverError("cannot update password", err)
 	}
-
 	err = tx.Commit()
 	if err != nil {
-		return nil, err
+		return nil, serverError("cannot commit transaction", err)
 	}
-
-	user.Username = userReq.Username
-	return &user, nil
+	return user, nil
 }
 
-// TODO: This is very similar to UserResponse. Refactor.
-type User struct {
-	ID            int      `json:"id,omitempty"`
-	Username      string   `json:"username"`
-	Email         string   `json:"email"`
-	EmailVerified bool     `json:"email_verified"`
-	CreationTime  int      `json:"creation_time"`
-	Tokens        []string `json:"tokens,omitempty"`
+// HTTP Handlers
+
+func sendUserResponse(w http.ResponseWriter, user *User) {
+	// We need to send the user information back but hide all the sensitive information.
+	user.Id = 0
+	user.Password = ""
+	user.NewPassword = ""
+	writeJSONResponse(w, user)
 }
 
-type Token string
-
-func generateToken() Token {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return Token(fmt.Sprintf("%x", b))
+func sendError(w http.ResponseWriter, err error) {
+	log.Printf("Sending error to client: %v", err)
+	writeJSONResponse(w, struct {
+		Error string `json:"error"`
+	}{err.Error()})
 }
 
-func addNewTokenToUser(userID int) (Token, error) {
-	token := generateToken()
-
-	_, err := db.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
+func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*User) (*User, error)) {
+	var userReq User
+	err := json.NewDecoder(r.Body).Decode(&userReq)
 	if err != nil {
-		return "", err
+		sendError(w, err)
+		return
 	}
 
-	return token, nil
+	user, err := userFunc(&userReq)
+	if err != nil {
+		sendError(w, err)
+		return
+	}
+
+	token, err := addNewTokenToUser(user.Id)
+	if err != nil {
+		sendError(w, err)
+		return
+	}
+
+	user.Token = token
+	sendUserResponse(w, user)
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	handleUser(w, r, authenticateUser)
+}
+
+func registerUserHandler(w http.ResponseWriter, r *http.Request) {
+	handleUser(w, r, registerUser)
+}
+
+func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	handleUser(w, r, changePassword)
+}
+
+func authenticateToken(r *http.Request) (*User, error) {
+	token := Token(r.Header.Get("token"))
+	if token == "" {
+		return nil, fmt.Errorf("missing token")
+	}
+	return getUserWithToken(token)
+}
+
+func verificationHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := authenticateToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	_, err = db.Exec("UPDATE users SET verified = 1 WHERE username = ?", user.Username)
+	if err != nil {
+		sendError(w, err)
+		return
+	}
+	// TODO: indicate the verification is successful
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func checkHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := authenticateToken(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	sendUserResponse(w, user)
 }
