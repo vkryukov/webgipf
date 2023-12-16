@@ -41,9 +41,9 @@ func generateToken() Token {
 
 type User struct {
 	Id            int    `json:"id,omitempty"`
-	Username      string `json:"username"`
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
+	ScreenName    string `json:"screen_name,omitempty"`
 	Password      string `json:"password,omitempty"`
 	NewPassword   string `json:"new_password,omitempty"`
 	CreationTime  int    `json:"creation_time"`
@@ -53,26 +53,26 @@ type User struct {
 func getUserWithToken(token Token) (*User, error) {
 	// TODO: differentiate between a token not found and a general error.
 	var user User
-	err := db.QueryRow(
-		`SELECT users.id, users.username, users.email, users.email_verified, users.password, users.creation_time 
-		FROM tokens 
-		JOIN users ON tokens.user_id = users.id 
-		WHERE tokens.token = ?`,
-		token).Scan(&user.Id, &user.Username, &user.Email, &user.EmailVerified, &user.Password, &user.CreationTime)
+	err := db.QueryRow(`
+	SELECT users.id, users.email, users.email_verified, users.screen_name, users.password_hash, users.creation_time 
+	FROM tokens 
+	JOIN users ON tokens.user_id = users.id 
+	WHERE tokens.token = ?
+	`, token).Scan(&user.Id, &user.Email, &user.EmailVerified, &user.ScreenName, &user.Password, &user.CreationTime)
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func getUserWithUsername(username string) (*User, error) {
+func getUserWithEmail(email string) (*User, error) {
 	// TODO: differentiate between a user not found and a general error.
 	var user User
-	err := db.QueryRow(
-		`SELECT id, username, email, email_verified, password, creation_time 
-		FROM users 
-		WHERE username = ?`,
-		username).Scan(&user.Id, &user.Username, &user.Email, &user.EmailVerified, &user.Password, &user.CreationTime)
+	err := db.QueryRow(`
+	SELECT id, email, email_verified, screen_name, password_hash, creation_time 
+	FROM users 
+	WHERE email = ?
+	`, email).Scan(&user.Id, &user.Email, &user.EmailVerified, &user.ScreenName, &user.Password, &user.CreationTime)
 	if err != nil {
 		return nil, err
 	}
@@ -86,12 +86,12 @@ func addNewTokenToUser(userID int) (Token, error) {
 }
 
 func authenticateUser(userReq *User) (*User, error) {
-	user, err := getUserWithUsername(userReq.Username)
+	user, err := getUserWithEmail(userReq.Email)
 	if err != nil {
-		return nil, fmt.Errorf("user %s not found", userReq.Username)
+		return nil, fmt.Errorf("user %s not found", userReq.Email)
 	}
 	if !comparePasswords(user.Password, userReq.Password) {
-		return nil, fmt.Errorf("wrong password for user %s", userReq.Username)
+		return nil, fmt.Errorf("wrong password for user %s", userReq.Email)
 	}
 	return user, nil
 }
@@ -100,8 +100,8 @@ func comparePasswords(hashedPwd string, plainPwd string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd)) == nil
 }
 
-func usernameExists(username string) bool {
-	_, err := getUserWithUsername(username)
+func emailExists(username string) bool {
+	_, err := getUserWithEmail(username)
 	return err == nil
 }
 
@@ -112,9 +112,6 @@ func serverError(message string, err error) error {
 }
 
 func registerUser(userReq *User) (*User, error) {
-	if userReq.Username == "" {
-		return nil, fmt.Errorf("missing username")
-	}
 	if userReq.Email == "" {
 		return nil, fmt.Errorf("missing email")
 	}
@@ -128,14 +125,14 @@ func registerUser(userReq *User) (*User, error) {
 	if err != nil {
 		return nil, serverError("cannot hash password", err)
 	}
-	if usernameExists(userReq.Username) {
-		return nil, fmt.Errorf("username %s already exists", userReq.Username)
+	if emailExists(userReq.Email) {
+		return nil, fmt.Errorf("email %s is already registered", userReq.Email)
 	}
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, serverError("cannot start transaction", err)
 	}
-	res, err := tx.Exec("INSERT INTO users(username, password, email) VALUES(?, ?, ?)", userReq.Username, hashedPwd, userReq.Email)
+	res, err := tx.Exec("INSERT INTO users(email, password_hash, screen_name) VALUES(?, ?, ?)", userReq.Email, hashedPwd, userReq.ScreenName)
 	if err != nil {
 		tx.Rollback()
 		return nil, serverError("cannot insert user", err)
@@ -150,7 +147,7 @@ func registerUser(userReq *User) (*User, error) {
 		tx.Rollback()
 		return nil, serverError("cannot create verification link", err)
 	}
-	err = sendRegistrationEmail(userReq.Username, userReq.Email, verificationLink)
+	err = sendRegistrationEmail(userReq.Email, userReq.ScreenName, verificationLink)
 	if err != nil {
 		tx.Rollback()
 		return nil, serverError("cannot send registration email; check email address", err)
@@ -160,9 +157,8 @@ func registerUser(userReq *User) (*User, error) {
 		return nil, serverError("cannot commit transaction", err)
 	}
 	return &User{
-		Id:            int(userID),
-		Username:      userReq.Username,
 		Email:         userReq.Email,
+		ScreenName:    userReq.ScreenName,
 		EmailVerified: false,
 	}, nil
 }
@@ -183,8 +179,8 @@ func init() {
 
     Thank you for registering for our game server! Here are the details 
     that we have recorded:
-        - your username is {{.Username}}
         - your email is {{.Email}}
+		- your screen name is {{.ScreenName}}
 
     IMPORTANT: Your email address is used to reset your password, and 
     needs to be verified. Please click on the following link to verify it:
@@ -200,13 +196,13 @@ func init() {
 	emailTmpl = template.Must(template.New("email").Parse(emailTemplate))
 }
 
-func sendRegistrationEmail(username, email, verificationLink string) error {
+func sendRegistrationEmail(email, screenName, verificationLink string) error {
 	var buf bytes.Buffer
 	if err := emailTmpl.Execute(&buf, struct {
-		Username         string
 		Email            string
+		ScreenName       string
 		VerificationLink string
-	}{username, email, verificationLink}); err != nil {
+	}{email, screenName, verificationLink}); err != nil {
 		return fmt.Errorf("executing email template: %v", err)
 	}
 	return sendMessage(email, "Gipf Game Server Registration", buf.String())
@@ -309,7 +305,7 @@ func verificationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	_, err = db.Exec("UPDATE users SET verified = 1 WHERE username = ?", user.Username)
+	_, err = db.Exec("UPDATE users SET verified = 1 WHERE email = ?", user.Email)
 	if err != nil {
 		sendError(w, err)
 		return

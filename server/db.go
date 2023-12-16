@@ -23,10 +23,10 @@ func initDB() {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE,
-		password TEXT,
-		email TEXT,
+		email TEXT UNIQUE,
 		email_verified INTEGER DEFAULT 0,
+		password_hash TEXT,
+		screen_name TEXT UNIQUE,
 		is_admin INTEGER DEFAULT 0,
 		creation_time REAL DEFAULT ((julianday('now') - 2440587.5)*86400000)
 	);
@@ -244,7 +244,7 @@ func checkGameStatus(gameID int) error {
 
 func listUsers() ([]*User, error) {
 	query := `
-    SELECT u.id, u.username, u.creation_time, t.token
+    SELECT u.id, u.email, u.screen_name, u.creation_time, t.token
     FROM users u
     LEFT JOIN (
         SELECT token, user_id
@@ -266,7 +266,7 @@ func listUsers() ([]*User, error) {
 		var user User
 		var creationTime float64
 
-		if err := rows.Scan(&user.Id, &user.Username, &creationTime, &token); err != nil {
+		if err := rows.Scan(&user.Id, &user.Email, &user.ScreenName, &creationTime, &token); err != nil {
 			return nil, err
 		}
 		user.CreationTime = int(creationTime)
