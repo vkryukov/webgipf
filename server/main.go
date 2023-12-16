@@ -56,7 +56,7 @@ func main() {
 	log.SetFlags(0)
 	log.SetOutput(&customWriter{logFile: os.Stdout})
 
-	initDB()
+	initDB("./games.db")
 	defer func() {
 		_, err := db.Exec("PRAGMA wal_checkpoint;")
 		if err != nil {

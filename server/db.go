@@ -13,9 +13,10 @@ import (
 
 var db *sql.DB
 
-func initDB() {
+func initDB(path string) {
 	var err error
-	db, err = sql.Open("sqlite3", "file:./games.db?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000")
+	db, err = sql.Open("sqlite3",
+		fmt.Sprintf("file:%s?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000", path))
 	if err != nil {
 		log.Fatal(err)
 	}

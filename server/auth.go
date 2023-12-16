@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"text/template"
 
+	"database/sql"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -79,9 +81,13 @@ func getUserWithEmail(email string) (*User, error) {
 	return &user, nil
 }
 
-func addNewTokenToUser(userID int) (Token, error) {
+type Execer interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
+func addNewTokenToUser(execer Execer, userID int) (Token, error) {
 	token := generateToken()
-	_, err := db.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
+	_, err := execer.Exec("INSERT INTO tokens(user_id, token) VALUES(?, ?)", userID, token)
 	return token, err
 }
 
@@ -100,8 +106,8 @@ func comparePasswords(hashedPwd string, plainPwd string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd)) == nil
 }
 
-func emailExists(username string) bool {
-	_, err := getUserWithEmail(username)
+func emailExists(email string) bool {
+	_, err := getUserWithEmail(email)
 	return err == nil
 }
 
@@ -117,9 +123,6 @@ func registerUser(userReq *User) (*User, error) {
 	}
 	if userReq.Password == "" {
 		return nil, fmt.Errorf("missing password")
-	}
-	if userReq.Password != userReq.NewPassword {
-		return nil, fmt.Errorf("passwords do not match")
 	}
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(userReq.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -142,7 +145,7 @@ func registerUser(userReq *User) (*User, error) {
 		tx.Rollback()
 		return nil, serverError("cannot get last insert ID", err)
 	}
-	verificationLink, err := createVerificationLink(userID)
+	verificationLink, err := createVerificationLink(tx, userID)
 	if err != nil {
 		tx.Rollback()
 		return nil, serverError("cannot create verification link", err)
@@ -163,8 +166,8 @@ func registerUser(userReq *User) (*User, error) {
 	}, nil
 }
 
-func createVerificationLink(userID int64) (string, error) {
-	token, err := addNewTokenToUser(int(userID))
+func createVerificationLink(execer Execer, userID int64) (string, error) {
+	token, err := addNewTokenToUser(execer, int(userID))
 	if err != nil {
 		return "", err
 	}
@@ -186,6 +189,8 @@ func init() {
     needs to be verified. Please click on the following link to verify it:
 
     {{.VerificationLink}}
+
+	You cannot join games until you verify your email address.
 
     If you did not register for our game server, please ignore this email.
 
@@ -269,7 +274,7 @@ func handleUser(w http.ResponseWriter, r *http.Request, userFunc func(*User) (*U
 		return
 	}
 
-	token, err := addNewTokenToUser(user.Id)
+	token, err := addNewTokenToUser(db, user.Id)
 	if err != nil {
 		sendError(w, err)
 		return
