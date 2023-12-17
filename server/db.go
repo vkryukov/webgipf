@@ -15,8 +15,14 @@ var db *sql.DB
 
 func initDB(path string) {
 	var err error
-	db, err = sql.Open("sqlite3",
-		fmt.Sprintf("file:%s?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000", path))
+	var prefix string
+
+	if path == ":memory:" {
+		prefix = path
+	} else {
+		prefix = "file:" + path
+	}
+	db, err = sql.Open("sqlite3", prefix+"?cache=shared&mode=rwc&_journal_mode=WAL&_synchronous=NORMAL&_busy_timeout=5000")
 	if err != nil {
 		log.Fatal(err)
 	}
