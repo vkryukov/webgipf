@@ -1,12 +1,15 @@
 module Ui exposing
     ( Field
     , Form
+    , viewBoldText
     , viewForm
+    , viewNavBar
     , viewPrimaryButton
     , viewSecondaryButton
+    , viewText
     )
 
-import Html exposing (Html, button, div, h2, input, label, span, text)
+import Html exposing (Html, a, button, div, h2, input, label, nav, span, text)
 import Html.Attributes exposing (class, classList, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput)
 
@@ -86,5 +89,29 @@ viewForm form =
                         , viewSecondaryButton form.secondaryAction
                         ]
                    ]
+            )
+        ]
+
+
+viewText : String -> Html msg
+viewText text_ =
+    div [ class "mr-4" ] [ text text_ ]
+
+
+viewBoldText : String -> Html msg
+viewBoldText text_ =
+    div [ class "font-bold mr-4" ] [ text text_ ]
+
+
+viewNavBar : List (Html msg) -> List ( String, msg ) -> Html msg
+viewNavBar items actions =
+    nav [ class "w-full flex justify-between items-center bg-gray-200 p-4" ]
+        [ div [ class "flex" ] items
+        , div [ class "flex" ]
+            (List.map
+                (\( label, actionMsg ) ->
+                    a [ class "text-blue-500 hover:underline mr-4 cursor-pointer", onClick actionMsg ] [ text label ]
+                )
+                actions
             )
         ]

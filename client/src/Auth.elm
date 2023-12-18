@@ -7,7 +7,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
 import Tools exposing (boolToString, errorToString)
-import Ui exposing (Field, Form, viewForm, viewPrimaryButton)
+import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewText)
 
 
 type alias Model =
@@ -332,12 +332,16 @@ viewSignUp model =
 
 viewUser : User -> Html Msg
 viewUser user =
-    div []
-        [ div [] [ text ("Email: " ++ user.email) ]
-        , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
-        , div [] [ text ("Screen Name: " ++ user.screenName) ]
-        , viewPrimaryButton ( "Logout", Logout )
-        ]
+    let
+        items =
+            [ viewBoldText user.screenName
+            , viewText ("<" ++ user.email ++ ">")
+            ]
+
+        actions =
+            [ ( "Sign out", Logout ) ]
+    in
+    viewNavBar items actions
 
 
 view : Model -> Html Msg
