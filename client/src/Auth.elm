@@ -40,7 +40,7 @@ type Msg
     | ViewSignIn
     | SignUp
     | ViewSignUp
-    | LoginReceived (Result Http.Error User)
+    | LoginReceived (Result Http.Error UserResponse)
     | Logout
 
 
@@ -72,6 +72,19 @@ userStatusDecoder =
         (Decode.field "token" Decode.string)
 
 
+type UserResponse
+    = UserResponse User
+    | ErrorResponse String
+
+
+userResponseDecoder : Decode.Decoder UserResponse
+userResponseDecoder =
+    Decode.oneOf
+        [ Decode.map UserResponse userDecoder
+        , Decode.map ErrorResponse (Decode.field "error" Decode.string)
+        ]
+
+
 checkUserStatus : String -> Cmd Msg
 checkUserStatus token =
     if token == "" then
@@ -80,7 +93,7 @@ checkUserStatus token =
     else
         Http.get
             { url = "http://localhost:8080/auth/check?token=" ++ token
-            , expect = Http.expectJson LoginReceived userDecoder
+            , expect = Http.expectJson LoginReceived userResponseDecoder
             }
 
 
@@ -97,7 +110,7 @@ login model =
     Http.post
         { url = "http://localhost:8080/auth/login"
         , body = body
-        , expect = Http.expectJson LoginReceived userDecoder
+        , expect = Http.expectJson LoginReceived userResponseDecoder
         }
 
 
@@ -115,7 +128,7 @@ signUp model =
     Http.post
         { url = "http://localhost:8080/auth/register"
         , body = body
-        , expect = Http.expectJson LoginReceived userDecoder
+        , expect = Http.expectJson LoginReceived userResponseDecoder
         }
 
 
@@ -143,15 +156,26 @@ init flags =
             )
 
 
-updateModelWithUserStatus : Result Http.Error User -> Model -> Model
-updateModelWithUserStatus result model =
-    -- TODO: updateModelWithUserStatus has a confusing name with userStatus that we save in preferences. Need to rename it.
+updateModelWithUserResponse : Result Http.Error UserResponse -> Model -> Model
+updateModelWithUserResponse result model =
     case result of
-        Ok user ->
+        Ok (UserResponse user) ->
             { model | user = Just user, userStatus = UserStatus user.token, error = Nothing, state = SignedIn }
 
+        Ok (ErrorResponse error) ->
+            { model
+                | user = Nothing
+                , userStatus = UserStatus ""
+                , error = Just error
+                , state =
+                    if model.state == Initializing then
+                        SigningIn
+
+                    else
+                        model.state
+            }
+
         Err error ->
-            -- TODO: handle error properly, and if we were in sign up, we shouldn't switch to sign in.
             { model
                 | user = Nothing
                 , userStatus = UserStatus ""
@@ -244,7 +268,7 @@ update msg model =
         LoginReceived result ->
             let
                 newModel =
-                    updateModelWithUserStatus result model
+                    updateModelWithUserResponse result model
             in
             ( newModel, savePreferences newModel )
 

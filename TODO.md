@@ -24,3 +24,6 @@
 [X] The server should still check that the passwords match during registration
 
 [X] Use Token type everywhere where it matters in auth.go
+ 
+[ ] Decide what to do with the screen name that currently have to be unique. For the MVP,
+    requiring it to be unique is probably the best tactic for now.
