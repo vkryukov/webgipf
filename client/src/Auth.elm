@@ -11,10 +11,10 @@ import Ui exposing (Field, Form, viewForm, viewPrimaryButton)
 
 
 type alias Model =
-    { usernameInput : String
+    { emailInput : String
+    , screenNameInput : String
     , passwordInput : String
     , repeatPasswordInput : String
-    , emailInput : String
     , user : Maybe User
     , userStatus : UserStatus
     , error : Maybe String
@@ -32,10 +32,10 @@ type State
 
 
 type Msg
-    = UsernameInput String
+    = EmailInput String
     | PasswordInput String
     | RepeatPasswordInput String
-    | EmailInput String
+    | ScreenNameInput String
     | SignIn
     | ViewSignIn
     | SignUp
@@ -45,9 +45,9 @@ type Msg
 
 
 type alias User =
-    { username : String
-    , email : String
+    { email : String
     , emailVerified : Bool
+    , screenName : String
     , token : String
     }
 
@@ -55,9 +55,9 @@ type alias User =
 userDecoder : Decode.Decoder User
 userDecoder =
     Decode.map4 User
-        (Decode.field "username" Decode.string)
         (Decode.field "email" Decode.string)
         (Decode.field "email_verified" Decode.bool)
+        (Decode.field "screen_name" Decode.string)
         (Decode.field "token" Decode.string)
 
 
@@ -90,7 +90,7 @@ login model =
         body =
             Http.jsonBody <|
                 Encode.object
-                    [ ( "username", Encode.string model.usernameInput )
+                    [ ( "email", Encode.string model.emailInput )
                     , ( "password", Encode.string model.passwordInput )
                     ]
     in
@@ -107,9 +107,9 @@ signUp model =
         body =
             Http.jsonBody <|
                 Encode.object
-                    [ ( "username", Encode.string model.usernameInput )
+                    [ ( "email", Encode.string model.emailInput )
                     , ( "password", Encode.string model.passwordInput )
-                    , ( "email", Encode.string model.emailInput )
+                    , ( "screen_name", Encode.string model.screenNameInput )
                     ]
     in
     Http.post
@@ -168,8 +168,8 @@ updateModelWithUserStatus result model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UsernameInput usernameInput ->
-            ( { model | usernameInput = usernameInput }, Cmd.none )
+        EmailInput emailInput ->
+            ( { model | emailInput = emailInput }, Cmd.none )
 
         PasswordInput passwordInput ->
             ( { model | passwordInput = passwordInput }, Cmd.none )
@@ -177,15 +177,15 @@ update msg model =
         RepeatPasswordInput repeatPasswordInput ->
             ( { model | repeatPasswordInput = repeatPasswordInput }, Cmd.none )
 
-        EmailInput emailInput ->
-            ( { model | emailInput = emailInput }, Cmd.none )
+        ScreenNameInput screenNameInput ->
+            ( { model | screenNameInput = screenNameInput }, Cmd.none )
 
         SignIn ->
-            if model.usernameInput == "" || model.passwordInput == "" then
+            if model.emailInput == "" || model.passwordInput == "" then
                 let
                     errorFields =
                         List.filter (\( _, input ) -> input == "")
-                            [ ( "Username", model.usernameInput )
+                            [ ( "Email", model.emailInput )
                             , ( "Password", model.passwordInput )
                             ]
                             |> List.map Tuple.first
@@ -199,11 +199,11 @@ update msg model =
             ( { model | state = SigningIn, errorFields = [], error = Nothing }, Cmd.none )
 
         SignUp ->
-            if model.usernameInput == "" || model.emailInput == "" || model.passwordInput == "" || model.repeatPasswordInput == "" then
+            if model.emailInput == "" || model.passwordInput == "" || model.repeatPasswordInput == "" then
                 let
                     errorFields =
                         List.filter (\( _, input ) -> input == "")
-                            [ ( "Username", model.usernameInput )
+                            [ ( "Username", model.emailInput )
                             , ( "Email", model.emailInput )
                             , ( "Password", model.passwordInput )
                             , ( "Repeat Password", model.repeatPasswordInput )
@@ -229,10 +229,10 @@ update msg model =
             let
                 newModel =
                     { model
-                        | usernameInput = ""
+                        | emailInput = ""
                         , passwordInput = ""
                         , repeatPasswordInput = ""
-                        , emailInput = ""
+                        , screenNameInput = ""
                         , user = Nothing
                         , userStatus = UserStatus ""
                         , error = Nothing
@@ -267,7 +267,7 @@ viewSignIn model =
     let
         fields : List (Field Msg)
         fields =
-            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput, highlight = False }
+            [ { label = "Email", fieldType = "text", placeholder = "Email", value = model.emailInput, onInput = EmailInput, highlight = False }
             , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput, highlight = False }
             ]
 
@@ -288,8 +288,8 @@ viewSignUp model =
     let
         fields : List (Field Msg)
         fields =
-            [ { label = "Username", fieldType = "text", placeholder = "Username", value = model.usernameInput, onInput = UsernameInput, highlight = False }
-            , { label = "Email", fieldType = "text", placeholder = "Email", value = model.emailInput, onInput = EmailInput, highlight = False }
+            [ { label = "Email", fieldType = "text", placeholder = "Email", value = model.emailInput, onInput = EmailInput, highlight = False }
+            , { label = "Screen Name", fieldType = "text", placeholder = "Screen Name", value = model.screenNameInput, onInput = ScreenNameInput, highlight = False }
             , { label = "Password", fieldType = "password", placeholder = "Password", value = model.passwordInput, onInput = PasswordInput, highlight = False }
             , { label = "Repeat Password", fieldType = "password", placeholder = "Repeat Password", value = model.repeatPasswordInput, onInput = RepeatPasswordInput, highlight = False }
             ]
@@ -309,9 +309,9 @@ viewSignUp model =
 viewUser : User -> Html Msg
 viewUser user =
     div []
-        [ div [] [ text ("Username: " ++ user.username) ]
-        , div [] [ text ("Email: " ++ user.email) ]
+        [ div [] [ text ("Email: " ++ user.email) ]
         , div [] [ text ("Email Verified: " ++ boolToString user.emailVerified) ]
+        , div [] [ text ("Screen Name: " ++ user.screenName) ]
         , viewPrimaryButton ( "Logout", Logout )
         ]
 
@@ -321,7 +321,7 @@ view model =
     div []
         [ case model.state of
             Initializing ->
-                text "Initializing..."
+                text "Connecting..."
 
             SigningIn ->
                 viewSignIn model
@@ -330,7 +330,7 @@ view model =
                 viewSignUp model
 
             SignedIn ->
-                viewUser (Maybe.withDefault { username = "", email = "", emailVerified = False, token = "" } model.user)
+                viewUser (Maybe.withDefault { email = "", emailVerified = False, screenName = "", token = "" } model.user)
 
             UpdatingDetails ->
                 text "Updating details..."

@@ -21,7 +21,6 @@ import Svg exposing (Svg, g, rect, svg)
 import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
 import Svg.Events exposing (onClick)
 import Task
-import Tools exposing (fst, snd)
 
 
 
@@ -133,7 +132,7 @@ receiveAction model action =
 
 selected : Model -> List Coord
 selected model =
-    fst model.autoSelected ++ model.gipfsSelected
+    Tuple.first model.autoSelected ++ model.gipfsSelected
 
 
 
@@ -419,7 +418,7 @@ currentSelectionState model =
         -- Nothing has been auto-selected yet. That means that we need to disambiguate between the possible removals.
         PlayerNeedsToDisambiguateRemoval
 
-    else if snd model.autoSelected == [] then
+    else if Tuple.second model.autoSelected == [] then
         -- The player has no Gipf pieces to remove, so we need to wait for them to confirm.
         PlayerNeedsToConfirmRemoval
 
@@ -538,7 +537,7 @@ viewSelectionAndRemoval model =
     let
         markedForRemoval =
             List.map drawDarkCross (selected model ++ model.gipfsSelected)
-                ++ List.map drawLightMark (snd model.autoSelected)
+                ++ List.map drawLightMark (Tuple.second model.autoSelected)
     in
     case currentSelectionState model of
         NothingToSelect ->
@@ -571,7 +570,7 @@ viewSelectionAndRemoval model =
         PlayerNeedsToToggleGipfPieces ->
             g []
                 (markedForRemoval
-                    ++ List.map (\p -> drawClickPoint p GipfEnter GipfEnter GipfClicked) (snd model.autoSelected)
+                    ++ List.map (\p -> drawClickPoint p GipfEnter GipfEnter GipfClicked) (Tuple.second model.autoSelected)
                 )
 
         PlayerNeedsToConfirmRemoval ->

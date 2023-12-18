@@ -176,16 +176,6 @@ findSubsetContaining lists element =
             Just x
 
 
-fst : ( a, b ) -> a
-fst ( a, _ ) =
-    a
-
-
-snd : ( a, b ) -> b
-snd ( _, b ) =
-    b
-
-
 boolToString : Bool -> String
 boolToString bool =
     if bool then
