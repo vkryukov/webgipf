@@ -4,7 +4,11 @@ module.exports = {
     "./src/**/*.html", "./src/**/*.js", "./*.html", "./*.js", "../server/static/*.html",
     "../server/static/*.js"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'sitename': ['Rubik Mono One', 'sans-serif']
+      }
+    }
   },
   plugins: [],
 }

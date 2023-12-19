@@ -7,7 +7,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
 import Tools exposing (errorToString)
-import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewText)
+import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewSiteTitle, viewText)
 
 
 type alias Model =
@@ -336,7 +336,8 @@ viewUser user =
     -- TODO: Add a button to resend verification email
     let
         items =
-            [ viewBoldText user.screenName
+            [ viewSiteTitle "Project GIPF"
+            , viewBoldText user.screenName
             , viewText ("<" ++ user.email ++ ">")
             ]
 

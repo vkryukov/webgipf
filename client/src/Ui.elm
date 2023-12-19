@@ -6,22 +6,13 @@ module Ui exposing
     , viewNavBar
     , viewPrimaryButton
     , viewSecondaryButton
+    , viewSiteTitle
     , viewText
     )
 
 import Html exposing (Html, a, button, div, h2, input, label, nav, span, text)
 import Html.Attributes exposing (class, classList, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput)
-
-
-fst : ( a, b ) -> a
-fst ( x, _ ) =
-    x
-
-
-snd : ( a, b ) -> b
-snd ( _, y ) =
-    y
 
 
 type alias Field msg =
@@ -101,6 +92,11 @@ viewText text_ =
 viewBoldText : String -> Html msg
 viewBoldText text_ =
     div [ class "font-bold mr-4" ] [ text text_ ]
+
+
+viewSiteTitle : String -> Html msg
+viewSiteTitle text_ =
+    div [ class "font-sitename font-bold mr-4" ] [ text text_ ]
 
 
 viewNavBar : List (Html msg) -> List ( String, msg ) -> Html msg
