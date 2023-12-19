@@ -56,6 +56,13 @@ func main() {
 	gameserver.InitDB("./games.db")
 	defer gameserver.CloseDB()
 
+	// setting up an email server
+	mailServer, err := gameserver.SmtpServerFromConfig("config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	gameserver.SetMailServer(mailServer)
+
 	// Game management
 
 	gameserver.RegisterAuthHandlers("/auth", baseURL)
