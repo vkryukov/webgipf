@@ -4,7 +4,7 @@ client/.coverage/
 server/main
 server/*.db*
 client/*.js
-server/static/*.js
+server/static/
 server/config.json
 server/server
 client/node_modules

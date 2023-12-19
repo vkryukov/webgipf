@@ -1,9 +1,11 @@
 module App exposing (Model, Msg(..), init, main, subscriptions, update, view, viewLink)
 
+import Auth
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Json.Encode as Encode
 import Url
 
 
@@ -11,7 +13,7 @@ import Url
 -- MAIN
 
 
-main : Program () Model Msg
+main : Program Encode.Value Model Msg
 main =
     Browser.application
         { init = init
@@ -30,12 +32,17 @@ main =
 type alias Model =
     { key : Nav.Key
     , url : Url.Url
+    , auth : Auth.Model
     }
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url key =
-    ( Model key url, Cmd.none )
+init : Encode.Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
+    let
+        ( auth, authCmd ) =
+            Auth.init flags
+    in
+    ( Model key url auth, Cmd.map AuthMsg authCmd )
 
 
 
@@ -45,6 +52,7 @@ init _ url key =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | AuthMsg Auth.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -63,6 +71,13 @@ update msg model =
             , Cmd.none
             )
 
+        AuthMsg authMsg ->
+            let
+                ( auth, authCmd ) =
+                    Auth.update authMsg model.auth
+            in
+            ( { model | auth = auth }, Cmd.map AuthMsg authCmd )
+
 
 
 -- SUBSCRIPTIONS
@@ -79,19 +94,25 @@ subscriptions _ =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "URL Interceptor"
+    { title = "Project Gipf"
     , body =
-        [ text "The current URL is: "
-        , b [] [ text (Url.toString model.url) ]
-        , ul []
-            [ viewLink "/home"
-            , viewLink "/profile"
-            , viewLink "/reviews/the-century-of-the-self"
-            , viewLink "/reviews/public-opinion"
-            , viewLink "/reviews/shah-of-shahs"
-            ]
-        ]
+        Html.map AuthMsg (Auth.view model.auth)
+            :: viewLinks model
     }
+
+
+viewLinks : Model -> List (Html msg)
+viewLinks model =
+    [ text "The current URL is: "
+    , b [] [ text (Url.toString model.url) ]
+    , ul []
+        [ viewLink "/home"
+        , viewLink "/profile"
+        , viewLink "/reviews/the-century-of-the-self"
+        , viewLink "/reviews/public-opinion"
+        , viewLink "/reviews/shah-of-shahs"
+        ]
+    ]
 
 
 viewLink : String -> Html msg

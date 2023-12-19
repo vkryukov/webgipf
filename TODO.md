@@ -1,6 +1,15 @@
-## Improving authentication
+## Overall architecture and UI
 
-### Sign-in and sign-up
+[X] Main.elm should incorporate Auth.elm 
+
+[ ] Main.elm should incorporate Admin.elm
+
+[ ] Incorporate tailwindcss; ./run_dev.sh script should add tailwindcss rebuilding
+
+[ ] Make sure the logging is consistent everywhere; maybe log client access etc. to 
+    the database?
+
+## Improving Sign-in and sign-up
 
 [X] UI should not allow sign-in or sign-up if any of the fields are empty
 
@@ -16,7 +25,7 @@
     changing updateModelWithUserStatus as well, as it expects either Http.Error or User field. Instead of User
     , it should be either User or Error message.
 
-[ ] Change updateModelWithUserStatus to reflect the server sending an error message as per above
+[X] Change updateModelWithUserStatus to reflect the server sending an error message as per above
 
 [X] Server should check whether we can send an email, and return an error if not
     - If that's the case, the entry in the database should NOT be created
@@ -26,4 +35,35 @@
 [X] Use Token type everywhere where it matters in auth.go
  
 [ ] Decide what to do with the screen name that currently have to be unique. For the MVP,
-    requiring it to be unique is probably the best tactic for now.
+    requiring it to be unique is probably the best tactic.
+
+## User actions for signed-in user
+
+A sign-in user should be able to:
+
+[ ] Create new games (selecting type of the game, selecting black or white)
+
+[ ] See a list of games they started, and whether it's their move
+
+[ ] (When not in a game) Receive notification about new moves, and see which games have move
+    updates since last visit
+
+[ ] Select a game, have the board displayed, and be able to make moves
+
+[ ] View and replay their past games
+
+[ ] Resend their verification link, and press it to verify email
+
+[ ] See the status of their email verification in the status bar
+
+
+## Admin actions
+
+[ ] An admin user (and only an admin user) should have access to various admin end points, that should enforce
+    admin authentication.
+
+[ ] List of all users (id, email, screen name, verification status)
+
+[ ] List of all games (id, white/black player names, number of moves, current action)
+
+[ ] Ability to view individual game

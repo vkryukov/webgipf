@@ -6,7 +6,7 @@ import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
-import Tools exposing (boolToString, errorToString)
+import Tools exposing (errorToString)
 import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewText)
 
 
@@ -332,6 +332,8 @@ viewSignUp model =
 
 viewUser : User -> Html Msg
 viewUser user =
+    -- TODO: Display whether email is verified
+    -- TODO: Add a button to resend verification email
     let
         items =
             [ viewBoldText user.screenName
