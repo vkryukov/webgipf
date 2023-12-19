@@ -16,4 +16,4 @@ npx tailwindcss -i tailwind.css -o ../server/static/gipf.css
 cd ../server
 go build -o server
 
-./server
+./server -noemail

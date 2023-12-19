@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
@@ -57,9 +58,18 @@ func main() {
 	defer gameserver.CloseDB()
 
 	// setting up an email server
-	mailServer, err := gameserver.SmtpServerFromConfig("config.json")
-	if err != nil {
-		log.Fatal(err)
+	noEmail := flag.Bool("noemail", false, "Use mock email server")
+	flag.Parse()
+
+	var mailServer gameserver.EmailSender
+	var err error
+	if *noEmail {
+		mailServer = &gameserver.MockEmailSender{}
+	} else {
+		mailServer, err = gameserver.SmtpServerFromConfig("config.json")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	gameserver.SetMailServer(mailServer)
 

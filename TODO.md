@@ -4,10 +4,12 @@
 
 [ ] Main.elm should incorporate Admin.elm
 
-[ ] Incorporate tailwindcss; ./run_dev.sh script should add tailwindcss rebuilding
+[X] Incorporate tailwindcss; ./run_dev.sh script should add tailwindcss rebuilding
 
 [ ] Make sure the logging is consistent everywhere; maybe log client access etc. to 
     the database?
+
+[X] Dev mode should have an option to use a MockEmailServer for sending email.
 
 ## Improving Sign-in and sign-up
 
