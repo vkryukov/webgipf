@@ -35,9 +35,9 @@
         var wsProtocol = window.location.protocol == 'https:' ? 'wss://' : 'ws://';
         var socket;
         if (window.location.hostname === 'localhost') {
-            socket = new WebSocket(wsProtocol + window.location.hostname + ':8080/ws');
+            socket = new WebSocket(wsProtocol + window.location.hostname + ':8080/game/ws');
         } else {
-            socket = new WebSocket(wsProtocol + window.location.hostname + '/ws');
+            socket = new WebSocket(wsProtocol + window.location.hostname + '/game/ws');
         }
 
         socket.onopen = function (event) {

@@ -76,7 +76,7 @@ func main() {
 	// Game management
 
 	gameserver.RegisterAuthHandlers("/auth", baseURL)
-	gameserver.RegisterGameHandlers("/game", baseURL)
+	gameserver.RegisterGameHandlers("/game")
 	gameserver.RegisterAdminHandlers("/admin", baseURL)
 
 	fileServer := http.FileServer(http.FS(staticFiles))
@@ -89,6 +89,7 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
+			log.Printf("404: %s", r.URL)
 			http.NotFound(w, r)
 			return
 		}
