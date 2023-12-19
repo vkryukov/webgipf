@@ -6,8 +6,9 @@ export APP_ENV=development
 
 # Compile
 cd ../client
+mkdir -p ../server/static
 elm make src/App.elm --output ../server/static/app.js
-cp src/index.html ../server/static/index.html
+cp index.html ../server/static/index.html
 npx tailwindcss -i tailwind.css -o ../server/static/gipf.css 
 cd ../server
 go build -o server

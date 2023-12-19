@@ -1,11 +1,10 @@
 client/elm-stuff/
 client/.coverage/
-.DS_Store
-server/main
+client/node_modules
+
 server/*.db*
-client/*.js
 server/static/
 server/config.json
 server/server
-client/node_modules
-client/gipf.css
+
+.DS_Store
