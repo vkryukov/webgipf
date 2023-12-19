@@ -1,6 +1,9 @@
 #!/bin/bash
 # Compile and run a development server
 
+# Exit script on first error
+set -e
+
 # Set environment variables
 export APP_ENV=development
 
