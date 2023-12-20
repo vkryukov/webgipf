@@ -76,14 +76,21 @@ gameDecoder =
 
 createGame : String -> String -> String -> Cmd Msg
 createGame gameType color screenName =
+    let
+        player =
+            if color == "white" then
+                "white_player"
+
+            else
+                "black_player"
+    in
     Http.post
         { url = "/game/create"
         , body =
             Http.jsonBody <|
                 Encode.object
-                    [ ( "gameType", Encode.string gameType )
-                    , ( "color", Encode.string color )
-                    , ( "screenName", Encode.string screenName )
+                    [ ( "type", Encode.string gameType )
+                    , ( player, Encode.string screenName )
                     ]
         , expect = Http.expectJson CreateGameReceived (responseDecoder gameDecoder)
         }
