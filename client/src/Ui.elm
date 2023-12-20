@@ -2,6 +2,7 @@ module Ui exposing
     ( Field
     , Form
     , viewBoldText
+    , viewErrorMessage
     , viewForm
     , viewNavBar
     , viewPrimaryButton
@@ -60,26 +61,30 @@ type alias Form msg =
     }
 
 
+viewErrorMessage : Maybe String -> Html msg
+viewErrorMessage maybeError =
+    case maybeError of
+        Just errorMsg ->
+            div [ class "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 max-w-s" ]
+                [ span [ class "block sm:inline" ] [ text errorMsg ] ]
+
+        Nothing ->
+            div [] []
+
+
 viewForm : Form msg -> Html msg
 viewForm form =
     div [ class "p-4" ]
         [ h2 [ class "text-lg font-bold mb-4" ] [ text form.title ]
         , div [ class "w-full max-w-xs" ]
-            ((case form.error of
-                Just errorMsg ->
-                    [ div [ class "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" ]
-                        [ span [ class "block sm:inline" ] [ text errorMsg ] ]
-                    ]
-
-                Nothing ->
-                    []
-             )
-                ++ List.map viewField form.fields
-                ++ [ div [ class "flex justify-between mt-4" ]
-                        [ viewPrimaryButton form.primaryAction
-                        , viewSecondaryButton form.secondaryAction
-                        ]
-                   ]
+            (viewErrorMessage form.error
+                :: (List.map viewField form.fields
+                        ++ [ div [ class "flex justify-between mt-4" ]
+                                [ viewPrimaryButton form.primaryAction
+                                , viewSecondaryButton form.secondaryAction
+                                ]
+                           ]
+                   )
             )
         ]
 

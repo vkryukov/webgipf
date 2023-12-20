@@ -16,14 +16,14 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewPrimaryButton)
+import Ui exposing (viewErrorMessage, viewPrimaryButton)
 
 
 type alias Model =
     { screenName : String
     , gameType : String
     , color : String
-    , error : String
+    , error : Maybe String
     }
 
 
@@ -33,7 +33,7 @@ init maybeUser =
         { screenName = ""
         , gameType = "Basic GIPF"
         , color = "white"
-        , error = ""
+        , error = Nothing
         }
     , Cmd.none
     )
@@ -58,20 +58,20 @@ type Msg
 
 
 type alias Game =
-    { id : String
+    { id : Int
     , gameType : String
-    , color : String
-    , screenName : String
+    , whitePlayer : String
+    , blackPlayer : String
     }
 
 
 gameDecoder : Decode.Decoder Game
 gameDecoder =
     Decode.map4 Game
-        (Decode.field "id" Decode.string)
-        (Decode.field "gameType" Decode.string)
-        (Decode.field "color" Decode.string)
-        (Decode.field "screenName" Decode.string)
+        (Decode.field "id" Decode.int)
+        (Decode.field "type" Decode.string)
+        (Decode.field "white_player" Decode.string)
+        (Decode.field "black_player" Decode.string)
 
 
 createGame : String -> String -> String -> Cmd Msg
@@ -111,10 +111,10 @@ update msg model =
         CreateGameReceived result ->
             case parseResult result of
                 Ok _ ->
-                    ( { model | error = "" }, Cmd.none )
+                    ( { model | error = Nothing }, Cmd.none )
 
                 Err error ->
-                    ( { model | error = error }, Cmd.none )
+                    ( { model | error = Just error }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -177,4 +177,5 @@ viewCreateNewGame model =
                     ]
                 , viewPrimaryButton ( "Create game", CreateGame )
                 ]
+            , viewErrorMessage model.error
             ]
