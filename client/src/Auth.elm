@@ -1,13 +1,12 @@
 port module Auth exposing (..)
 
 import Browser
-import Html exposing (Html, div, p, text)
+import Html exposing (Html, div, text)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
-import ServerUtils exposing (Response(..), responseDecoder)
+import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Task
-import Tools exposing (errorToString)
 import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewSiteTitle, viewText)
 
 
@@ -41,7 +40,7 @@ type Msg
     | ViewSignIn
     | SignUp
     | ViewSignUp
-    | LoginReceived (Result Http.Error (Response User))
+    | LoginReceived (HttpResult User)
     | Logout
 
 
@@ -144,30 +143,22 @@ init flags =
             )
 
 
-updateModelWithUserResponse : Result Http.Error (Response User) -> Model -> Model
+updateModelWithUserResponse : HttpResult User -> Model -> Model
 updateModelWithUserResponse result model =
-    case result of
-        Ok (OkResponse user) ->
-            { model | user = Just user, userStatus = UserStatus user.token, error = Nothing, state = SignedIn }
-
-        Ok (ErrorResponse error) ->
+    case parseResult result of
+        Ok user ->
             { model
-                | user = Nothing
-                , userStatus = UserStatus ""
-                , error = Just error
-                , state =
-                    if model.state == Initializing then
-                        SigningIn
-
-                    else
-                        model.state
+                | user = Just user
+                , userStatus = UserStatus user.token
+                , error = Nothing
+                , state = SignedIn
             }
 
-        Err error ->
+        Err message ->
             { model
                 | user = Nothing
                 , userStatus = UserStatus ""
-                , error = Just (errorToString error)
+                , error = Just message
                 , state =
                     if model.state == Initializing then
                         SigningIn

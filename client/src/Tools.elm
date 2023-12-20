@@ -183,22 +183,3 @@ boolToString bool =
 
     else
         "False"
-
-
-errorToString : Http.Error -> String
-errorToString error =
-    case error of
-        Http.BadUrl url ->
-            "Bad URL: " ++ url
-
-        Http.Timeout ->
-            "Request timed out"
-
-        Http.NetworkError ->
-            "Network error"
-
-        Http.BadStatus statusCode ->
-            "Bad status: " ++ String.fromInt statusCode
-
-        Http.BadBody message ->
-            "Bad body: " ++ message

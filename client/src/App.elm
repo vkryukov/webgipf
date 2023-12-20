@@ -3,11 +3,10 @@ module App exposing (Model, Msg(..), init, main, subscriptions, update, view)
 import Auth
 import Browser
 import Browser.Navigation as Nav
+import Game
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onCheck, onClick, onInput)
 import Json.Encode as Encode
-import Ui exposing (viewPrimaryButton)
 import Url
 
 
@@ -35,8 +34,7 @@ type alias Model =
     { key : Nav.Key
     , url : Url.Url
     , auth : Auth.Model
-    , gameType : String
-    , color : String
+    , game : Game.Model
     }
 
 
@@ -45,9 +43,17 @@ init flags url key =
     let
         ( auth, authCmd ) =
             Auth.init flags
+
+        ( game, gameCmd ) =
+            Game.init auth.user
     in
     -- TODO: Default gameType should be in sync with the select choices
-    ( Model key url auth "Basic GIPF" "white", Cmd.map AuthMsg authCmd )
+    ( Model key url auth game
+    , Cmd.batch
+        [ Cmd.map AuthMsg authCmd
+        , Cmd.map GameMsg gameCmd
+        ]
+    )
 
 
 
@@ -58,9 +64,7 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | AuthMsg Auth.Msg
-    | SelectGameType String
-    | SelectColor String
-    | CreateGame
+    | GameMsg Game.Msg
     | NoOp
 
 
@@ -84,21 +88,18 @@ update msg model =
             let
                 ( auth, authCmd ) =
                     Auth.update authMsg model.auth
+
+                game =
+                    Game.updateModelWithUser auth.user model.game
             in
-            ( { model | auth = auth }, Cmd.map AuthMsg authCmd )
+            ( { model | auth = auth, game = game }, Cmd.map AuthMsg authCmd )
 
-        SelectGameType gameType ->
-            ( { model | gameType = gameType }, Cmd.none )
-
-        SelectColor color ->
-            ( { model | color = color }, Cmd.none )
-
-        CreateGame ->
+        GameMsg gameMsg ->
             let
-                _ =
-                    Debug.log "Create game" ( model.gameType, model.color )
+                ( game, gameCmd ) =
+                    Game.update gameMsg model.game
             in
-            ( model, Cmd.none )
+            ( { model | game = game }, Cmd.map GameMsg gameCmd )
 
         NoOp ->
             ( model, Cmd.none )
@@ -122,67 +123,11 @@ view model =
     { title = "Project Gipf"
     , body =
         [ Html.map AuthMsg (Auth.view model.auth)
-        , viewCreateNewGame
+        , Html.map GameMsg (Game.viewCreateNewGame model.game)
         ]
 
     -- :: viewLinks model
     }
-
-
-viewCreateNewGame : Html Msg
-viewCreateNewGame =
-    div [ class "p-4" ]
-        [ h2 [ class "text-lg font-bold mb-4" ] [ text "Create new game" ]
-        , div [ class "flex items-center space-x-4" ]
-            [ label [ class "mr-2" ] [ text "Select game type:" ]
-            , select [ class "form-select", onInput SelectGameType ]
-                [ option [] [ text "Basic GIPF" ]
-                , option [] [ text "Standard GIPF" ]
-                , option [] [ text "Tournament GIPF" ]
-                ]
-            , label [ class "ml-4 mr-2" ] [ text "Play as:" ]
-            , div [ class "flex items-center space-x-4" ]
-                [ label []
-                    [ input
-                        [ type_ "radio"
-                        , name "choice"
-                        , value "white"
-                        , class "form-radio"
-                        , checked True
-                        , onCheck
-                            (\isChecked ->
-                                if isChecked then
-                                    SelectColor "white"
-
-                                else
-                                    NoOp
-                            )
-                        ]
-                        []
-                    , text " White"
-                    ]
-                , label []
-                    [ input
-                        [ type_ "radio"
-                        , name "choice"
-                        , value "black"
-                        , class "form-radio"
-                        , onCheck
-                            (\isChecked ->
-                                if isChecked then
-                                    SelectColor "black"
-
-                                else
-                                    NoOp
-                            )
-                        ]
-                        []
-                    , text " Black"
-                    ]
-                ]
-            , viewPrimaryButton ( "Create game", CreateGame )
-            ]
-        ]
 
 
 
