@@ -5,6 +5,7 @@ import Html exposing (Html, div, p, text)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
+import ServerUtils exposing (Response(..), responseDecoder)
 import Task
 import Tools exposing (errorToString)
 import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewSiteTitle, viewText)
@@ -40,7 +41,7 @@ type Msg
     | ViewSignIn
     | SignUp
     | ViewSignUp
-    | LoginReceived (Result Http.Error UserResponse)
+    | LoginReceived (Result Http.Error (Response User))
     | Logout
 
 
@@ -72,19 +73,6 @@ userStatusDecoder =
         (Decode.field "token" Decode.string)
 
 
-type UserResponse
-    = UserResponse User
-    | ErrorResponse String
-
-
-userResponseDecoder : Decode.Decoder UserResponse
-userResponseDecoder =
-    Decode.oneOf
-        [ Decode.map UserResponse userDecoder
-        , Decode.map ErrorResponse (Decode.field "error" Decode.string)
-        ]
-
-
 checkUserStatus : String -> Cmd Msg
 checkUserStatus token =
     if token == "" then
@@ -93,7 +81,7 @@ checkUserStatus token =
     else
         Http.get
             { url = "http://localhost:8080/auth/check?token=" ++ token
-            , expect = Http.expectJson LoginReceived userResponseDecoder
+            , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
             }
 
 
@@ -110,7 +98,7 @@ login model =
     Http.post
         { url = "http://localhost:8080/auth/login"
         , body = body
-        , expect = Http.expectJson LoginReceived userResponseDecoder
+        , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
         }
 
 
@@ -128,7 +116,7 @@ signUp model =
     Http.post
         { url = "http://localhost:8080/auth/register"
         , body = body
-        , expect = Http.expectJson LoginReceived userResponseDecoder
+        , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
         }
 
 
@@ -156,10 +144,10 @@ init flags =
             )
 
 
-updateModelWithUserResponse : Result Http.Error UserResponse -> Model -> Model
+updateModelWithUserResponse : Result Http.Error (Response User) -> Model -> Model
 updateModelWithUserResponse result model =
     case result of
-        Ok (UserResponse user) ->
+        Ok (OkResponse user) ->
             { model | user = Just user, userStatus = UserStatus user.token, error = Nothing, state = SignedIn }
 
         Ok (ErrorResponse error) ->
