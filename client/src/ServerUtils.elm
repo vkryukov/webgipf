@@ -4,7 +4,6 @@ module ServerUtils exposing
     , responseDecoder
     )
 
-import Html exposing (a)
 import Http
 import Json.Decode as Decode
 
