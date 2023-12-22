@@ -10,16 +10,15 @@ module Game exposing
     )
 
 import Auth
-import Html exposing (Html, div, h2, label, option, select, text)
+import Html exposing (Html, div, label, option, select, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
-import String exposing (join)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewPrimaryButton, viewRadio, viewTable)
+import Ui exposing (viewErrorMessage, viewPrimaryButton, viewRadio, viewSection, viewTable)
 
 
 type alias Model =
@@ -185,9 +184,8 @@ viewCreateNewGame model =
         div [] []
 
     else
-        div [ class "p-4" ]
-            [ h2 [ class "text-lg font-bold mb-4" ] [ text "Create new game" ]
-            , div [ class "flex items-center space-x-4" ]
+        viewSection "Create new game"
+            [ div [ class "flex items-center space-x-4" ]
                 [ label [ class "mr-2" ] [ text "Select game type:" ]
                 , select [ class "form-select", onInput SelectGameType ]
                     [ option [] [ text "Basic GIPF" ]
