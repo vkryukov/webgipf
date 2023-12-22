@@ -7,6 +7,7 @@ import Game
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Encode as Encode
+import Ui exposing (viewSection)
 import Url
 
 
@@ -130,10 +131,11 @@ view model =
     , body =
         [ Html.map AuthMsg (Auth.view model.auth)
         , Html.map GameMsg (Game.viewCreateNewGame model.game)
-        , Html.map GameMsg (Game.viewUserGameList model.game)
+        , viewSection "Your games"
+            [ Html.map GameMsg (Game.viewOwnGamesList model.game) ]
+        , viewSection "Joinable games"
+            [ Html.map GameMsg (Game.viewJoinableGamesList model.game) ]
         ]
-
-    -- :: viewLinks model
     }
 
 

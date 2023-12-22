@@ -5,17 +5,19 @@ module Game exposing
     , update
     , updateModelWithUser
     , viewCreateNewGame
-    , viewUserGameList
+    , viewJoinableGamesList
+    , viewOwnGamesList
     )
 
 import Auth
-import Html exposing (Html, div, h2, input, label, option, select, text)
-import Html.Attributes exposing (checked, class, name, type_, value)
-import Html.Events exposing (onCheck, onInput)
+import Html exposing (Html, div, h2, label, option, select, text)
+import Html.Attributes exposing (class)
+import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
+import String exposing (join)
 import Time exposing (Month(..))
 import Ui exposing (viewErrorMessage, viewPrimaryButton, viewRadio, viewTable)
 
@@ -26,7 +28,8 @@ type alias Model =
     , gameType : String
     , color : String
     , error : Maybe String
-    , games : List Game
+    , ownGames : List Game
+    , joinableGames : List Game
     }
 
 
@@ -38,7 +41,8 @@ init maybeUser =
         , gameType = "Basic GIPF"
         , color = "white"
         , error = Nothing
-        , games = []
+        , ownGames = []
+        , joinableGames = []
         }
 
 
@@ -50,10 +54,10 @@ updateModelWithUser maybeUser model =
                 newModel =
                     { model | screenName = user.screenName, token = user.token }
             in
-            ( newModel, listGames newModel )
+            ( newModel, Cmd.batch [ ownGames newModel, joinableGames newModel ] )
 
         Nothing ->
-            ( { model | screenName = "", token = "", games = [] }, Cmd.none )
+            ( { model | screenName = "", token = "", ownGames = [], joinableGames = [] }, Cmd.none )
 
 
 type Msg
@@ -61,7 +65,8 @@ type Msg
     | SelectColor String
     | CreateGame
     | CreateGameReceived (HttpResult Game)
-    | GameListReceived (HttpResult (List Game))
+    | OwnGamesReceived (HttpResult (List Game))
+    | JoinableGamesReceived (HttpResult (List Game))
     | NoOp
 
 
@@ -108,20 +113,30 @@ createGame model =
         }
 
 
-listGames : Model -> Cmd Msg
-listGames model =
+getGames : String -> (HttpResult (List Game) -> Msg) -> Model -> Cmd Msg
+getGames url cmd model =
     if model.token == "" then
         Cmd.none
 
     else
         Http.post
-            { url = "/game/list"
+            { url = url
             , body =
                 Http.jsonBody <|
                     Encode.object
                         [ ( "token", Encode.string model.token ) ]
-            , expect = Http.expectJson GameListReceived (responseDecoder gameListDecoder)
+            , expect = Http.expectJson cmd (responseDecoder gameListDecoder)
             }
+
+
+ownGames : Model -> Cmd Msg
+ownGames model =
+    getGames "/game/list" OwnGamesReceived model
+
+
+joinableGames : Model -> Cmd Msg
+joinableGames model =
+    getGames "/game/joinable" JoinableGamesReceived model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -139,15 +154,23 @@ update msg model =
         CreateGameReceived result ->
             case parseResult result of
                 Ok _ ->
-                    ( { model | error = Nothing }, listGames model )
+                    ( { model | error = Nothing }, ownGames model )
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
 
-        GameListReceived result ->
+        OwnGamesReceived result ->
             case parseResult result of
                 Ok games ->
-                    ( { model | games = games }, Cmd.none )
+                    ( { model | ownGames = games }, Cmd.none )
+
+                Err error ->
+                    ( { model | error = Just error }, Cmd.none )
+
+        JoinableGamesReceived result ->
+            case parseResult result of
+                Ok games ->
+                    ( { model | joinableGames = games }, Cmd.none )
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
@@ -182,13 +205,24 @@ viewCreateNewGame model =
             ]
 
 
-viewUserGameList : Model -> Html Msg
-viewUserGameList model =
-    viewTable model.games
+viewOwnGamesList : Model -> Html Msg
+viewOwnGamesList model =
+    viewTable model.ownGames
         [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions" ]
         [ \game -> String.fromInt game.id
         , .gameType
         , .whitePlayer
         , .blackPlayer
         , \game -> String.fromInt game.numActions
+        ]
+
+
+viewJoinableGamesList : Model -> Html Msg
+viewJoinableGamesList model =
+    viewTable model.joinableGames
+        [ "Game Id", "Game type", "White Player", "Black Player" ]
+        [ \game -> String.fromInt game.id
+        , .gameType
+        , .whitePlayer
+        , .blackPlayer
         ]

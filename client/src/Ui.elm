@@ -4,10 +4,12 @@ module Ui exposing
     , viewBoldText
     , viewErrorMessage
     , viewForm
+    , viewH2
     , viewNavBar
     , viewPrimaryButton
     , viewRadio
     , viewSecondaryButton
+    , viewSection
     , viewSiteTitle
     , viewTable
     , viewText
@@ -76,9 +78,8 @@ viewErrorMessage maybeError =
 
 viewForm : Form msg -> Html msg
 viewForm form =
-    div [ class "p-4" ]
-        [ h2 [ class "text-lg font-bold mb-4" ] [ text form.title ]
-        , div [ class "w-full max-w-xs" ]
+    viewSection form.title
+        [ div [ class "w-full max-w-xs" ]
             (viewErrorMessage form.error
                 :: (List.map viewField form.fields
                         ++ [ div [ class "flex justify-between mt-4" ]
@@ -89,6 +90,19 @@ viewForm form =
                    )
             )
         ]
+
+
+viewSection : String -> List (Html msg) -> Html msg
+viewSection title items =
+    div [ class "mb-4 p-4" ]
+        [ viewH2 title
+        , div [ class "flex flex-col" ] items
+        ]
+
+
+viewH2 : String -> Html msg
+viewH2 text_ =
+    h2 [ class "text-lg font-bold mb-4" ] [ text text_ ]
 
 
 viewText : String -> Html msg
