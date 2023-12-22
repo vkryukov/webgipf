@@ -131,10 +131,10 @@ view model =
     , body =
         [ Html.map AuthMsg (Auth.view model.auth)
         , Html.map GameMsg (Game.viewCreateNewGame model.game)
-        , viewSection "Your games"
-            [ Html.map GameMsg (Game.viewOwnGamesList model.game) ]
         , viewSection "Joinable games"
             [ Html.map GameMsg (Game.viewJoinableGamesList model.game) ]
+        , viewSection "Your games"
+            [ Html.map GameMsg (Game.viewOwnGamesList model.game) ]
         ]
     }
 
