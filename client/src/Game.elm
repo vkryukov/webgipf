@@ -17,7 +17,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (StringOrInt(..), viewErrorMessage, viewPrimaryButton, viewTable)
+import Ui exposing (viewErrorMessage, viewPrimaryButton, viewTable)
 
 
 type alias Model =
@@ -222,9 +222,9 @@ viewUserGameList : Model -> Html Msg
 viewUserGameList model =
     viewTable model.games
         [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions" ]
-        [ \game -> Int game.id
-        , \game -> Str game.gameType
-        , \game -> Str game.whitePlayer
-        , \game -> Str game.blackPlayer
-        , \game -> Int game.numActions
+        [ \game -> String.fromInt game.id
+        , .gameType
+        , .whitePlayer
+        , .blackPlayer
+        , \game -> String.fromInt game.numActions
         ]

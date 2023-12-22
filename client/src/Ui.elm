@@ -1,7 +1,6 @@
 module Ui exposing
     ( Field
     , Form
-    , StringOrInt(..)
     , viewBoldText
     , viewErrorMessage
     , viewForm
@@ -120,22 +119,7 @@ viewNavBar items actions =
         ]
 
 
-type StringOrInt
-    = Str String
-    | Int Int
-
-
-toString : StringOrInt -> String
-toString stringOrInt =
-    case stringOrInt of
-        Str str ->
-            str
-
-        Int int ->
-            String.fromInt int
-
-
-viewTable : List a -> List String -> List (a -> StringOrInt) -> Html msg
+viewTable : List a -> List String -> List (a -> String) -> Html msg
 viewTable objs headers fields =
     div [ class "flex flex-col" ]
         [ div [ class "-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8" ]
@@ -157,7 +141,7 @@ viewTable objs headers fields =
                                     tr []
                                         (List.map
                                             (\field ->
-                                                td [ class "px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500" ] [ text (toString (field obj)) ]
+                                                td [ class "px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500" ] [ text (field obj) ]
                                             )
                                             fields
                                         )
