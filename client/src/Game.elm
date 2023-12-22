@@ -5,10 +5,11 @@ module Game exposing
     , update
     , updateModelWithUser
     , viewCreateNewGame
+    , viewUserGameList
     )
 
 import Auth
-import Html exposing (Html, div, h2, input, label, option, select, text)
+import Html exposing (Html, div, h2, input, label, option, select, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (checked, class, name, type_, value)
 import Html.Events exposing (onCheck, onInput)
 import Http
@@ -25,30 +26,34 @@ type alias Model =
     , gameType : String
     , color : String
     , error : Maybe String
+    , games : List Game
     }
 
 
 init : Maybe Auth.User -> ( Model, Cmd Msg )
 init maybeUser =
-    ( updateModelWithUser maybeUser
+    updateModelWithUser maybeUser
         { screenName = ""
         , token = ""
         , gameType = "Basic GIPF"
         , color = "white"
         , error = Nothing
+        , games = []
         }
-    , Cmd.none
-    )
 
 
-updateModelWithUser : Maybe Auth.User -> Model -> Model
+updateModelWithUser : Maybe Auth.User -> Model -> ( Model, Cmd Msg )
 updateModelWithUser maybeUser model =
     case maybeUser of
         Just user ->
-            { model | screenName = user.screenName, token = user.token }
+            let
+                newModel =
+                    { model | screenName = user.screenName, token = user.token }
+            in
+            ( newModel, listGames newModel )
 
         Nothing ->
-            { model | screenName = "" }
+            ( { model | screenName = "", token = "", games = [] }, Cmd.none )
 
 
 type Msg
@@ -56,6 +61,7 @@ type Msg
     | SelectColor String
     | CreateGame
     | CreateGameReceived (HttpResult Game)
+    | GameListReceived (HttpResult (List Game))
     | NoOp
 
 
@@ -66,18 +72,20 @@ type alias Game =
     , blackPlayer : String
     , whiteToken : String
     , blackToken : String
+    , numActions : Int
     }
 
 
 gameDecoder : Decode.Decoder Game
 gameDecoder =
-    Decode.map6 Game
+    Decode.map7 Game
         (Decode.field "id" Decode.int)
         (Decode.field "type" Decode.string)
         (Decode.field "white_player" Decode.string)
         (Decode.field "black_player" Decode.string)
         (Decode.field "white_token" Decode.string)
         (Decode.field "black_token" Decode.string)
+        (Decode.field "num_actions" Decode.int)
 
 
 gameListDecoder : Decode.Decoder (List Game)
@@ -100,6 +108,22 @@ createGame model =
         }
 
 
+listGames : Model -> Cmd Msg
+listGames model =
+    if model.token == "" then
+        Cmd.none
+
+    else
+        Http.post
+            { url = "/game/list"
+            , body =
+                Http.jsonBody <|
+                    Encode.object
+                        [ ( "token", Encode.string model.token ) ]
+            , expect = Http.expectJson GameListReceived (responseDecoder gameListDecoder)
+            }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -115,7 +139,15 @@ update msg model =
         CreateGameReceived result ->
             case parseResult result of
                 Ok _ ->
-                    ( { model | error = Nothing }, Cmd.none )
+                    ( { model | error = Nothing }, listGames model )
+
+                Err error ->
+                    ( { model | error = Just error }, Cmd.none )
+
+        GameListReceived result ->
+            case parseResult result of
+                Ok games ->
+                    ( { model | games = games }, Cmd.none )
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
@@ -147,7 +179,7 @@ viewCreateNewGame model =
                             , name "choice"
                             , value "white"
                             , class "form-radio"
-                            , checked True
+                            , checked (model.color == "white")
                             , onCheck
                                 (\isChecked ->
                                     if isChecked then
@@ -166,6 +198,7 @@ viewCreateNewGame model =
                             , name "choice"
                             , value "black"
                             , class "form-radio"
+                            , checked (model.color == "black")
                             , onCheck
                                 (\isChecked ->
                                     if isChecked then
@@ -183,3 +216,48 @@ viewCreateNewGame model =
                 ]
             , viewErrorMessage model.error
             ]
+
+
+viewUserGameList : Model -> Html Msg
+viewUserGameList model =
+    -- Create a table of games, with the following fields:
+    -- - Game type, with a link to the game
+    -- - Opponent name
+    -- - Game status
+    -- - Game result
+    div [ class "p-4" ]
+        [ h2 [ class "text-lg font-bold mb-4" ] [ text "Your games" ]
+        , div [ class "flex flex-col" ]
+            [ div [ class "overflow-x-auto" ]
+                [ table [ class "table-auto" ]
+                    [ thead []
+                        [ tr []
+                            [ th [ class "px-4 py-2" ] [ text "Game Id" ]
+                            , th [ class "px-4 py-2" ] [ text "Game type" ]
+                            , th [ class "px-4 py-2" ] [ text "White Player" ]
+                            , th [ class "px-4 py-2" ] [ text "Black Player" ]
+                            , th [ class "px-4 py-2" ] [ text "Num Actions" ]
+                            ]
+                        ]
+                    , tbody []
+                        (List.map
+                            (\game ->
+                                tr []
+                                    [ td [ class "border px-4 py-2" ]
+                                        [ text (String.fromInt game.id) ]
+                                    , td [ class "border px-4 py-2" ]
+                                        [ text game.gameType ]
+                                    , td [ class "border px-4 py-2" ]
+                                        [ text game.whitePlayer ]
+                                    , td [ class "border px-4 py-2" ]
+                                        [ text game.blackPlayer ]
+                                    , td [ class "border px-4 py-2" ]
+                                        [ text (String.fromInt game.numActions) ]
+                                    ]
+                            )
+                            model.games
+                        )
+                    ]
+                ]
+            ]
+        ]

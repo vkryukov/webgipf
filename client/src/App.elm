@@ -89,11 +89,16 @@ update msg model =
                 ( auth, authCmd ) =
                     Auth.update authMsg model.auth
 
-                game =
+                ( game, gameCmd ) =
                     -- TODO: make sure that the logout is also handled
                     Game.updateModelWithUser auth.user model.game
             in
-            ( { model | auth = auth, game = game }, Cmd.map AuthMsg authCmd )
+            ( { model | auth = auth, game = game }
+            , Cmd.batch
+                [ Cmd.map AuthMsg authCmd
+                , Cmd.map GameMsg gameCmd
+                ]
+            )
 
         GameMsg gameMsg ->
             let
@@ -125,6 +130,7 @@ view model =
     , body =
         [ Html.map AuthMsg (Auth.view model.auth)
         , Html.map GameMsg (Game.viewCreateNewGame model.game)
+        , Html.map GameMsg (Game.viewUserGameList model.game)
         ]
 
     -- :: viewLinks model
