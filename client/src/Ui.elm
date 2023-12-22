@@ -1,6 +1,7 @@
 module Ui exposing
     ( Field
     , Form
+    , StringOrInt(..)
     , viewBoldText
     , viewErrorMessage
     , viewForm
@@ -8,10 +9,11 @@ module Ui exposing
     , viewPrimaryButton
     , viewSecondaryButton
     , viewSiteTitle
+    , viewTable
     , viewText
     )
 
-import Html exposing (Html, a, button, div, h2, input, label, nav, span, text)
+import Html exposing (Html, a, button, div, h2, input, label, nav, option, select, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (class, classList, placeholder, type_, value)
 import Html.Events exposing (onClick, onInput)
 
@@ -115,4 +117,55 @@ viewNavBar items actions =
                 )
                 actions
             )
+        ]
+
+
+type StringOrInt
+    = Str String
+    | Int Int
+
+
+toString : StringOrInt -> String
+toString stringOrInt =
+    case stringOrInt of
+        Str str ->
+            str
+
+        Int int ->
+            String.fromInt int
+
+
+viewTable : List a -> List String -> List (a -> StringOrInt) -> Html msg
+viewTable objs headers fields =
+    div [ class "flex flex-col" ]
+        [ div [ class "-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8" ]
+            [ div [ class "py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8" ]
+                [ div [ class "shadow overflow-hidden border-b border-gray-200 sm:rounded-lg" ]
+                    [ table [ class "divide-y divide-gray-200" ]
+                        [ thead []
+                            [ tr []
+                                (List.map
+                                    (\header ->
+                                        th [ class "px-6 py-3 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider" ] [ text header ]
+                                    )
+                                    headers
+                                )
+                            ]
+                        , tbody [ class "bg-white divide-y divide-gray-200" ]
+                            (List.map
+                                (\obj ->
+                                    tr []
+                                        (List.map
+                                            (\field ->
+                                                td [ class "px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500" ] [ text (toString (field obj)) ]
+                                            )
+                                            fields
+                                        )
+                                )
+                                objs
+                            )
+                        ]
+                    ]
+                ]
+            ]
         ]

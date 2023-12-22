@@ -17,7 +17,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewPrimaryButton)
+import Ui exposing (StringOrInt(..), viewErrorMessage, viewPrimaryButton, viewTable)
 
 
 type alias Model =
@@ -220,44 +220,11 @@ viewCreateNewGame model =
 
 viewUserGameList : Model -> Html Msg
 viewUserGameList model =
-    -- Create a table of games, with the following fields:
-    -- - Game type, with a link to the game
-    -- - Opponent name
-    -- - Game status
-    -- - Game result
-    div [ class "p-4" ]
-        [ h2 [ class "text-lg font-bold mb-4" ] [ text "Your games" ]
-        , div [ class "flex flex-col" ]
-            [ div [ class "overflow-x-auto" ]
-                [ table [ class "table-auto" ]
-                    [ thead []
-                        [ tr []
-                            [ th [ class "px-4 py-2" ] [ text "Game Id" ]
-                            , th [ class "px-4 py-2" ] [ text "Game type" ]
-                            , th [ class "px-4 py-2" ] [ text "White Player" ]
-                            , th [ class "px-4 py-2" ] [ text "Black Player" ]
-                            , th [ class "px-4 py-2" ] [ text "Num Actions" ]
-                            ]
-                        ]
-                    , tbody []
-                        (List.map
-                            (\game ->
-                                tr []
-                                    [ td [ class "border px-4 py-2" ]
-                                        [ text (String.fromInt game.id) ]
-                                    , td [ class "border px-4 py-2" ]
-                                        [ text game.gameType ]
-                                    , td [ class "border px-4 py-2" ]
-                                        [ text game.whitePlayer ]
-                                    , td [ class "border px-4 py-2" ]
-                                        [ text game.blackPlayer ]
-                                    , td [ class "border px-4 py-2" ]
-                                        [ text (String.fromInt game.numActions) ]
-                                    ]
-                            )
-                            model.games
-                        )
-                    ]
-                ]
-            ]
+    viewTable model.games
+        [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions" ]
+        [ \game -> Int game.id
+        , \game -> Str game.gameType
+        , \game -> Str game.whitePlayer
+        , \game -> Str game.blackPlayer
+        , \game -> Int game.numActions
         ]

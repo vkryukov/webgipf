@@ -45,6 +45,8 @@ A sign-in user should be able to:
 
 [X] Create new games (selecting type of the game, selecting black or white)
 
+[ ] See a list of games that can be joined, and join these games
+
 [ ] See a list of games they started, and whether it's their move
 
 [ ] Select a game, have the board displayed, and be able to make moves
