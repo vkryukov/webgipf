@@ -6,6 +6,7 @@ module Ui exposing
     , viewForm
     , viewNavBar
     , viewPrimaryButton
+    , viewRadio
     , viewSecondaryButton
     , viewSiteTitle
     , viewTable
@@ -13,8 +14,8 @@ module Ui exposing
     )
 
 import Html exposing (Html, a, button, div, h2, input, label, nav, option, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (class, classList, placeholder, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Attributes exposing (checked, class, classList, name, placeholder, type_, value)
+import Html.Events exposing (onCheck, onClick, onInput)
 
 
 type alias Field msg =
@@ -152,4 +153,33 @@ viewTable objs headers fields =
                     ]
                 ]
             ]
+        ]
+
+
+viewCheckBox : Bool -> String -> (Bool -> msg) -> Html msg
+viewCheckBox isChecked lbl onCheck =
+    div [ class "flex items-center" ]
+        [ input [ type_ "checkbox", checked isChecked, onClick (onCheck (not isChecked)) ] []
+        , label [ class "ml-2 block text-sm leading-5 text-gray-700" ] [ text lbl ]
+        ]
+
+
+viewRadio : Bool -> String -> msg -> msg -> Html msg
+viewRadio checked_ lbl checkMsg noOpMsg =
+    div [ class "flex items-center" ]
+        [ input
+            [ type_ "radio"
+            , class "form-radio"
+            , checked checked_
+            , onCheck
+                (\isChecked ->
+                    if isChecked then
+                        checkMsg
+
+                    else
+                        noOpMsg
+                )
+            ]
+            []
+        , label [ class "ml-2 block text-sm leading-5 text-gray-700" ] [ text lbl ]
         ]

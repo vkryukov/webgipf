@@ -9,7 +9,7 @@ module Game exposing
     )
 
 import Auth
-import Html exposing (Html, div, h2, input, label, option, select, table, tbody, td, text, th, thead, tr)
+import Html exposing (Html, div, h2, input, label, option, select, text)
 import Html.Attributes exposing (checked, class, name, type_, value)
 import Html.Events exposing (onCheck, onInput)
 import Http
@@ -17,7 +17,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewPrimaryButton, viewTable)
+import Ui exposing (viewErrorMessage, viewPrimaryButton, viewRadio, viewTable)
 
 
 type alias Model =
@@ -173,44 +173,8 @@ viewCreateNewGame model =
                     ]
                 , label [ class "ml-4 mr-2" ] [ text "Play as:" ]
                 , div [ class "flex items-center space-x-4" ]
-                    [ label []
-                        [ input
-                            [ type_ "radio"
-                            , name "choice"
-                            , value "white"
-                            , class "form-radio"
-                            , checked (model.color == "white")
-                            , onCheck
-                                (\isChecked ->
-                                    if isChecked then
-                                        SelectColor "white"
-
-                                    else
-                                        NoOp
-                                )
-                            ]
-                            []
-                        , text " White"
-                        ]
-                    , label []
-                        [ input
-                            [ type_ "radio"
-                            , name "choice"
-                            , value "black"
-                            , class "form-radio"
-                            , checked (model.color == "black")
-                            , onCheck
-                                (\isChecked ->
-                                    if isChecked then
-                                        SelectColor "black"
-
-                                    else
-                                        NoOp
-                                )
-                            ]
-                            []
-                        , text " Black"
-                        ]
+                    [ viewRadio (model.color == "white") "White" (SelectColor "white") NoOp
+                    , viewRadio (model.color == "black") "Black" (SelectColor "black") NoOp
                     ]
                 , viewPrimaryButton ( "Create game", CreateGame )
                 ]
