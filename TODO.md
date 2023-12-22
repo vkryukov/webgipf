@@ -43,14 +43,14 @@
 
 A sign-in user should be able to:
 
-[ ] Create new games (selecting type of the game, selecting black or white)
+[X] Create new games (selecting type of the game, selecting black or white)
 
 [ ] See a list of games they started, and whether it's their move
 
+[ ] Select a game, have the board displayed, and be able to make moves
+
 [ ] (When not in a game) Receive notification about new moves, and see which games have move
     updates since last visit
-
-[ ] Select a game, have the board displayed, and be able to make moves
 
 [ ] View and replay their past games
 

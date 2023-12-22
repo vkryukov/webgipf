@@ -90,6 +90,7 @@ update msg model =
                     Auth.update authMsg model.auth
 
                 game =
+                    -- TODO: make sure that the logout is also handled
                     Game.updateModelWithUser auth.user model.game
             in
             ( { model | auth = auth, game = game }, Cmd.map AuthMsg authCmd )

@@ -21,6 +21,7 @@ import Ui exposing (viewErrorMessage, viewPrimaryButton)
 
 type alias Model =
     { screenName : String
+    , token : String
     , gameType : String
     , color : String
     , error : Maybe String
@@ -31,6 +32,7 @@ init : Maybe Auth.User -> ( Model, Cmd Msg )
 init maybeUser =
     ( updateModelWithUser maybeUser
         { screenName = ""
+        , token = ""
         , gameType = "Basic GIPF"
         , color = "white"
         , error = Nothing
@@ -43,7 +45,7 @@ updateModelWithUser : Maybe Auth.User -> Model -> Model
 updateModelWithUser maybeUser model =
     case maybeUser of
         Just user ->
-            { model | screenName = user.screenName }
+            { model | screenName = user.screenName, token = user.token }
 
         Nothing ->
             { model | screenName = "" }
@@ -62,35 +64,37 @@ type alias Game =
     , gameType : String
     , whitePlayer : String
     , blackPlayer : String
+    , whiteToken : String
+    , blackToken : String
     }
 
 
 gameDecoder : Decode.Decoder Game
 gameDecoder =
-    Decode.map4 Game
+    Decode.map6 Game
         (Decode.field "id" Decode.int)
         (Decode.field "type" Decode.string)
         (Decode.field "white_player" Decode.string)
         (Decode.field "black_player" Decode.string)
+        (Decode.field "white_token" Decode.string)
+        (Decode.field "black_token" Decode.string)
 
 
-createGame : String -> String -> String -> Cmd Msg
-createGame gameType color screenName =
-    let
-        player =
-            if color == "white" then
-                "white_player"
+gameListDecoder : Decode.Decoder (List Game)
+gameListDecoder =
+    Decode.list gameDecoder
 
-            else
-                "black_player"
-    in
+
+createGame : Model -> Cmd Msg
+createGame model =
     Http.post
         { url = "/game/create"
         , body =
             Http.jsonBody <|
                 Encode.object
-                    [ ( "type", Encode.string gameType )
-                    , ( player, Encode.string screenName )
+                    [ ( "type", Encode.string model.gameType )
+                    , ( model.color ++ "_player", Encode.string model.screenName )
+                    , ( model.color ++ "_token", Encode.string model.token )
                     ]
         , expect = Http.expectJson CreateGameReceived (responseDecoder gameDecoder)
         }
@@ -106,7 +110,7 @@ update msg model =
             ( { model | color = color }, Cmd.none )
 
         CreateGame ->
-            ( model, createGame model.gameType model.color model.screenName )
+            ( model, createGame model )
 
         CreateGameReceived result ->
             case parseResult result of
