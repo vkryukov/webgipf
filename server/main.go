@@ -88,11 +88,11 @@ func main() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			log.Printf("404: %s", r.URL)
-			http.NotFound(w, r)
-			return
-		}
+		// if r.URL.Path != "/" {
+		// 	log.Printf("404: %s", r.URL)
+		// 	http.NotFound(w, r)
+		// 	return
+		// }
 		// Serve index.html for the root path
 		data, err := staticFiles.ReadFile("static/index.html")
 		if err != nil {
