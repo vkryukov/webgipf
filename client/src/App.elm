@@ -3,7 +3,7 @@ module App exposing (Model, Msg(..), init, main, subscriptions, update, view)
 import Auth
 import Browser
 import Browser.Navigation as Nav
-import Game
+import Games
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Encode as Encode
@@ -46,13 +46,13 @@ init flags url key =
             Auth.init flags
 
         ( game, gameCmd ) =
-            Game.init auth.user
+            Games.init auth.user
     in
     -- TODO: Default gameType should be in sync with the select choices
     ( Model key url auth game
     , Cmd.batch
         [ Cmd.map AuthMsg authCmd
-        , Cmd.map GameMsg gameCmd
+        , Cmd.map GamesMsg gameCmd
         ]
     )
 
@@ -92,21 +92,21 @@ update msg model =
 
                 ( game, gameCmd ) =
                     -- TODO: make sure that the logout is also handled
-                    Game.updateModelWithUser auth.user model.game
+                    Games.updateModelWithUser auth.user model.game
             in
             ( { model | auth = auth, game = game }
             , Cmd.batch
                 [ Cmd.map AuthMsg authCmd
-                , Cmd.map GameMsg gameCmd
+                , Cmd.map GamesMsg gameCmd
                 ]
             )
 
         GameMsg gameMsg ->
             let
                 ( game, gameCmd ) =
-                    Game.update gameMsg model.game
+                    Games.update gameMsg model.game
             in
-            ( { model | game = game }, Cmd.map GameMsg gameCmd )
+            ( { model | game = game }, Cmd.map GamesMsg gameCmd )
 
         NoOp ->
             ( model, Cmd.none )
@@ -130,11 +130,11 @@ view model =
     { title = "Project Gipf"
     , body =
         [ Html.map AuthMsg (Auth.view model.auth)
-        , Html.map GameMsg (Game.viewCreateNewGame model.game)
+        , Html.map GamesMsg (Games.viewCreateNewGame model.game)
         , viewSection "Joinable games"
-            [ Html.map GameMsg (Game.viewJoinableGamesList model.game) ]
+            [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
         , viewSection "Your games"
-            [ Html.map GameMsg (Game.viewOwnGamesList model.game) ]
+            [ Html.map GamesMsg (Games.viewOwnGamesList model.game) ]
         ]
     }
 

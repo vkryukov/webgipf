@@ -1,4 +1,4 @@
-module Game exposing
+module Games exposing
     ( Model
     , Msg(..)
     , init
