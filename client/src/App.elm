@@ -35,7 +35,7 @@ type alias Model =
     { key : Nav.Key
     , url : Url.Url
     , auth : Auth.Model
-    , game : Game.Model
+    , game : Games.Model
     }
 
 
@@ -65,7 +65,7 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | AuthMsg Auth.Msg
-    | GameMsg Game.Msg
+    | GamesMsg Games.Msg
     | NoOp
 
 
@@ -101,7 +101,7 @@ update msg model =
                 ]
             )
 
-        GameMsg gameMsg ->
+        GamesMsg gameMsg ->
             let
                 ( game, gameCmd ) =
                     Games.update gameMsg model.game

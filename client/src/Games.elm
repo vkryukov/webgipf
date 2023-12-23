@@ -10,15 +10,15 @@ module Games exposing
     )
 
 import Auth
-import Html exposing (Html, div, label, option, select, text)
-import Html.Attributes exposing (class)
+import Html exposing (Html, a, div, label, option, select, text)
+import Html.Attributes exposing (class, href)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSection, viewStringTable)
+import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSection)
 
 
 type alias Model =
@@ -232,13 +232,14 @@ viewCreateNewGame model =
 
 viewOwnGamesList : Model -> Html Msg
 viewOwnGamesList model =
-    viewStringTable model.ownGames
+    viewHtmlTable model.ownGames
         [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions" ]
-        [ \game -> String.fromInt game.id
-        , .gameType
-        , .whitePlayer
-        , .blackPlayer
-        , \game -> String.fromInt game.numActions
+        [ \game -> text (String.fromInt game.id)
+        , \game -> text game.gameType
+        , \game -> text game.whitePlayer
+        , \game -> text game.blackPlayer
+        , \game -> text (String.fromInt game.numActions)
+        , \game -> a [ href ("/game/play/" ++ String.fromInt game.id) ] [ text "Play" ]
         ]
 
 
