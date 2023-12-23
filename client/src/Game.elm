@@ -18,7 +18,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewPrimaryButton, viewRadio, viewSection, viewTable)
+import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSection, viewStringTable)
 
 
 type alias Model =
@@ -66,6 +66,8 @@ type Msg
     | CreateGameReceived (HttpResult Game)
     | OwnGamesReceived (HttpResult (List Game))
     | JoinableGamesReceived (HttpResult (List Game))
+    | JoinGame Int
+    | JoinedGameReceved (HttpResult Game)
     | NoOp
 
 
@@ -130,12 +132,26 @@ getGames url cmd model =
 
 ownGames : Model -> Cmd Msg
 ownGames model =
-    getGames "/game/list" OwnGamesReceived model
+    getGames "/game/list/byuser" OwnGamesReceived model
 
 
 joinableGames : Model -> Cmd Msg
 joinableGames model =
-    getGames "/game/joinable" JoinableGamesReceived model
+    getGames "/game/list/joinable" JoinableGamesReceived model
+
+
+joinGame : Int -> Model -> Cmd Msg
+joinGame gameId model =
+    Http.post
+        { url = "/game/join"
+        , body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "token", Encode.string model.token )
+                    , ( "id", Encode.int gameId )
+                    ]
+        , expect = Http.expectJson JoinedGameReceved (responseDecoder gameDecoder)
+        }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -174,6 +190,17 @@ update msg model =
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
 
+        JoinGame gameId ->
+            ( model, joinGame gameId model )
+
+        JoinedGameReceved result ->
+            case parseResult result of
+                Ok _ ->
+                    ( { model | error = Nothing }, Cmd.batch [ ownGames model, joinableGames model ] )
+
+                Err error ->
+                    ( { model | error = Just error }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -205,7 +232,7 @@ viewCreateNewGame model =
 
 viewOwnGamesList : Model -> Html Msg
 viewOwnGamesList model =
-    viewTable model.ownGames
+    viewStringTable model.ownGames
         [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions" ]
         [ \game -> String.fromInt game.id
         , .gameType
@@ -217,10 +244,11 @@ viewOwnGamesList model =
 
 viewJoinableGamesList : Model -> Html Msg
 viewJoinableGamesList model =
-    viewTable model.joinableGames
-        [ "Game Id", "Game type", "White Player", "Black Player" ]
-        [ \game -> String.fromInt game.id
-        , .gameType
-        , .whitePlayer
-        , .blackPlayer
+    viewHtmlTable model.joinableGames
+        [ "Game Id", "Game type", "White Player", "Black Player", "Join?" ]
+        [ \game -> text (String.fromInt game.id)
+        , \game -> text game.gameType
+        , \game -> text game.whitePlayer
+        , \game -> text game.blackPlayer
+        , \game -> viewPrimaryButton ( "Join", JoinGame game.id )
         ]

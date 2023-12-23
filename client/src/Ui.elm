@@ -5,13 +5,14 @@ module Ui exposing
     , viewErrorMessage
     , viewForm
     , viewH2
+    , viewHtmlTable
     , viewNavBar
     , viewPrimaryButton
     , viewRadio
     , viewSecondaryButton
     , viewSection
     , viewSiteTitle
-    , viewTable
+    , viewStringTable
     , viewText
     )
 
@@ -134,8 +135,18 @@ viewNavBar items actions =
         ]
 
 
-viewTable : List a -> List String -> List (a -> String) -> Html msg
-viewTable objs headers fields =
+viewStringTable : List a -> List String -> List (a -> String) -> Html msg
+viewStringTable objs headers fields =
+    viewRawHtmlTable headers (List.map (\obj -> List.map (\field -> text (field obj)) fields) objs)
+
+
+viewHtmlTable : List a -> List String -> List (a -> Html msg) -> Html msg
+viewHtmlTable objs headers fields =
+    viewRawHtmlTable headers (List.map (\obj -> List.map (\field -> field obj) fields) objs)
+
+
+viewRawHtmlTable : List String -> List (List (Html msg)) -> Html msg
+viewRawHtmlTable headers rows =
     div [ class "flex flex-col" ]
         [ div [ class "-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8" ]
             [ div [ class "py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8" ]
@@ -152,16 +163,16 @@ viewTable objs headers fields =
                             ]
                         , tbody [ class "bg-white divide-y divide-gray-200" ]
                             (List.map
-                                (\obj ->
+                                (\row ->
                                     tr []
                                         (List.map
                                             (\field ->
-                                                td [ class "px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500" ] [ text (field obj) ]
+                                                td [ class "px-6 py-4 whitespace-no-wrap text-sm leading-5 text-gray-500" ] [ field ]
                                             )
-                                            fields
+                                            row
                                         )
                                 )
-                                objs
+                                rows
                             )
                         ]
                     ]
