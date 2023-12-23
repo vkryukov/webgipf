@@ -241,10 +241,18 @@ viewOwnGamesList model =
         , \game -> text (String.fromInt game.numActions)
         , \game ->
             if (game.whitePlayer /= "") && (game.blackPlayer /= "") then
-                a [ href ("/game/play/" ++ String.fromInt game.id) ] [ text "Play" ]
+                a
+                    [ href ("/game/play/" ++ String.fromInt game.id)
+                    , class "text-blue-500 hover:text-blue-700 underline"
+                    ]
+                    [ text "Play" ]
 
             else
-                a [ href ("/game/cancel/" ++ String.fromInt game.id) ] [ text "Cancel" ]
+                a
+                    [ href ("/game/cancel/" ++ String.fromInt game.id)
+                    , class "text-blue-500 hover:text-blue-700 underline"
+                    ]
+                    [ text "Cancel" ]
         ]
 
 
