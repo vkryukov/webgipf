@@ -90,23 +90,23 @@ update msg model =
                 ( auth, authCmd ) =
                     Auth.update authMsg model.auth
 
-                ( game, gameCmd ) =
+                ( games, gamesCmd ) =
                     -- TODO: make sure that the logout is also handled
                     Games.updateModelWithUser auth.user model.game
             in
-            ( { model | auth = auth, game = game }
+            ( { model | auth = auth, game = games }
             , Cmd.batch
                 [ Cmd.map AuthMsg authCmd
-                , Cmd.map GamesMsg gameCmd
+                , Cmd.map GamesMsg gamesCmd
                 ]
             )
 
-        GamesMsg gameMsg ->
+        GamesMsg gamesMsg ->
             let
-                ( game, gameCmd ) =
-                    Games.update gameMsg model.game
+                ( games, gamesCmd ) =
+                    Games.update gamesMsg model.game
             in
-            ( { model | game = game }, Cmd.map GamesMsg gameCmd )
+            ( { model | game = games }, Cmd.map GamesMsg gamesCmd )
 
         NoOp ->
             ( model, Cmd.none )
