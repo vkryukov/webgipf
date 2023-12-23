@@ -233,20 +233,25 @@ viewCreateNewGame model =
 viewOwnGamesList : Model -> Html Msg
 viewOwnGamesList model =
     viewHtmlTable model.ownGames
-        [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions" ]
+        [ "Game Id", "Game type", "White Player", "Black Player", "Num Actions", "" ]
         [ \game -> text (String.fromInt game.id)
         , \game -> text game.gameType
         , \game -> text game.whitePlayer
         , \game -> text game.blackPlayer
         , \game -> text (String.fromInt game.numActions)
-        , \game -> a [ href ("/game/play/" ++ String.fromInt game.id) ] [ text "Play" ]
+        , \game ->
+            if (game.whitePlayer /= "") && (game.blackPlayer /= "") then
+                a [ href ("/game/play/" ++ String.fromInt game.id) ] [ text "Play" ]
+
+            else
+                a [ href ("/game/cancel/" ++ String.fromInt game.id) ] [ text "Cancel" ]
         ]
 
 
 viewJoinableGamesList : Model -> Html Msg
 viewJoinableGamesList model =
     viewHtmlTable model.joinableGames
-        [ "Game Id", "Game type", "White Player", "Black Player", "Join?" ]
+        [ "Game Id", "Game type", "White Player", "Black Player", "" ]
         [ \game -> text (String.fromInt game.id)
         , \game -> text game.gameType
         , \game -> text game.whitePlayer
