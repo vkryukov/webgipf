@@ -1,6 +1,5 @@
 port module Auth exposing (..)
 
-import Browser
 import Html exposing (Html, div, text)
 import Http
 import Json.Decode as Decode
@@ -10,17 +9,38 @@ import Task
 import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewSiteTitle, viewText)
 
 
+
+-- MODEL
+
+
 type alias Model =
     { emailInput : String
     , screenNameInput : String
     , passwordInput : String
     , repeatPasswordInput : String
     , user : Maybe User
-    , userStatus : UserStatus
+    , token : String
     , error : Maybe String
     , errorFields : List String
     , state : State
     }
+
+
+type alias User =
+    { email : String
+    , emailVerified : Bool
+    , screenName : String
+    , token : String
+    }
+
+
+userDecoder : Decode.Decoder User
+userDecoder =
+    Decode.map4 User
+        (Decode.field "email" Decode.string)
+        (Decode.field "email_verified" Decode.bool)
+        (Decode.field "screen_name" Decode.string)
+        (Decode.field "token" Decode.string)
 
 
 type State
@@ -28,7 +48,62 @@ type State
     | SigningIn
     | SigningUp
     | SignedIn
-    | UpdatingDetails
+
+
+isAuthenticated : Model -> Bool
+isAuthenticated model =
+    model.state == SignedIn
+
+
+initialModel : Model
+initialModel =
+    { emailInput = ""
+    , screenNameInput = ""
+    , passwordInput = ""
+    , repeatPasswordInput = ""
+    , user = Nothing
+    , token = ""
+    , error = Nothing
+    , errorFields = []
+    , state = Initializing
+    }
+
+
+type alias SavedModel =
+    { token : String
+    }
+
+
+port setStorage : Encode.Value -> Cmd msg
+
+
+save : Model -> Cmd msg
+save model =
+    setStorage
+        (Encode.object
+            [ ( "token", Encode.string model.token )
+            ]
+        )
+
+
+savedModelDecoder : Decode.Decoder SavedModel
+savedModelDecoder =
+    Decode.map SavedModel
+        (Decode.field "token" Decode.string)
+
+
+init : Encode.Value -> ( Model, Cmd Msg )
+init flags =
+    case Decode.decodeValue savedModelDecoder flags of
+        Ok savedModel ->
+            ( { initialModel | token = savedModel.token }, checkUserStatus savedModel.token )
+
+        Err _ ->
+            ( initialModel, Cmd.none )
+
+
+
+-- UPDATE
 
 
 type Msg
@@ -42,39 +117,6 @@ type Msg
     | ViewSignUp
     | LoginReceived (HttpResult User)
     | Logout
-
-
-type alias User =
-    { email : String
-    , emailVerified : Bool
-    , screenName : String
-    , token : String
-    }
-
-
-isAuthenticated : Model -> Bool
-isAuthenticated model =
-    model.state == SignedIn
-
-
-userDecoder : Decode.Decoder User
-userDecoder =
-    Decode.map4 User
-        (Decode.field "email" Decode.string)
-        (Decode.field "email_verified" Decode.bool)
-        (Decode.field "screen_name" Decode.string)
-        (Decode.field "token" Decode.string)
-
-
-type alias UserStatus =
-    { token : String
-    }
-
-
-userStatusDecoder : Decode.Decoder UserStatus
-userStatusDecoder =
-    Decode.map UserStatus
-        (Decode.field "token" Decode.string)
 
 
 checkUserStatus : String -> Cmd Msg
@@ -124,46 +166,25 @@ signUp model =
         }
 
 
-port setStorage : Encode.Value -> Cmd msg
-
-
-savePreferences : Model -> Cmd msg
-savePreferences model =
-    setStorage
-        (Encode.object
-            [ ( "token", Encode.string model.userStatus.token )
-            ]
-        )
-
-
-init : Encode.Value -> ( Model, Cmd Msg )
-init flags =
-    case Decode.decodeValue userStatusDecoder flags of
-        Ok status ->
-            ( Model "" "" "" "" Nothing status Nothing [] Initializing, checkUserStatus status.token )
-
-        Err _ ->
-            ( Model "" "" "" "" Nothing { token = "" } Nothing [] SigningIn
-            , Cmd.none
-            )
-
-
 updateModelWithUserResponse : HttpResult User -> Model -> Model
 updateModelWithUserResponse result model =
     case parseResult result of
         Ok user ->
             { model
                 | user = Just user
-                , userStatus = UserStatus user.token
+                , token = user.token
                 , error = Nothing
+                , errorFields = []
                 , state = SignedIn
             }
 
         Err message ->
             { model
                 | user = Nothing
-                , userStatus = UserStatus ""
+                , token = ""
                 , error = Just message
+
+                -- TODO: set errorFields as well
                 , state =
                     if model.state == Initializing then
                         SigningIn
@@ -234,27 +255,14 @@ update msg model =
             ( { model | state = SigningUp, errorFields = [], error = Nothing }, Cmd.none )
 
         Logout ->
-            let
-                newModel =
-                    { model
-                        | emailInput = ""
-                        , passwordInput = ""
-                        , repeatPasswordInput = ""
-                        , screenNameInput = ""
-                        , user = Nothing
-                        , userStatus = UserStatus ""
-                        , error = Nothing
-                        , state = SigningIn
-                    }
-            in
-            ( newModel, savePreferences newModel )
+            ( { initialModel | state = SigningIn }, save initialModel )
 
         LoginReceived result ->
             let
                 newModel =
                     updateModelWithUserResponse result model
             in
-            ( newModel, savePreferences newModel )
+            ( newModel, save newModel )
 
 
 highlightErrorFields : List String -> List (Field msg) -> List (Field msg)
@@ -346,17 +354,4 @@ view model =
 
             SignedIn ->
                 viewUser (Maybe.withDefault { email = "", emailVerified = False, screenName = "", token = "" } model.user)
-
-            UpdatingDetails ->
-                text "Updating details..."
         ]
-
-
-main : Program Encode.Value Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = \_ -> Sub.none
-        }
