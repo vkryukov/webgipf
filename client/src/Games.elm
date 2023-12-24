@@ -1,6 +1,7 @@
 module Games exposing
     ( Model
     , Msg(..)
+    , cancelGame
     , init
     , update
     , updateModelWithUser
@@ -64,10 +65,11 @@ type Msg
     | SelectColor String
     | CreateGame
     | CreateGameReceived (HttpResult Game)
-    | OwnGamesReceived (HttpResult (List Game))
-    | JoinableGamesReceived (HttpResult (List Game))
+    | OwnGamesReceived (HttpResult (Maybe (List Game)))
+    | JoinableGamesReceived (HttpResult (Maybe (List Game)))
     | JoinGame Int
     | JoinedGameReceved (HttpResult Game)
+    | GameCancelled (Result Http.Error ())
     | NoOp
 
 
@@ -94,9 +96,9 @@ gameDecoder =
         (Decode.field "num_actions" Decode.int)
 
 
-gameListDecoder : Decode.Decoder (List Game)
+gameListDecoder : Decode.Decoder (Maybe (List Game))
 gameListDecoder =
-    Decode.list gameDecoder
+    Decode.nullable (Decode.list gameDecoder)
 
 
 createGame : Model -> Cmd Msg
@@ -114,7 +116,7 @@ createGame model =
         }
 
 
-getGames : String -> (HttpResult (List Game) -> Msg) -> Model -> Cmd Msg
+getGames : String -> (HttpResult (Maybe (List Game)) -> Msg) -> Model -> Cmd Msg
 getGames url cmd model =
     if model.token == "" then
         Cmd.none
@@ -154,6 +156,20 @@ joinGame gameId model =
         }
 
 
+cancelGame : Int -> Model -> Cmd Msg
+cancelGame gameId model =
+    Http.post
+        { url = "/game/cancel"
+        , body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "token", Encode.string model.token )
+                    , ( "id", Encode.int gameId )
+                    ]
+        , expect = Http.expectWhatever GameCancelled
+        }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -176,7 +192,16 @@ update msg model =
 
         OwnGamesReceived result ->
             case parseResult result of
-                Ok games ->
+                Ok maybeGames ->
+                    let
+                        games =
+                            case maybeGames of
+                                Just g ->
+                                    g
+
+                                Nothing ->
+                                    []
+                    in
                     ( { model | ownGames = games }, Cmd.none )
 
                 Err error ->
@@ -184,7 +209,17 @@ update msg model =
 
         JoinableGamesReceived result ->
             case parseResult result of
-                Ok games ->
+                -- TODO: fix this ugliness
+                Ok maybeGames ->
+                    let
+                        games =
+                            case maybeGames of
+                                Just g ->
+                                    g
+
+                                Nothing ->
+                                    []
+                    in
                     ( { model | joinableGames = games }, Cmd.none )
 
                 Err error ->
@@ -200,6 +235,9 @@ update msg model =
 
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
+
+        GameCancelled _ ->
+            ( model, ownGames model )
 
         NoOp ->
             ( model, Cmd.none )
