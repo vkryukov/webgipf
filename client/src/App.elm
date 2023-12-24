@@ -7,6 +7,7 @@ import Games
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Encode as Encode
+import Routes
 import Ui exposing (viewSection)
 import Url
 import Url.Parser exposing ((</>))
@@ -23,8 +24,8 @@ main =
         , view = view
         , update = update
         , subscriptions = subscriptions
-        , onUrlChange = UrlChanged
         , onUrlRequest = LinkClicked
+        , onUrlChange = Routes.match >> NewRoute
         }
 
 
@@ -32,9 +33,18 @@ main =
 -- MODEL
 
 
+type Page
+    = NotFound
+    | HomeSignedIn
+    | HomeSignedOut
+    | SignIn
+    | PlayGame Int
+    | ViewGame Int
+
+
 type alias Model =
     { key : Nav.Key
-    , url : Url.Url
+    , page : Page
     , auth : Auth.Model
     , game : Games.Model
     }
@@ -48,11 +58,18 @@ init flags url key =
 
         ( game, gameCmd ) =
             Games.init auth.user
+
+        initialModel =
+            Model key NotFound auth game
+
+        ( model, cmd ) =
+            setNewPage (Routes.match url) initialModel
     in
     -- TODO: Default gameType should be in sync with the select choices
-    ( Model key url auth game
+    ( model
     , Cmd.batch
-        [ Cmd.map AuthMsg authCmd
+        [ cmd
+        , Cmd.map AuthMsg authCmd
         , Cmd.map GamesMsg gameCmd
         ]
     )
@@ -64,10 +81,33 @@ init flags url key =
 
 type Msg
     = LinkClicked Browser.UrlRequest
-    | UrlChanged Url.Url
+    | NewRoute (Maybe Routes.Route)
     | AuthMsg Auth.Msg
     | GamesMsg Games.Msg
     | NoOp
+
+
+setNewPage : Maybe Routes.Route -> Model -> ( Model, Cmd Msg )
+setNewPage maybeRoute model =
+    case maybeRoute of
+        Just Routes.Home ->
+            if Auth.isAuthenticated model.auth then
+                ( { model | page = HomeSignedIn }, Cmd.none )
+
+            else
+                ( { model | page = HomeSignedOut }, Cmd.none )
+
+        Just Routes.SignIn ->
+            ( { model | page = SignIn }, Cmd.none )
+
+        Just (Routes.ViewGame id) ->
+            ( { model | page = ViewGame id }, Cmd.none )
+
+        Just (Routes.PlayGame id) ->
+            ( { model | page = PlayGame id }, Cmd.none )
+
+        Nothing ->
+            ( { model | page = NotFound }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -101,10 +141,8 @@ update msg model =
                 Browser.External href ->
                     ( model, Nav.load href )
 
-        UrlChanged url ->
-            ( { model | url = url }
-            , Cmd.none
-            )
+        NewRoute maybeRoute ->
+            setNewPage maybeRoute model
 
         AuthMsg authMsg ->
             let
@@ -158,21 +196,3 @@ view model =
             [ Html.map GamesMsg (Games.viewOwnGamesList model.game) ]
         ]
     }
-
-
-
--- viewLinks : Model -> List (Html msg)
--- viewLinks model =
---     [ text "The current URL is: "
---     , b [] [ text (Url.toString model.url) ]
---     , ul []
---         [ viewLink "/home"
---         , viewLink "/profile"
---         , viewLink "/reviews/the-century-of-the-self"
---         , viewLink "/reviews/public-opinion"
---         , viewLink "/reviews/shah-of-shahs"
---         ]
---     ]
--- viewLink : String -> Html msg
--- viewLink path =
---     li [] [ a [ href path ] [ text path ] ]

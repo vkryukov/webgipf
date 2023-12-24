@@ -52,6 +52,11 @@ type alias User =
     }
 
 
+isAuthenticated : Model -> Bool
+isAuthenticated model =
+    model.state == SignedIn
+
+
 userDecoder : Decode.Decoder User
 userDecoder =
     Decode.map4 User
@@ -79,7 +84,7 @@ checkUserStatus token =
 
     else
         Http.get
-            { url = "http://localhost:8080/auth/check?token=" ++ token
+            { url = "/auth/check?token=" ++ token
             , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
             }
 
@@ -95,7 +100,7 @@ login model =
                     ]
     in
     Http.post
-        { url = "http://localhost:8080/auth/login"
+        { url = "/auth/login"
         , body = body
         , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
         }
@@ -113,7 +118,7 @@ signUp model =
                     ]
     in
     Http.post
-        { url = "http://localhost:8080/auth/register"
+        { url = "/auth/register"
         , body = body
         , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
         }
