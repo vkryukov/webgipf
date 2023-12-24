@@ -116,27 +116,7 @@ update msg model =
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    let
-                        parser =
-                            Url.Parser.s "game" </> Url.Parser.s "cancel" </> Url.Parser.int
-
-                        maybeId =
-                            Url.Parser.parse parser url
-                    in
-                    case maybeId of
-                        Just id ->
-                            let
-                                gamesCmd =
-                                    Games.cancelGame id model.game
-                            in
-                            ( model
-                            , Cmd.batch
-                                [ Cmd.map GamesMsg gamesCmd
-                                ]
-                            )
-
-                        Nothing ->
-                            ( model, Nav.pushUrl model.key (Url.toString url) )
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
 
                 Browser.External href ->
                     ( model, Nav.load href )
