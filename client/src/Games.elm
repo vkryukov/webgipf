@@ -192,6 +192,7 @@ update msg model =
 
         OwnGamesReceived result ->
             case parseResult result of
+                -- TODO: fix this ugliness
                 Ok maybeGames ->
                     let
                         games =
