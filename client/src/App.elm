@@ -164,15 +164,47 @@ subscriptions _ =
 -- VIEW
 
 
+viewSiteBar : Model -> Html Msg
+viewSiteBar model =
+    Html.map AuthMsg (Auth.viewSiteBar model.auth)
+
+
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Project Gipf"
-    , body =
-        [ Html.map AuthMsg (Auth.view model.auth)
-        , Html.map GamesMsg (Games.viewCreateNewGame model.game)
-        , viewSection "Joinable games"
-            [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
-        , viewSection "Your games"
-            [ Html.map GamesMsg (Games.viewOwnGamesList model.game) ]
-        ]
-    }
+    case model.page of
+        HomeSignedOut ->
+            { title = "Project Gipf"
+            , body =
+                [ viewSiteBar model
+                , p [ class "p-4" ] [ text "Welcome to Project Gipf" ]
+                ]
+            }
+
+        HomeSignedIn ->
+            { title = "Home"
+            , body =
+                [ viewSiteBar model
+                , viewSection "Joinable games"
+                    [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
+                , viewSection "Your games"
+                    [ Html.map GamesMsg (Games.viewOwnGamesList model.game)
+                    ]
+                ]
+            }
+
+        NotFound ->
+            { title = "Page not found"
+            , body =
+                [ viewSiteBar model
+                , p [] [ text "Page not found" ]
+                ]
+            }
+
+        SignIn ->
+            { title = "Signing in"
+            , body =
+                [ Html.map AuthMsg (Auth.view model.auth) ]
+            }
+
+        _ ->
+            { title = "Under constructoin", body = [ p [ class "p-4" ] [ text "Under construction" ] ] }

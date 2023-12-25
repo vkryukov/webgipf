@@ -1,6 +1,6 @@
 port module Auth exposing (..)
 
-import Html exposing (Html, div, text)
+import Html exposing (Html, div)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -322,36 +322,40 @@ viewSignUp model =
     viewForm form
 
 
-viewUser : User -> Html Msg
-viewUser user =
+viewSiteBar : Model -> Html Msg
+viewSiteBar model =
     -- TODO: Display whether email is verified
     -- TODO: Add a button to resend verification email
-    let
-        items =
-            [ viewSiteTitle "Project GIPF"
-            , viewBoldText user.screenName
-            , viewText ("<" ++ user.email ++ ">")
-            ]
+    viewNavBar
+        (case model.user of
+            Just user ->
+                [ viewSiteTitle "Project GIPF"
+                , viewBoldText user.screenName
+                , viewText ("<" ++ user.email ++ ">")
+                ]
 
-        actions =
-            [ ( "Sign out", Logout ) ]
-    in
-    viewNavBar items actions
+            Nothing ->
+                [ viewSiteTitle "Project GIPF" ]
+        )
+        (case model.user of
+            Just user ->
+                [ ( "Sign out", Logout ) ]
+
+            Nothing ->
+                [ ( "Sign in", ViewSignIn )
+                , ( "Sign up", ViewSignUp )
+                ]
+        )
 
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ case model.state of
-            Initializing ->
-                text "Connecting..."
+    case model.state of
+        SigningIn ->
+            viewSignIn model
 
-            SigningIn ->
-                viewSignIn model
+        SigningUp ->
+            viewSignUp model
 
-            SigningUp ->
-                viewSignUp model
-
-            SignedIn ->
-                viewUser (Maybe.withDefault { email = "", emailVerified = False, screenName = "", token = "" } model.user)
-        ]
+        _ ->
+            div [] []
