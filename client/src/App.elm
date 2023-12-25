@@ -38,6 +38,7 @@ type Page
     | HomeSignedIn
     | HomeSignedOut
     | SignIn
+    | SignUp
     | PlayGame Int
     | ViewGame Int
 
@@ -98,7 +99,31 @@ setNewPage maybeRoute model =
                 ( { model | page = HomeSignedOut }, Cmd.none )
 
         Just Routes.SignIn ->
-            ( { model | page = SignIn }, Cmd.none )
+            let
+                auth =
+                    model.auth
+
+                newAuth =
+                    { auth | state = Auth.SigningIn }
+            in
+            ( { model | page = SignIn, auth = newAuth }, Cmd.none )
+
+        Just Routes.SignUp ->
+            let
+                auth =
+                    model.auth
+
+                newAuth =
+                    { auth | state = Auth.SigningUp }
+            in
+            ( { model | page = SignUp, auth = newAuth }, Cmd.none )
+
+        Just Routes.SignOut ->
+            let
+                ( auth, authCmd ) =
+                    Auth.signOut model.auth
+            in
+            ( { model | page = HomeSignedOut, auth = auth }, Cmd.map AuthMsg authCmd )
 
         Just (Routes.ViewGame id) ->
             ( { model | page = ViewGame id }, Cmd.none )
@@ -211,6 +236,12 @@ view model =
 
         SignIn ->
             { title = "Signing in"
+            , body =
+                [ Html.map AuthMsg (Auth.view model.auth) ]
+            }
+
+        SignUp ->
+            { title = "Signing up"
             , body =
                 [ Html.map AuthMsg (Auth.view model.auth) ]
             }

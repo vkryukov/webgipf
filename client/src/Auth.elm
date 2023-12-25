@@ -4,9 +4,10 @@ import Html exposing (Html, div)
 import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Routes
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Task
-import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewPrimaryButton, viewSecondaryButton, viewSiteTitle, viewText)
+import Ui exposing (Field, Form, viewBoldText, viewForm, viewLink, viewNavBar, viewPrimaryButton, viewSecondaryButton, viewSiteTitle, viewText)
 
 
 
@@ -116,7 +117,6 @@ type Msg
     | SignUp
     | ViewSignUp
     | LoginReceived (HttpResult User)
-    | Logout
 
 
 checkUserStatus : String -> Cmd Msg
@@ -131,8 +131,8 @@ checkUserStatus token =
             }
 
 
-login : Model -> Cmd Msg
-login model =
+signIn : Model -> Cmd Msg
+signIn model =
     let
         body =
             Http.jsonBody <|
@@ -222,7 +222,7 @@ update msg model =
                 ( { model | errorFields = errorFields, error = Just "All fields must be filled" }, Cmd.none )
 
             else
-                ( model, login model )
+                ( model, signIn model )
 
         ViewSignIn ->
             ( { model | state = SigningIn, errorFields = [], error = Nothing }, Cmd.none )
@@ -254,15 +254,17 @@ update msg model =
         ViewSignUp ->
             ( { model | state = SigningUp, errorFields = [], error = Nothing }, Cmd.none )
 
-        Logout ->
-            ( { initialModel | state = SigningIn }, save initialModel )
-
         LoginReceived result ->
             let
                 newModel =
                     updateModelWithUserResponse result model
             in
             ( newModel, save newModel )
+
+
+signOut : Model -> ( Model, Cmd Msg )
+signOut model =
+    ( { model | user = Nothing, token = "", state = SigningIn }, save { model | user = Nothing, token = "", state = SigningIn } )
 
 
 highlightErrorFields : List String -> List (Field msg) -> List (Field msg)
@@ -293,7 +295,7 @@ viewSignIn model =
             , fields = highlightErrorFields model.errorFields fields
             , actions =
                 [ viewPrimaryButton ( "Sign In", SignIn )
-                , viewSecondaryButton ( "Sign Up", ViewSignUp )
+                , viewLink "Sign Up" (Routes.href Routes.SignUp)
                 ]
             , error = model.error
             }
@@ -318,7 +320,7 @@ viewSignUp model =
             , fields = highlightErrorFields model.errorFields fields
             , actions =
                 [ viewPrimaryButton ( "Sign Up", SignUp )
-                , viewSecondaryButton ( "Sign In", ViewSignIn )
+                , viewLink "Sign In" (Routes.href Routes.SignIn)
                 ]
             , error = model.error
             }
@@ -342,12 +344,12 @@ viewSiteBar model =
                 [ viewSiteTitle "Project GIPF" ]
         )
         (case model.user of
-            Just user ->
-                [ ( "Sign out", Logout ) ]
+            Just _ ->
+                [ viewLink "Sign out" (Routes.href Routes.SignOut) ]
 
             Nothing ->
-                [ ( "Sign in", ViewSignIn )
-                , ( "Sign up", ViewSignUp )
+                [ viewLink "Sign in" (Routes.href Routes.SignIn)
+                , viewLink "Sign up" (Routes.href Routes.SignUp)
                 ]
         )
 

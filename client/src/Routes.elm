@@ -9,6 +9,8 @@ import Url.Parser as Parser exposing ((</>), Parser)
 type Route
     = Home
     | SignIn
+    | SignUp
+    | SignOut
     | PlayGame Int
     | ViewGame Int
 
@@ -18,6 +20,8 @@ routes =
     Parser.oneOf
         [ Parser.map Home Parser.top
         , Parser.map SignIn (Parser.s "signin")
+        , Parser.map SignUp (Parser.s "signup")
+        , Parser.map SignOut (Parser.s "signout")
         , Parser.map PlayGame (Parser.s "play" </> Parser.int)
         , Parser.map ViewGame (Parser.s "view" </> Parser.int)
         ]
@@ -36,6 +40,12 @@ routeToUrl route =
 
         SignIn ->
             "/signin"
+
+        SignUp ->
+            "/signup"
+
+        SignOut ->
+            "/signout"
 
         PlayGame id ->
             "/play/" ++ String.fromInt id

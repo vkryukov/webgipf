@@ -119,17 +119,12 @@ viewSiteTitle text_ =
     div [ class "font-sitename font-bold mr-4" ] [ text text_ ]
 
 
-viewNavBar : List (Html msg) -> List ( String, msg ) -> Html msg
+viewNavBar : List (Html msg) -> List (Html msg) -> Html msg
 viewNavBar items actions =
     nav [ class "w-full flex justify-between items-center bg-gray-200 p-4" ]
         [ div [ class "flex" ] items
         , div [ class "flex" ]
-            (List.map
-                (\( label, actionMsg ) ->
-                    viewLink label (onClick actionMsg)
-                )
-                actions
-            )
+            actions
         ]
 
 
