@@ -11,7 +11,6 @@ module Games exposing
     )
 
 import Auth
-import Gipf exposing (emptyGame)
 import Html exposing (Html, a, div, label, option, select, text)
 import Html.Attributes exposing (class, href)
 import Html.Events exposing (onInput)

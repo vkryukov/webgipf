@@ -133,7 +133,16 @@ update msg model =
                     -- TODO: make sure that the logout is also handled
                     Games.updateModelWithUser auth.user model.game
             in
-            ( { model | auth = auth, game = games }
+            ( { model
+                | auth = auth
+                , game = games
+                , page =
+                    if Auth.isAuthenticated auth && model.page == HomeSignedOut then
+                        HomeSignedIn
+
+                    else
+                        HomeSignedOut
+              }
             , Cmd.batch
                 [ Cmd.map AuthMsg authCmd
                 , Cmd.map GamesMsg gamesCmd
