@@ -6,6 +6,7 @@ module Ui exposing
     , viewForm
     , viewH2
     , viewHtmlTable
+    , viewLink
     , viewNavBar
     , viewPrimaryButton
     , viewRadio
@@ -16,8 +17,8 @@ module Ui exposing
     , viewText
     )
 
-import Html exposing (Html, a, button, div, h2, input, label, nav, option, select, span, table, tbody, td, text, th, thead, tr)
-import Html.Attributes exposing (checked, class, classList, name, placeholder, type_, value)
+import Html exposing (Html, a, button, div, h2, input, label, nav, span, table, tbody, td, text, th, thead, tr)
+import Html.Attributes exposing (checked, class, classList, placeholder, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
 
 
@@ -125,11 +126,16 @@ viewNavBar items actions =
         , div [ class "flex" ]
             (List.map
                 (\( label, actionMsg ) ->
-                    a [ class "text-blue-500 hover:underline mr-4 cursor-pointer", onClick actionMsg ] [ text label ]
+                    viewLink label (onClick actionMsg)
                 )
                 actions
             )
         ]
+
+
+viewLink : String -> Html.Attribute msg -> Html msg
+viewLink text_ attr =
+    a [ class "text-blue-500 hover:underline mr-4 cursor-pointer", attr ] [ text text_ ]
 
 
 viewStringTable : List a -> List String -> List (a -> String) -> Html msg
