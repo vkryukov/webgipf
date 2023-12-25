@@ -11,11 +11,13 @@ module Games exposing
     )
 
 import Auth
+import Gipf exposing (emptyGame)
 import Html exposing (Html, a, div, label, option, select, text)
 import Html.Attributes exposing (class, href)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
@@ -65,8 +67,8 @@ type Msg
     | SelectColor String
     | CreateGame
     | CreateGameReceived (HttpResult Game)
-    | OwnGamesReceived (HttpResult (Maybe (List Game)))
-    | JoinableGamesReceived (HttpResult (Maybe (List Game)))
+    | OwnGamesReceived (HttpResult (List Game))
+    | JoinableGamesReceived (HttpResult (List Game))
     | JoinGame Int
     | JoinedGameReceved (HttpResult Game)
     | GameCancelled (Result Http.Error ())
@@ -86,19 +88,22 @@ type alias Game =
 
 gameDecoder : Decode.Decoder Game
 gameDecoder =
-    Decode.map7 Game
-        (Decode.field "id" Decode.int)
-        (Decode.field "type" Decode.string)
-        (Decode.field "white_player" Decode.string)
-        (Decode.field "black_player" Decode.string)
-        (Decode.field "white_token" Decode.string)
-        (Decode.field "black_token" Decode.string)
-        (Decode.field "num_actions" Decode.int)
+    Decode.succeed Game
+        |> Pipeline.required "id" Decode.int
+        |> Pipeline.required "type" Decode.string
+        |> Pipeline.required "white_player" Decode.string
+        |> Pipeline.required "black_player" Decode.string
+        |> Pipeline.required "white_token" Decode.string
+        |> Pipeline.required "black_token" Decode.string
+        |> Pipeline.required "num_actions" Decode.int
 
 
-gameListDecoder : Decode.Decoder (Maybe (List Game))
+gameListDecoder : Decode.Decoder (List Game)
 gameListDecoder =
-    Decode.nullable (Decode.list gameDecoder)
+    Decode.oneOf
+        [ Decode.null []
+        , Decode.list gameDecoder
+        ]
 
 
 createGame : Model -> Cmd Msg
@@ -116,7 +121,7 @@ createGame model =
         }
 
 
-getGames : String -> (HttpResult (Maybe (List Game)) -> Msg) -> Model -> Cmd Msg
+getGames : String -> (HttpResult (List Game) -> Msg) -> Model -> Cmd Msg
 getGames url cmd model =
     if model.token == "" then
         Cmd.none
@@ -192,17 +197,7 @@ update msg model =
 
         OwnGamesReceived result ->
             case parseResult result of
-                -- TODO: fix this ugliness
-                Ok maybeGames ->
-                    let
-                        games =
-                            case maybeGames of
-                                Just g ->
-                                    g
-
-                                Nothing ->
-                                    []
-                    in
+                Ok games ->
                     ( { model | ownGames = games }, Cmd.none )
 
                 Err error ->
@@ -210,17 +205,7 @@ update msg model =
 
         JoinableGamesReceived result ->
             case parseResult result of
-                -- TODO: fix this ugliness
-                Ok maybeGames ->
-                    let
-                        games =
-                            case maybeGames of
-                                Just g ->
-                                    g
-
-                                Nothing ->
-                                    []
-                    in
+                Ok games ->
                     ( { model | joinableGames = games }, Cmd.none )
 
                 Err error ->
