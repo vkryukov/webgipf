@@ -6,7 +6,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Task
-import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewSiteTitle, viewText)
+import Ui exposing (Field, Form, viewBoldText, viewForm, viewNavBar, viewPrimaryButton, viewSecondaryButton, viewSiteTitle, viewText)
 
 
 
@@ -291,8 +291,10 @@ viewSignIn model =
         form =
             { title = "Sign In"
             , fields = highlightErrorFields model.errorFields fields
-            , primaryAction = ( "Sign In", SignIn )
-            , secondaryAction = ( "Sign Up", ViewSignUp )
+            , actions =
+                [ viewPrimaryButton ( "Sign In", SignIn )
+                , viewSecondaryButton ( "Sign Up", ViewSignUp )
+                ]
             , error = model.error
             }
     in
@@ -314,8 +316,10 @@ viewSignUp model =
         form =
             { title = "Sign Up"
             , fields = highlightErrorFields model.errorFields fields
-            , primaryAction = ( "Sign Up", SignUp )
-            , secondaryAction = ( "Sign In", ViewSignIn )
+            , actions =
+                [ viewPrimaryButton ( "Sign Up", SignUp )
+                , viewSecondaryButton ( "Sign In", ViewSignIn )
+                ]
             , error = model.error
             }
     in

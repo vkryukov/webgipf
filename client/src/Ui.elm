@@ -60,8 +60,7 @@ viewSecondaryButton ( label, msg ) =
 type alias Form msg =
     { title : String
     , fields : List (Field msg)
-    , primaryAction : ( String, msg )
-    , secondaryAction : ( String, msg )
+    , actions : List (Html msg)
     , error : Maybe String
     }
 
@@ -84,9 +83,7 @@ viewForm form =
             (viewErrorMessage form.error
                 :: (List.map viewField form.fields
                         ++ [ div [ class "flex justify-between mt-4" ]
-                                [ viewPrimaryButton form.primaryAction
-                                , viewSecondaryButton form.secondaryAction
-                                ]
+                                form.actions
                            ]
                    )
             )
