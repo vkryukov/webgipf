@@ -1,5 +1,6 @@
-module Routes exposing (Route(..), href, match)
+module Routes exposing (Route(..), href, match, redirect)
 
+import Browser.Navigation as Nav
 import Html
 import Html.Attributes
 import Url exposing (Url)
@@ -57,3 +58,8 @@ routeToUrl route =
 href : Route -> Html.Attribute msg
 href route =
     Html.Attributes.href (routeToUrl route)
+
+
+redirect : Nav.Key -> Route -> Cmd msg
+redirect key route =
+    Nav.pushUrl key (routeToUrl route)

@@ -7,7 +7,7 @@ import Json.Encode as Encode
 import Routes
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Task
-import Ui exposing (Field, Form, viewBoldText, viewForm, viewLink, viewNavBar, viewPrimaryButton, viewSecondaryButton, viewSiteTitle, viewText)
+import Ui exposing (Field, Form, viewBoldText, viewForm, viewLink, viewNavBar, viewPrimaryButton, viewSiteTitle, viewText)
 
 
 
@@ -264,7 +264,11 @@ update msg model =
 
 signOut : Model -> ( Model, Cmd Msg )
 signOut model =
-    ( { model | user = Nothing, token = "", state = SigningIn }, save { model | user = Nothing, token = "", state = SigningIn } )
+    let
+        newModel =
+            { model | user = Nothing, token = "", state = SigningIn }
+    in
+    ( newModel, save newModel )
 
 
 highlightErrorFields : List String -> List (Field msg) -> List (Field msg)
@@ -299,6 +303,9 @@ viewSignIn model =
                 ]
             , error = model.error
             }
+
+        _ =
+            Debug.log "Auth.viewSignIn" form
     in
     viewForm form
 
@@ -356,8 +363,16 @@ viewSiteBar model =
 
 view : Model -> Html Msg
 view model =
+    let
+        _ =
+            Debug.log "Auth.view" model
+    in
     case model.state of
         SigningIn ->
+            let
+                _ =
+                    Debug.log "Auth.view: SigningIn" ""
+            in
             viewSignIn model
 
         SigningUp ->

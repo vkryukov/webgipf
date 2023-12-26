@@ -37,8 +37,7 @@ type Page
     = NotFound
     | HomeSignedIn
     | HomeSignedOut
-    | SignIn
-    | SignUp
+    | SignInOrUp
     | PlayGame Int
     | ViewGame Int
 
@@ -64,6 +63,10 @@ init flags url key =
             Model key NotFound auth game
 
         ( model, cmd ) =
+            let
+                _ =
+                    Debug.log "url in init" url
+            in
             setNewPage (Routes.match url) initialModel
     in
     -- TODO: Default gameType should be in sync with the select choices
@@ -90,10 +93,22 @@ type Msg
 
 setNewPage : Maybe Routes.Route -> Model -> ( Model, Cmd Msg )
 setNewPage maybeRoute model =
+    let
+        _ =
+            Debug.log "setNewPage" maybeRoute
+    in
     case maybeRoute of
         Just Routes.Home ->
+            let
+                _ =
+                    Debug.log "setNewPage Home" model.auth
+            in
             if Auth.isAuthenticated model.auth then
-                ( { model | page = HomeSignedIn }, Cmd.none )
+                let
+                    ( games, gamesCmd ) =
+                        Games.updateModelWithUser model.auth.user model.game
+                in
+                ( { model | page = HomeSignedIn, game = games }, Cmd.map GamesMsg gamesCmd )
 
             else
                 ( { model | page = HomeSignedOut }, Cmd.none )
@@ -106,7 +121,7 @@ setNewPage maybeRoute model =
                 newAuth =
                     { auth | state = Auth.SigningIn }
             in
-            ( { model | page = SignIn, auth = newAuth }, Cmd.none )
+            ( { model | page = SignInOrUp, auth = newAuth }, Cmd.none )
 
         Just Routes.SignUp ->
             let
@@ -116,14 +131,17 @@ setNewPage maybeRoute model =
                 newAuth =
                     { auth | state = Auth.SigningUp }
             in
-            ( { model | page = SignUp, auth = newAuth }, Cmd.none )
+            ( { model | page = SignInOrUp, auth = newAuth }, Cmd.none )
 
         Just Routes.SignOut ->
             let
                 ( auth, authCmd ) =
                     Auth.signOut model.auth
+
+                changeURL =
+                    Routes.redirect model.key Routes.Home
             in
-            ( { model | page = HomeSignedOut, auth = auth }, Cmd.map AuthMsg authCmd )
+            ( { model | auth = auth }, Cmd.batch [ Cmd.map AuthMsg authCmd, changeURL ] )
 
         Just (Routes.ViewGame id) ->
             ( { model | page = ViewGame id }, Cmd.none )
@@ -137,8 +155,8 @@ setNewPage maybeRoute model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        LinkClicked urlRequest ->
+    case ( model.page, msg ) of
+        ( _, LinkClicked urlRequest ) ->
             case urlRequest of
                 Browser.Internal url ->
                     ( model, Nav.pushUrl model.key (Url.toString url) )
@@ -146,42 +164,38 @@ update msg model =
                 Browser.External href ->
                     ( model, Nav.load href )
 
-        NewRoute maybeRoute ->
+        ( _, NewRoute maybeRoute ) ->
             setNewPage maybeRoute model
 
-        AuthMsg authMsg ->
+        ( _, AuthMsg authMsg ) ->
             let
                 ( auth, authCmd ) =
                     Auth.update authMsg model.auth
 
-                ( games, gamesCmd ) =
-                    -- TODO: make sure that the logout is also handled
-                    Games.updateModelWithUser auth.user model.game
+                changeURL =
+                    if Auth.isAuthenticated auth then
+                        Routes.redirect model.key Routes.Home
+
+                    else
+                        Cmd.none
             in
             ( { model
                 | auth = auth
-                , game = games
-                , page =
-                    if Auth.isAuthenticated auth && model.page == HomeSignedOut then
-                        HomeSignedIn
-
-                    else
-                        HomeSignedOut
               }
             , Cmd.batch
                 [ Cmd.map AuthMsg authCmd
-                , Cmd.map GamesMsg gamesCmd
+                , changeURL
                 ]
             )
 
-        GamesMsg gamesMsg ->
+        ( HomeSignedIn, GamesMsg gamesMsg ) ->
             let
                 ( games, gamesCmd ) =
                     Games.update gamesMsg model.game
             in
             ( { model | game = games }, Cmd.map GamesMsg gamesCmd )
 
-        NoOp ->
+        _ ->
             ( model, Cmd.none )
 
 
@@ -205,6 +219,10 @@ viewSiteBar model =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        _ =
+            Debug.log "App.view" model
+    in
     case model.page of
         HomeSignedOut ->
             { title = "Project Gipf"
@@ -234,17 +252,20 @@ view model =
                 ]
             }
 
-        SignIn ->
-            { title = "Signing in"
-            , body =
-                [ Html.map AuthMsg (Auth.view model.auth) ]
-            }
+        SignInOrUp ->
+            let
+                _ =
+                    Debug.log "view SignIn" model.auth
+            in
+            { title =
+                if model.auth.state == Auth.SigningIn then
+                    "Signing in"
 
-        SignUp ->
-            { title = "Signing up"
+                else
+                    "Singning up"
             , body =
                 [ Html.map AuthMsg (Auth.view model.auth) ]
             }
 
         _ ->
-            { title = "Under constructoin", body = [ p [ class "p-4" ] [ text "Under construction" ] ] }
+            { title = "Under construction", body = [ p [ class "p-4" ] [ text "Under construction" ] ] }
