@@ -142,7 +142,7 @@ signIn model =
                     ]
     in
     Http.post
-        { url = "/auth/login"
+        { url = "/auth/signin"
         , body = body
         , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
         }
@@ -160,7 +160,7 @@ signUp model =
                     ]
     in
     Http.post
-        { url = "/auth/register"
+        { url = "/auth/signup"
         , body = body
         , expect = Http.expectJson LoginReceived (responseDecoder userDecoder)
         }
@@ -303,9 +303,6 @@ viewSignIn model =
                 ]
             , error = model.error
             }
-
-        _ =
-            Debug.log "Auth.viewSignIn" form
     in
     viewForm form
 
@@ -363,16 +360,8 @@ viewSiteBar model =
 
 view : Model -> Html Msg
 view model =
-    let
-        _ =
-            Debug.log "Auth.view" model
-    in
     case model.state of
         SigningIn ->
-            let
-                _ =
-                    Debug.log "Auth.view: SigningIn" ""
-            in
             viewSignIn model
 
         SigningUp ->
