@@ -56,6 +56,10 @@ func main() {
 
 	gameserver.InitDB("./games.db")
 	defer gameserver.CloseDB()
+	gameserver.InitLogDB("./logs.db")
+	defer gameserver.CloseLogDB()
+	gameserver.SetMiddlewareConfig(false, true)
+	gameserver.StartPrintingLog(time.Second)
 
 	// setting up an email server
 	noEmail := flag.Bool("noemail", false, "Use mock email server")

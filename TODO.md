@@ -6,7 +6,7 @@
 
 [X] Incorporate tailwindcss; ./run_dev.sh script should add tailwindcss rebuilding
 
-[ ] Make sure the logging is consistent everywhere; maybe log client access etc. to 
+[X] Make sure the logging is consistent everywhere; maybe log client access etc. to 
     the database?
 
 [X] Dev mode should have an option to use a MockEmailServer for sending email.
@@ -39,15 +39,19 @@
 [ ] Decide what to do with the screen name that currently have to be unique. For the MVP,
     requiring it to be unique is probably the best tactic.
 
+[ ] During the registration, if an error occurs, a corresponding field should be highlighted.
+
 ## User actions for signed-in user
 
 A sign-in user should be able to:
 
 [X] Create new games (selecting type of the game, selecting black or white)
 
-[ ] See a list of games that can be joined, and join these games
+[X] See a list of games that can be joined, and join these games
 
-[ ] See a list of games they started, and whether it's their move
+[X] See a list of games they started
+
+[ ] Know which of their own games require their move
 
 [ ] Select a game, have the board displayed, and be able to make moves
 
@@ -56,7 +60,7 @@ A sign-in user should be able to:
 
 [ ] View and replay their past games
 
-[ ] Resend their verification link, and press it to verify email
+[ ] Resend their verification link, and click on it to verify email
 
 [ ] See the status of their email verification in the status bar
 
