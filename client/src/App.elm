@@ -249,6 +249,8 @@ view model =
             { title = "Home"
             , body =
                 [ viewSiteBar model
+                , viewSection "Create game"
+                    [ Html.map GamesMsg (Games.viewCreateNewGame model.game) ]
                 , viewSection "Joinable games"
                     [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
                 , viewSection "Your games"
