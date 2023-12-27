@@ -18,6 +18,7 @@ import Http
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
+import Routes
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
 import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSection)
@@ -265,14 +266,14 @@ viewOwnGamesList model =
         , \game ->
             if (game.whitePlayer /= "") && (game.blackPlayer /= "") then
                 a
-                    [ href ("/game/play/" ++ String.fromInt game.id)
+                    [ Routes.href (Routes.PlayGame game.id)
                     , class "text-blue-500 hover:text-blue-700 underline"
                     ]
                     [ text "Play" ]
 
             else
                 a
-                    [ href ("/game/cancel/" ++ String.fromInt game.id)
+                    [ Routes.href (Routes.ViewGame game.id)
                     , class "text-blue-500 hover:text-blue-700 underline"
                     ]
                     [ text "Cancel" ]

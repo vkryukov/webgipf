@@ -7,6 +7,7 @@ import Games
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Encode as Encode
+import PlayGame
 import Routes
 import Ui exposing (viewSection)
 import Url
@@ -38,7 +39,7 @@ type Page
     | HomeSignedIn
     | HomeSignedOut
     | SignInOrUp
-    | PlayGame Int
+    | PlayGame PlayGame.Model
     | ViewGame Int
 
 
@@ -63,10 +64,6 @@ init flags url key =
             Model key NotFound auth game
 
         ( model, cmd ) =
-            let
-                _ =
-                    Debug.log "url in init" url
-            in
             setNewPage (Routes.match url) initialModel
     in
     -- TODO: Default gameType should be in sync with the select choices
@@ -88,21 +85,14 @@ type Msg
     | NewRoute (Maybe Routes.Route)
     | AuthMsg Auth.Msg
     | GamesMsg Games.Msg
+    | PlayGameMsg PlayGame.Msg
     | NoOp
 
 
 setNewPage : Maybe Routes.Route -> Model -> ( Model, Cmd Msg )
 setNewPage maybeRoute model =
-    let
-        _ =
-            Debug.log "setNewPage" maybeRoute
-    in
     case maybeRoute of
         Just Routes.Home ->
-            let
-                _ =
-                    Debug.log "setNewPage Home" model.auth
-            in
             if Auth.isAuthenticated model.auth then
                 let
                     ( games, gamesCmd ) =
@@ -147,7 +137,14 @@ setNewPage maybeRoute model =
             ( { model | page = ViewGame id }, Cmd.none )
 
         Just (Routes.PlayGame id) ->
-            ( { model | page = PlayGame id }, Cmd.none )
+            let
+                ( playPageModel, playPageCmd ) =
+                    PlayGame.initWithGameIdToken id model.auth.token
+
+                _ =
+                    Debug.log "playPageModel" playPageModel
+            in
+            ( { model | page = PlayGame playPageModel }, Cmd.map PlayGameMsg playPageCmd )
 
         Nothing ->
             ( { model | page = NotFound }, Cmd.none )
@@ -159,12 +156,20 @@ update msg model =
         ( _, LinkClicked urlRequest ) ->
             case urlRequest of
                 Browser.Internal url ->
+                    let
+                        _ =
+                            Debug.log "Internal" url
+                    in
                     ( model, Nav.pushUrl model.key (Url.toString url) )
 
                 Browser.External href ->
                     ( model, Nav.load href )
 
         ( _, NewRoute maybeRoute ) ->
+            let
+                _ =
+                    Debug.log "NewRoute" maybeRoute
+            in
             setNewPage maybeRoute model
 
         ( _, AuthMsg authMsg ) ->
@@ -195,6 +200,13 @@ update msg model =
             in
             ( { model | game = games }, Cmd.map GamesMsg gamesCmd )
 
+        ( PlayGame playGameModel, PlayGameMsg playGameMsg ) ->
+            let
+                ( newPlayGameModel, playGameCmd ) =
+                    PlayGame.update playGameMsg playGameModel
+            in
+            ( { model | page = PlayGame newPlayGameModel }, Cmd.map PlayGameMsg playGameCmd )
+
         _ ->
             ( model, Cmd.none )
 
@@ -204,8 +216,13 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model.page of
+        PlayGame childModel ->
+            Sub.map PlayGameMsg (PlayGame.subscriptions childModel)
+
+        _ ->
+            Sub.none
 
 
 
@@ -219,10 +236,6 @@ viewSiteBar model =
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        _ =
-            Debug.log "App.view" model
-    in
     case model.page of
         HomeSignedOut ->
             { title = "Project Gipf"
@@ -253,10 +266,6 @@ view model =
             }
 
         SignInOrUp ->
-            let
-                _ =
-                    Debug.log "view SignIn" model.auth
-            in
             { title =
                 if model.auth.state == Auth.SigningIn then
                     "Signing in"
@@ -265,6 +274,14 @@ view model =
                     "Singning up"
             , body =
                 [ Html.map AuthMsg (Auth.view model.auth) ]
+            }
+
+        PlayGame playPageModel ->
+            { title = "Play game"
+            , body =
+                [ viewSiteBar model
+                , Html.map PlayGameMsg (PlayGame.view playPageModel)
+                ]
             }
 
         _ ->

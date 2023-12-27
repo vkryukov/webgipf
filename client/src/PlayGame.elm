@@ -1,4 +1,4 @@
-port module Main exposing (..)
+port module PlayGame exposing (..)
 
 import Browser
 import Gipf
@@ -346,10 +346,15 @@ view model =
         ]
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    messageReceiver WebSocketMessageReceived
+
+
 main =
     Browser.element
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> messageReceiver WebSocketMessageReceived
+        , subscriptions = subscriptions
         }
