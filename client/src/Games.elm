@@ -116,6 +116,7 @@ createGame model =
                     [ ( "type", Encode.string model.gameType )
                     , ( model.color ++ "_player", Encode.string model.screenName )
                     , ( model.color ++ "_token", Encode.string model.token )
+                    , ( "public", Encode.bool True )
                     ]
         , expect = Http.expectJson CreateGameReceived (responseDecoder gameDecoder)
         }
