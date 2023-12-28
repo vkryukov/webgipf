@@ -11,6 +11,8 @@
 
 [X] Dev mode should have an option to use a MockEmailServer for sending email.
 
+[ ] Compile and run the latest version on playgipf.com
+
 ## Improving Sign-in and sign-up
 
 [X] UI should not allow sign-in or sign-up if any of the fields are empty
@@ -53,7 +55,7 @@ A sign-in user should be able to:
 
 [ ] Know which of their own games require their move
 
-[ ] Select a game, have the board displayed, and be able to make moves
+[X] Select a game, have the board displayed, and be able to make moves
 
 [ ] (When not in a game) Receive notification about new moves, and see which games have move
     updates since last visit
@@ -63,6 +65,30 @@ A sign-in user should be able to:
 [ ] Resend their verification link, and click on it to verify email
 
 [ ] See the status of their email verification in the status bar
+
+
+## Improve play game experience
+
+[ ] Don't show all the auxialry information
+
+[ ] Refreshing the screen should bring back the game
+
+[ ] Stop/restart websocket connection on joining/leaving the play game screen as per Elm book
+
+[ ] Display game type
+
+[ ] Correctly handle starting position for Basic and Standard game
+
+
+## Improve Home page signed in experience
+
+[ ] Num of actions on the first screen should be correct (currently 0 for a game just started)
+
+[ ] Cancel should indeed cancel the games
+
+[ ] Differentiate between public and private games
+
+[ ] Allow creation of private games, with the ability to let people join them
 
 
 ## Admin actions
