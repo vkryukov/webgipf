@@ -188,7 +188,7 @@ gameResponseDecoder =
         (Decode.field "game_token" Decode.string)
         (Decode.field "white_player" Decode.string)
         (Decode.field "black_player" Decode.string)
-        (Decode.field "actions" (Decode.list actionDecoder))
+        (Decode.field "actions" (Decode.oneOf [ Decode.list actionDecoder, Decode.succeed [] ]))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
