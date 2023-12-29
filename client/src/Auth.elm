@@ -3,6 +3,7 @@ port module Auth exposing (..)
 import Html exposing (Html, div)
 import Http
 import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import Routes
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
@@ -37,11 +38,11 @@ type alias User =
 
 userDecoder : Decode.Decoder User
 userDecoder =
-    Decode.map4 User
-        (Decode.field "email" Decode.string)
-        (Decode.field "email_verified" Decode.bool)
-        (Decode.field "screen_name" Decode.string)
-        (Decode.field "token" Decode.string)
+    Decode.succeed User
+        |> Pipeline.required "email" Decode.string
+        |> Pipeline.required "email_verified" Decode.bool
+        |> Pipeline.required "screen_name" Decode.string
+        |> Pipeline.required "token" Decode.string
 
 
 type State

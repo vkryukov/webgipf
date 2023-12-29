@@ -8,6 +8,7 @@ import Html.Attributes exposing (placeholder, style, type_)
 import Html.Events exposing (onCheck, onClick, onInput)
 import Http
 import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import Task
 import Time exposing (Month(..), Zone)
@@ -104,11 +105,11 @@ type alias User =
 
 userDecoder : Decode.Decoder User
 userDecoder =
-    Decode.map4 User
-        (Decode.field "id" Decode.int)
-        (Decode.field "username" Decode.string)
-        (Decode.field "creation_time" (Decode.int |> Decode.map (Just << Time.millisToPosix)))
-        (Decode.field "tokens" (Decode.list Decode.string))
+    Decode.succeed User
+        |> required "id" Decode.int
+        |> required "username" Decode.string
+        |> required "creation_time" (Decode.int |> Decode.map (Just << Time.millisToPosix))
+        |> required "tokens" (Decode.list Decode.string)
 
 
 loadUsersRequest : Cmd Msg

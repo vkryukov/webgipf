@@ -5,6 +5,7 @@ import Gipf
 import GipfBoard
 import Html exposing (Html, div, text)
 import Json.Decode as Decode
+import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import MD5
 
@@ -140,11 +141,11 @@ type Msg
 
 webSocketMessageDecoder : Decode.Decoder WebSocketMessage
 webSocketMessageDecoder =
-    Decode.map4 WebSocketMessage
-        (Decode.field "game_id" Decode.int)
-        (Decode.field "token" Decode.string)
-        (Decode.field "message_type" Decode.string)
-        (Decode.field "message" Decode.string)
+    Decode.succeed WebSocketMessage
+        |> Pipeline.required "game_id" Decode.int
+        |> Pipeline.required "token" Decode.string
+        |> Pipeline.required "message_type" Decode.string
+        |> Pipeline.required "message" Decode.string
 
 
 {-| Processing actions
@@ -158,29 +159,33 @@ type alias Action =
 
 actionDecoder : Decode.Decoder Action
 actionDecoder =
-    Decode.map3 Action
-        (Decode.field "action_num" Decode.int)
-        (Decode.field "action" Decode.string)
-        (Decode.field "signature" Decode.string)
+    Decode.succeed Action
+        |> Pipeline.required "action_num" Decode.int
+        |> Pipeline.required "action" Decode.string
+        |> Pipeline.required "signature" Decode.string
 
 
 type alias JoinGameResponse =
     { player : String
-    , game_token : String
-    , white_player : String
-    , black_player : String
+    , gameToken : String
+    , whitePlayer : String
+    , blackPlayer : String
+    , gameType : String
+    , startingPosition : String
     , actions : List Action
     }
 
 
 gameResponseDecoder : Decode.Decoder JoinGameResponse
 gameResponseDecoder =
-    Decode.map5 JoinGameResponse
-        (Decode.field "player" Decode.string)
-        (Decode.field "game_token" Decode.string)
-        (Decode.field "white_player" Decode.string)
-        (Decode.field "black_player" Decode.string)
-        (Decode.field "actions" (Decode.oneOf [ Decode.list actionDecoder, Decode.succeed [] ]))
+    Decode.succeed JoinGameResponse
+        |> Pipeline.required "player" Decode.string
+        |> Pipeline.required "game_token" Decode.string
+        |> Pipeline.required "white_player" Decode.string
+        |> Pipeline.required "black_player" Decode.string
+        |> Pipeline.required "game_type" Decode.string
+        |> Pipeline.required "starting_position" Decode.string
+        |> Pipeline.required "actions" (Decode.oneOf [ Decode.list actionDecoder, Decode.succeed [] ])
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -236,9 +241,9 @@ update msg model =
                                             GipfBoard.initFromStringWithPlayer actions gameResponse.player
                                     in
                                     ( { model
-                                        | gameToken = gameResponse.game_token
-                                        , whitePlayer = gameResponse.white_player
-                                        , blackPlayer = gameResponse.black_player
+                                        | gameToken = gameResponse.gameToken
+                                        , whitePlayer = gameResponse.whitePlayer
+                                        , blackPlayer = gameResponse.blackPlayer
                                         , thisPlayer = gameResponse.player
                                         , state = Joined
                                         , board = newGipfBoard
