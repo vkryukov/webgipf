@@ -21,7 +21,7 @@ import Json.Encode as Encode
 import Routes
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSection)
+import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSecondaryButton, viewSection)
 
 
 type alias Model =
@@ -71,6 +71,7 @@ type Msg
     | JoinableGamesReceived (HttpResult (List Game))
     | JoinGame Int
     | JoinedGameReceved (HttpResult Game)
+    | CancelGame Int
     | GameCancelled (Result Http.Error ())
     | NoOp
 
@@ -223,6 +224,9 @@ update msg model =
                 Err error ->
                     ( { model | error = Just error }, Cmd.none )
 
+        CancelGame gameId ->
+            ( model, cancelGame gameId model )
+
         GameCancelled _ ->
             ( model, ownGames model )
 
@@ -273,11 +277,7 @@ viewOwnGamesList model =
                     [ text "Play" ]
 
             else
-                a
-                    [ Routes.href (Routes.ViewGame game.id)
-                    , class "text-blue-500 hover:text-blue-700 underline"
-                    ]
-                    [ text "Cancel" ]
+                viewSecondaryButton ( "Cancel", CancelGame game.id )
         ]
 
 
