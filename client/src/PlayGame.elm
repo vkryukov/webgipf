@@ -3,9 +3,7 @@ port module PlayGame exposing (..)
 import Browser
 import Gipf
 import GipfBoard
-import Html exposing (Html, button, div, input, text)
-import Html.Attributes exposing (placeholder)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, div, text)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import MD5
@@ -18,15 +16,13 @@ port messageReceiver : (String -> msg) -> Sub msg
 
 
 type GameState
-    = EnterGameIdAndToken
-    | JoinRequestSent
+    = JoinRequestSent
     | Joined
 
 
 type alias Model =
     { board : GipfBoard.Model
     , gameId : Int
-    , gameIdInput : String
     , playerToken : String
     , gameToken : String
     , whitePlayer : String
@@ -60,13 +56,12 @@ init _ =
         model =
             { board = board
             , gameId = 0
-            , gameIdInput = ""
             , playerToken = ""
             , gameToken = ""
             , whitePlayer = ""
             , blackPlayer = ""
             , thisPlayer = ""
-            , state = EnterGameIdAndToken
+            , state = JoinRequestSent
             , error = Nothing
             }
     in
@@ -141,9 +136,6 @@ sendAction model a =
 type Msg
     = GipfBoardMsg GipfBoard.Msg
     | WebSocketMessageReceived String
-    | UpdateGameId String
-    | UpdatePlayerToken String
-    | Submit
 
 
 webSocketMessageDecoder : Decode.Decoder WebSocketMessage
@@ -194,22 +186,6 @@ gameResponseDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UpdateGameId gameIdStr ->
-            ( { model | gameIdInput = gameIdStr }, Cmd.none )
-
-        UpdatePlayerToken token ->
-            ( { model | playerToken = token }, Cmd.none )
-
-        Submit ->
-            let
-                gameId =
-                    String.toInt model.gameIdInput |> Maybe.withDefault 0
-
-                _ =
-                    Debug.log "gameIdInput" ( model.gameIdInput, gameId )
-            in
-            initWithGameIdToken gameId model.playerToken
-
         GipfBoardMsg gipfBoardMsg ->
             let
                 ( newGipfBoard, gipfBoardCmd ) =
@@ -328,13 +304,6 @@ view model =
     div []
         [ viewError model
         , case model.state of
-            EnterGameIdAndToken ->
-                div []
-                    [ input [ placeholder "Enter game ID", onInput UpdateGameId ] []
-                    , input [ placeholder "Enter player token", onInput UpdatePlayerToken ] []
-                    , button [ onClick Submit ] [ text "Submit" ]
-                    ]
-
             JoinRequestSent ->
                 div [] [ text "Joining..." ]
 
