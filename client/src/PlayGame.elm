@@ -211,7 +211,6 @@ gameResponseDecoder =
         |> Pipeline.required "white_player" Decode.string
         |> Pipeline.required "black_player" Decode.string
         |> Pipeline.required "game_type" Decode.string
-        |> Pipeline.required "starting_position" Decode.string
         |> Pipeline.required "actions" (Decode.oneOf [ Decode.list actionDecoder, Decode.succeed [] ])
 
 
