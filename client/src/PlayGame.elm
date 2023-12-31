@@ -21,6 +21,34 @@ type GameState
     | Joined
 
 
+
+-- Generic interface to various game boards
+
+
+{-|
+
+    GameInit takes game type, and actions as strings,
+    and returns a game board.
+
+-}
+initGame : String -> String -> GameBoards
+initGame gameType actions =
+    if String.startsWith "GIPF" gameType then
+        GipfBoard (GipfBoard.initWithGameTypeAndActions gameType actions)
+
+    else
+        UnimplementedBoard
+
+
+type GameBoards
+    = GipfBoard GipfBoard.Model
+    | UnimplementedBoard
+
+
+
+-- Main model
+
+
 type alias Model =
     { board : GipfBoard.Model
     , gameId : Int
@@ -171,7 +199,6 @@ type alias JoinGameResponse =
     , whitePlayer : String
     , blackPlayer : String
     , gameType : String
-    , startingPosition : String
     , actions : List Action
     }
 

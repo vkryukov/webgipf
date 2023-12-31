@@ -6,6 +6,7 @@ module GipfBoard exposing
     , initFromGame
     , initFromString
     , initFromStringWithPlayer
+    , initWithGameTypeAndActions
     , receiveAction
     , update
     , view
@@ -91,6 +92,18 @@ initFromGame game =
 initFromString : String -> ( Model, Cmd msg )
 initFromString s =
     initFromGame (stringToGameWithDefault s)
+
+
+initWithGameTypeAndActions : String -> String -> Model
+initWithGameTypeAndActions gameType actions =
+    let
+        game =
+            Maybe.withDefault emptyGame (gameFromTypeAndActions gameType actions)
+
+        ( model, _ ) =
+            initFromGame game
+    in
+    model
 
 
 actionAllowed : Model -> String -> Bool

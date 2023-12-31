@@ -1019,6 +1019,23 @@ basicGame =
     }
 
 
+gameFromTypeAndActions : String -> String -> Maybe Game
+gameFromTypeAndActions gameType actions =
+    let
+        startingGame =
+            case gameType of
+                "GIPF basic" ->
+                    Just basicGame
+
+                "GIPF standard" ->
+                    Just standardGame
+
+                _ ->
+                    Just emptyGame
+    in
+    List.foldl performAction startingGame (stringToActions actions)
+
+
 reverseColor : Color -> Color
 reverseColor color =
     if color == Black then
