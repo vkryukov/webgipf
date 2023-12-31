@@ -79,12 +79,14 @@ A sign-in user should be able to:
 
 [ ] Correctly handle starting position for Basic and Standard game
 
+[ ] PlayGame should utilize a generic interface, not deeply embed knowledge of Gipf specifically
+
 
 ## Improve Home page signed in experience
 
-[ ] Num of actions on the first screen should be correct (currently 0 for a game just started)
+[X] Num of actions on the first screen should be correct (currently 0 for a game just started)
 
-[ ] Cancel should indeed cancel the games
+[X] Cancel should indeed cancel the games
 
 [ ] Differentiate between public and private games
 
