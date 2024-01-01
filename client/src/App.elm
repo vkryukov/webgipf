@@ -140,9 +140,6 @@ setNewPage maybeRoute model =
             let
                 ( playPageModel, playPageCmd ) =
                     PlayGame.initWithGameIdToken id model.auth.token
-
-                _ =
-                    Debug.log "playPageModel" playPageModel
             in
             ( { model | page = PlayGame playPageModel }, Cmd.map PlayGameMsg playPageCmd )
 
@@ -156,20 +153,12 @@ update msg model =
         ( _, LinkClicked urlRequest ) ->
             case urlRequest of
                 Browser.Internal url ->
-                    let
-                        _ =
-                            Debug.log "Internal" url
-                    in
                     ( model, Nav.pushUrl model.key (Url.toString url) )
 
                 Browser.External href ->
                     ( model, Nav.load href )
 
         ( _, NewRoute maybeRoute ) ->
-            let
-                _ =
-                    Debug.log "NewRoute" maybeRoute
-            in
             setNewPage maybeRoute model
 
         ( _, AuthMsg authMsg ) ->

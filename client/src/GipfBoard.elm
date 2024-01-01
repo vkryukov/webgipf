@@ -45,7 +45,6 @@ type alias Model =
     , gipfHovered : Maybe Coord
 
     -- play related
-    , allowActions : Bool
     , player : String -- are we playing black or white
 
     -- useful for the viewer
@@ -82,7 +81,6 @@ initFromGame game =
       , selectedToDisambiguate = Nothing
       , gipfsSelected = []
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
-      , allowActions = True
       , player = ""
       , showDebug = True
       , highlightActions = False
@@ -106,20 +104,17 @@ initWithPlayer gameType actions player =
 
         ( model, _ ) =
             initFromGame game
-
-        _ =
-            Debug.log "initWithPlayer" ( ( gameType, actions, player ), game )
     in
-    { model | player = player, allowActions = actionAllowed model player }
+    { model | player = player }
 
 
-actionAllowed : Model -> String -> Bool
-actionAllowed model player =
+actionAllowed : Model -> Bool
+actionAllowed model =
     let
         actionPlayer =
             playerWithAction model
     in
-    (player == "white" && actionPlayer == White) || (player == "black" && actionPlayer == Black)
+    (model.player == "white" && actionPlayer == White) || (model.player == "black" && actionPlayer == Black)
 
 
 initEmpty : ( Model, Cmd msg )
@@ -479,7 +474,7 @@ playerWithAction model =
 -}
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
-    if model.allowActions then
+    if actionAllowed model then
         case currentSelectionState model of
             NothingToSelect ->
                 if model.game.state == WaitingForMove then
@@ -649,6 +644,10 @@ viewActionHighlights model =
 
 view : Model -> Html Msg
 view model =
+    let
+        allowAction =
+            actionAllowed model
+    in
     div [ style "position" "relative" ]
         [ svg
             [ width "610"
@@ -661,18 +660,18 @@ view model =
             , viewCurrentAction model
             , viewPieces model
             , viewActionHighlights model
-            , if model.allowActions then
+            , if allowAction then
                 viewPossibleMoves model
 
               else
                 g [] []
-            , if model.allowActions then
+            , if allowAction then
                 viewSelectionAndRemoval model
 
               else
                 g [] []
             ]
-        , if model.allowActions then
+        , if allowAction then
             viewConfirmRemoveButton model
 
           else
@@ -684,14 +683,8 @@ view model =
                 , style "word-wrap" "break-word"
                 ]
                 [ p [] [ text (actionsToString model.game.actionHistory) ]
-                , p [ fontSize "6" ] [ text (Debug.toString model.game) ]
                 ]
 
           else
             div [] []
         ]
-
-
-main : Program () Model Msg
-main =
-    Browser.element { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }

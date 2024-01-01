@@ -79,7 +79,7 @@ A sign-in user should be able to:
 
 [ ] Correctly handle starting position for Basic and Standard game
 
-[ ] PlayGame should utilize a generic interface, not deeply embed knowledge of Gipf specifically
+[X] PlayGame should utilize a generic interface, not deeply embed knowledge of Gipf specifically
 
 
 ## Improve Home page signed in experience

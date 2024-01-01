@@ -66,6 +66,7 @@
         // Receive messages from the WebSocket server and send them to Elm
         socket.onmessage = function (event) {
             var message = event.data;
+            console.log('Received message:', message);
             app.ports.messageReceiver.send(message);
         };
 

@@ -1036,9 +1036,6 @@ gameFromTypeAndActions gameType actions =
 
                 _ ->
                     Just emptyGame
-
-        _ =
-            Debug.log "gameFromTypeAndActions" ( gameType, actions, startingGame )
     in
     List.foldl performAction startingGame (stringToActions actions)
 

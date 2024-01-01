@@ -8,7 +8,6 @@ import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import MD5
 import Platform.Cmd as Cmd
-import Svg.Attributes exposing (in_)
 
 
 port sendMessage : Encode.Value -> Cmd msg
