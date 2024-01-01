@@ -2,11 +2,11 @@ module GipfBoard exposing
     ( Model
     , Msg(..)
     , actionAllowed
+    , getActionToSend
     , initEmpty
     , initFromGame
     , initFromString
-    , initFromStringWithPlayer
-    , initWithGameTypeAndActions
+    , initWithPlayer
     , receiveAction
     , update
     , view
@@ -44,8 +44,11 @@ type alias Model =
     , gipfsSelected : List Coord
     , gipfHovered : Maybe Coord
 
-    -- useful for the viewer
+    -- play related
     , allowActions : Bool
+    , player : String -- are we playing black or white
+
+    -- useful for the viewer
     , showDebug : Bool
     , highlightActions : Bool -- should we draw the arrows for the moves / mark stones that are to be removed?
     , lastMove : Maybe Direction
@@ -80,6 +83,7 @@ initFromGame game =
       , gipfsSelected = []
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
       , allowActions = True
+      , player = ""
       , showDebug = True
       , highlightActions = False
       , lastMove = Nothing
@@ -94,16 +98,19 @@ initFromString s =
     initFromGame (stringToGameWithDefault s)
 
 
-initWithGameTypeAndActions : String -> String -> Model
-initWithGameTypeAndActions gameType actions =
+initWithPlayer : String -> String -> String -> Model
+initWithPlayer gameType actions player =
     let
         game =
             Maybe.withDefault emptyGame (gameFromTypeAndActions gameType actions)
 
         ( model, _ ) =
             initFromGame game
+
+        _ =
+            Debug.log "initWithPlayer" ( ( gameType, actions, player ), game )
     in
-    model
+    { model | player = player, allowActions = actionAllowed model player }
 
 
 actionAllowed : Model -> String -> Bool
@@ -113,15 +120,6 @@ actionAllowed model player =
             playerWithAction model
     in
     (player == "white" && actionPlayer == White) || (player == "black" && actionPlayer == Black)
-
-
-initFromStringWithPlayer : String -> String -> ( Model, Cmd msg )
-initFromStringWithPlayer s player =
-    let
-        ( model, cmd ) =
-            initFromString s
-    in
-    ( { model | allowActions = actionAllowed model player }, cmd )
 
 
 initEmpty : ( Model, Cmd msg )
@@ -261,6 +259,19 @@ update msg model =
 
             else
                 ( { model | gipfsSelected = coord :: model.gipfsSelected }, Cmd.none )
+
+
+getActionToSend : Msg -> Model -> Maybe ( Int, String )
+getActionToSend msg model =
+    case msg of
+        MoveMade move ->
+            Just (Gipf.lastAction model.game)
+
+        RemovePieces ->
+            Just (Gipf.lastAction model.game)
+
+        _ ->
+            Nothing
 
 
 

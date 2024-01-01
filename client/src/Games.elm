@@ -12,7 +12,7 @@ module Games exposing
 
 import Auth
 import Html exposing (Html, a, div, label, option, select, text)
-import Html.Attributes exposing (class, href)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode as Decode
@@ -40,7 +40,7 @@ init maybeUser =
     updateModelWithUser maybeUser
         { screenName = ""
         , token = ""
-        , gameType = "Basic GIPF"
+        , gameType = "GIPF basic"
         , color = "white"
         , error = Nothing
         , ownGames = []
@@ -244,9 +244,9 @@ viewCreateNewGame model =
             [ div [ class "flex items-center space-x-4" ]
                 [ label [ class "mr-2" ] [ text "Select game type:" ]
                 , select [ class "form-select", onInput SelectGameType ]
-                    [ option [] [ text "Basic GIPF" ]
-                    , option [] [ text "Standard GIPF" ]
-                    , option [] [ text "Tournament GIPF" ]
+                    [ option [] [ text "GIPF basic" ]
+                    , option [] [ text "GIPF standard" ]
+                    , option [] [ text "GIPF tournament" ]
                     ]
                 , label [ class "ml-4 mr-2" ] [ text "Play as:" ]
                 , div [ class "flex items-center space-x-4" ]

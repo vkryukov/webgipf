@@ -911,7 +911,11 @@ stringToAction str =
 
 stringToActions : String -> List (Maybe Action)
 stringToActions str =
-    List.map stringToAction (String.split " " str)
+    if str == "" then
+        []
+
+    else
+        List.map stringToAction (String.split " " str)
 
 
 actionToString : Action -> String
@@ -1032,6 +1036,9 @@ gameFromTypeAndActions gameType actions =
 
                 _ ->
                     Just emptyGame
+
+        _ =
+            Debug.log "gameFromTypeAndActions" ( gameType, actions, startingGame )
     in
     List.foldl performAction startingGame (stringToActions actions)
 

@@ -5,6 +5,7 @@ import Dict
 import Expect
 import Gipf exposing (..)
 import List exposing (sortWith)
+import Svg.Attributes exposing (in_)
 import Test exposing (..)
 import Tools exposing (maybeList)
 
@@ -771,4 +772,17 @@ removeTest =
                         stringToGameWithDefault "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wa4-b5 Ka4-b5 Wd8-d7 Ke9-e8 xc5,d6,e7,f7 xe6,g4 Wb6-c6 Ka5-b5 Wh6-h5 Ki4-h5 Wi4-h5 Kg7-g6 Wi3-h4 Kh6-h5 Wa5-b5 Ki3-h3 Wi4-h4 xb5,c5,d5,e5,f4,g3 Ki5-h5 Wi2-h3 xc6,d6,e6,f5,g4,h3 Ka4-b4 xb4,f3"
                 in
                 Expect.equal (g.blackCount.captured == 2 && g.blackCount.own == 4) True
+        ]
+
+
+testGameFromTypeAndActions : Test
+testGameFromTypeAndActions =
+    describe "init from type and actions test"
+        [ test "bug: creating a game with an empty action string should result in the correct starting game" <|
+            \_ ->
+                let
+                    g =
+                        gameFromTypeAndActions "GIPF basic" ""
+                in
+                Expect.equal g (Just basicGame)
         ]

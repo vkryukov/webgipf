@@ -1,13 +1,14 @@
 port module PlayGame exposing (..)
 
 import Browser
-import Gipf
 import GipfBoard
 import Html exposing (Html, div, text)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import MD5
+import Platform.Cmd as Cmd
+import Svg.Attributes exposing (in_)
 
 
 port sendMessage : Encode.Value -> Cmd msg
@@ -27,20 +28,20 @@ type GameState
 
 {-|
 
-    GameInit takes game type, and actions as strings,
+    GameInit takes game type and actions as strings,
     and returns a game board.
 
 -}
-initGame : String -> String -> GameBoards
-initGame gameType actions =
+initGame : String -> String -> String -> GameBoard
+initGame gameType actions player =
     if String.startsWith "GIPF" gameType then
-        GipfBoard (GipfBoard.initWithGameTypeAndActions gameType actions)
+        GipfBoard (GipfBoard.initWithPlayer gameType actions player)
 
     else
         UnimplementedBoard
 
 
-type GameBoards
+type GameBoard
     = GipfBoard GipfBoard.Model
     | UnimplementedBoard
 
@@ -50,7 +51,7 @@ type GameBoards
 
 
 type alias Model =
-    { board : GipfBoard.Model
+    { board : GameBoard
     , gameId : Int
     , playerToken : String
     , gameToken : String
@@ -79,11 +80,8 @@ initWithGameIdToken gameId token =
 init : () -> ( Model, Cmd Msg )
 init _ =
     let
-        ( board, _ ) =
-            GipfBoard.initEmpty
-
         model =
-            { board = board
+            { board = UnimplementedBoard
             , gameId = 0
             , playerToken = ""
             , gameToken = ""
@@ -217,40 +215,9 @@ gameResponseDecoder =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GipfBoardMsg gipfBoardMsg ->
-            let
-                ( newGipfBoard, gipfBoardCmd ) =
-                    GipfBoard.update gipfBoardMsg model.board
-
-                allowed =
-                    GipfBoard.actionAllowed newGipfBoard model.thisPlayer
-
-                _ =
-                    Debug.log "allowed" ( newGipfBoard, model.thisPlayer, allowed )
-
-                newGipfBoard1 =
-                    { newGipfBoard | allowActions = allowed }
-
-                lastAction =
-                    Gipf.lastAction newGipfBoard1.game
-            in
-            case gipfBoardMsg of
-                GipfBoard.MoveMade _ ->
-                    ( { model | board = newGipfBoard1 }, sendAction model lastAction )
-
-                GipfBoard.RemovePieces ->
-                    ( { model | board = newGipfBoard1 }, sendAction model lastAction )
-
-                _ ->
-                    ( { model | board = newGipfBoard1 }, Cmd.map GipfBoardMsg gipfBoardCmd )
-
         WebSocketMessageReceived message ->
             case Decode.decodeString webSocketMessageDecoder message of
                 Ok webSocketMessage ->
-                    let
-                        _ =
-                            Debug.log "WebSocketMessageReceived" webSocketMessage
-                    in
                     case webSocketMessage.messageType of
                         "GameJoined" ->
                             let
@@ -261,10 +228,11 @@ update msg model =
                                 Ok gameResponse ->
                                     let
                                         actions =
+                                            -- TODO: we don't need to splt the actions to a list on the server side
                                             String.join " " (List.map (\a -> a.action) gameResponse.actions)
 
-                                        ( newGipfBoard, cmd ) =
-                                            GipfBoard.initFromStringWithPlayer actions gameResponse.player
+                                        board =
+                                            initGame gameResponse.gameType actions gameResponse.player
                                     in
                                     ( { model
                                         | gameToken = gameResponse.gameToken
@@ -272,9 +240,9 @@ update msg model =
                                         , blackPlayer = gameResponse.blackPlayer
                                         , thisPlayer = gameResponse.player
                                         , state = Joined
-                                        , board = newGipfBoard
+                                        , board = board
                                       }
-                                    , Cmd.map GipfBoardMsg cmd
+                                    , Cmd.none
                                     )
 
                                 Err err ->
@@ -287,17 +255,7 @@ update msg model =
                             in
                             case actionResult of
                                 Ok action ->
-                                    let
-                                        ( newGipfBoard, cmd ) =
-                                            GipfBoard.receiveAction model.board action.action
-
-                                        allowed =
-                                            GipfBoard.actionAllowed newGipfBoard model.thisPlayer
-
-                                        newGipfBoard1 =
-                                            { newGipfBoard | allowActions = allowed }
-                                    in
-                                    ( { model | board = newGipfBoard1 }, Cmd.map GipfBoardMsg cmd )
+                                    sendActionToBoard model action
 
                                 Err err ->
                                     ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
@@ -307,6 +265,48 @@ update msg model =
 
                 Err err ->
                     ( { model | error = Just (Decode.errorToString err) }, Cmd.none )
+
+        message ->
+            updateBoard message model
+
+
+updateBoard : Msg -> Model -> ( Model, Cmd Msg )
+updateBoard someMessage model =
+    case ( someMessage, model.board ) of
+        ( GipfBoardMsg msg, GipfBoard board ) ->
+            let
+                ( newBoard, cmd ) =
+                    GipfBoard.update msg board
+
+                maybeLastAction =
+                    GipfBoard.getActionToSend msg newBoard
+
+                cmds =
+                    case maybeLastAction of
+                        Just lastAction ->
+                            [ sendAction model lastAction, Cmd.map GipfBoardMsg cmd ]
+
+                        Nothing ->
+                            [ Cmd.map GipfBoardMsg cmd ]
+            in
+            ( { model | board = GipfBoard newBoard }, Cmd.batch cmds )
+
+        _ ->
+            ( model, Cmd.none )
+
+
+sendActionToBoard : Model -> Action -> ( Model, Cmd Msg )
+sendActionToBoard model action =
+    case model.board of
+        GipfBoard board ->
+            let
+                ( newBoard, cmd ) =
+                    GipfBoard.receiveAction board action.action
+            in
+            ( { model | board = GipfBoard newBoard }, Cmd.map GipfBoardMsg cmd )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 viewError : Model -> Html Msg
@@ -322,9 +322,7 @@ viewError model =
 viewGameInfo : Model -> Html Msg
 viewGameInfo model =
     div []
-        [ div [] [ text ("Game ID: " ++ String.fromInt model.gameId) ]
-        , div [] [ text ("Game token: " ++ model.gameToken) ]
-        , div [] [ text ("White player: " ++ model.whitePlayer) ]
+        [ div [] [ text ("White player: " ++ model.whitePlayer) ]
         , div [] [ text ("Black player: " ++ model.blackPlayer) ]
         , div [] [ text ("This player: " ++ model.thisPlayer) ]
         ]
@@ -341,9 +339,19 @@ view model =
             Joined ->
                 div []
                     [ viewGameInfo model
-                    , Html.map GipfBoardMsg (GipfBoard.view model.board)
+                    , viewBoard model.board
                     ]
         ]
+
+
+viewBoard : GameBoard -> Html Msg
+viewBoard someBoard =
+    case someBoard of
+        GipfBoard board ->
+            Html.map GipfBoardMsg (GipfBoard.view board)
+
+        _ ->
+            div [] [ text "Unimplemented board" ]
 
 
 subscriptions : Model -> Sub Msg
