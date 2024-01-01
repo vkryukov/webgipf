@@ -1,11 +1,7 @@
 module GipfBoard exposing
     ( Model
-    , Msg(..)
-    , actionAllowed
+    , Msg
     , getActionToSend
-    , initEmpty
-    , initFromGame
-    , initFromString
     , initWithPlayer
     , receiveAction
     , update
