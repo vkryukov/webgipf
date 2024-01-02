@@ -167,7 +167,7 @@ update msg model =
                     Auth.update authMsg model.auth
 
                 changeURL =
-                    if Auth.isAuthenticated auth then
+                    if Auth.isAuthenticated auth && model.page == HomeSignedOut then
                         Routes.redirect model.key Routes.Home
 
                     else
