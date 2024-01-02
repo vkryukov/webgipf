@@ -519,6 +519,7 @@ performMoveWithDefaultColorTest =
                         , whiteCount = { captured = 0, own = 16 }
                         , whiteGipfCount = 1
                         , whitePlayedNonGipf = False
+                        , gameType = TournamentGipf
                         }
                     )
         ]
@@ -557,6 +558,7 @@ stringToGameTest =
                         , whiteCount = { captured = 0, own = 14 }
                         , whiteGipfCount = 2
                         , whitePlayedNonGipf = False
+                        , gameType = TournamentGipf
                         }
                     )
         , test "Playing standard game moves should result in a good game" <|
@@ -577,6 +579,7 @@ stringToGameTest =
                         , whiteCount = { captured = 0, own = 12 }
                         , whiteGipfCount = 3
                         , whitePlayedNonGipf = False
+                        , gameType = TournamentGipf
                         }
                     )
         , test "Standard game" <|
@@ -596,6 +599,7 @@ stringToGameTest =
                     , whiteCount = { captured = 0, own = 12 }
                     , whiteGipfCount = 3
                     , whitePlayedNonGipf = True
+                    , gameType = StandardGipf
                     }
         , test "Game with some remove Action" <|
             \_ ->
@@ -615,6 +619,7 @@ stringToGameTest =
                         , whiteCount = { captured = 0, own = 6 }
                         , whiteGipfCount = 3
                         , whitePlayedNonGipf = True
+                        , gameType = TournamentGipf
                         }
                     )
         , test "Game where first move is a regular piece should become a basic game" <|
@@ -656,6 +661,7 @@ actionTest =
                         , whiteCount = { captured = 0, own = 6 }
                         , whiteGipfCount = 3
                         , whitePlayedNonGipf = True
+                        , gameType = TournamentGipf
                         }
                     )
         , test "reconstruct a game with 4 pieces in a row" <|
@@ -785,4 +791,32 @@ testGameFromTypeAndActions =
                         gameFromTypeAndActions "GIPF basic" ""
                 in
                 Expect.equal g (Just basicGame)
+        ]
+
+
+testLastAction : Test
+testLastAction =
+    describe "test last action number for different game types"
+        [ test "last action number for basic game" <|
+            \_ ->
+                let
+                    g =
+                        Maybe.withDefault standardGame (gameFromTypeAndActions "GIPF basic" "e1-e2")
+                in
+                Expect.equal (lastAction g) ( 1, "We1-e2" )
+
+        -- , test "last action number for standard game" <|
+        --     \_ ->
+        --         let
+        --             g =
+        --                 Maybe.withDefault basicGame (gameFromTypeAndActions "GIPF standard" "e1-e2")
+        --         in
+        --         Expect.equal (lastAction g) ( 1, "We1-e2" )
+        -- , test "last action number for tournament game" <|
+        --     \_ ->
+        --         let
+        --             g =
+        --                 Maybe.withDefault standardGame (gameFromTypeAndActions "GIPF tournament" "GBe1-e2 GWe1-e2")
+        --         in
+        --         Expect.equal (lastAction g) ( 2, "Be1-e2" )
         ]

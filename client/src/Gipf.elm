@@ -1,4 +1,50 @@
-module Gipf exposing (..)
+module Gipf exposing
+    ( Action(..)
+    , BoardPieces
+    , Color(..)
+    , Coord
+    , Direction
+    , Game
+    , GameState(..)
+    , GameType(..)
+    , Kind(..)
+    , Piece
+    , actionsToString
+    , allMoves
+    , autoSelectToRemove
+    , autoSelectToRemoveWithDisambiguation
+    , availableMoves
+    , basicGame
+    , boardPointQ
+    , boardPoints
+    , boardToPieces
+    , boardToString
+    , connectedGroupOfFour
+    , connectedGroupsOfFour
+    , coordinatesSlice
+    , disambiguateRemovalCoords
+    , edgeBoardPointQ
+    , edgeBoardPoints
+    , emptyGame
+    , gameFromTypeAndActions
+    , insertPieceWithMove
+    , interiorBoardPointQ
+    , lastAction
+    , nameToCoord
+    , neighbors
+    , performAction
+    , performMoveWithDefaultColor
+    , piecesToBoard
+    , reverseColor
+    , standardGame
+    , standardStartingBoard
+    , stringToAction
+    , stringToBoard
+    , stringToBoardWithDefault
+    , stringToGame
+    , stringToGameWithDefault
+    , stringToMove
+    )
 
 import Dict exposing (Dict)
 import Regex
@@ -467,7 +513,14 @@ type alias Game =
     , currentPlayerFourStones : List (List Piece)
     , otherPlayerFourStones : List (List Piece)
     , actionHistory : List Action -- from newest to oldest
+    , gameType : GameType
     }
+
+
+type GameType
+    = BasicGipf
+    | StandardGipf
+    | TournamentGipf
 
 
 invalidMoveQ : Move -> Game -> Bool
@@ -511,7 +564,19 @@ lastAction game =
             ( 0, "" )
 
         action :: _ ->
-            ( List.length game.actionHistory, actionToString action )
+            let
+                delta =
+                    case game.gameType of
+                        BasicGipf ->
+                            6
+
+                        StandardGipf ->
+                            6
+
+                        TournamentGipf ->
+                            0
+            in
+            ( List.length game.actionHistory - delta, actionToString action )
 
 
 currentAndOtherFourStones : BoardPieces -> Color -> ( List (List Piece), List (List Piece) )
@@ -967,6 +1032,7 @@ emptyGame =
     , currentPlayerFourStones = []
     , otherPlayerFourStones = []
     , actionHistory = []
+    , gameType = TournamentGipf
     }
 
 
@@ -1008,6 +1074,7 @@ standardGame =
         | blackPlayedNonGipf = True
         , whitePlayedNonGipf = True
         , currentKind = Regular
+        , gameType = StandardGipf
     }
 
 
@@ -1020,6 +1087,7 @@ basicGame =
     { g
         | isBasicGame = True
         , currentKind = Regular
+        , gameType = BasicGipf
     }
 
 

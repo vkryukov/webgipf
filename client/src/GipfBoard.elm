@@ -8,14 +8,13 @@ module GipfBoard exposing
     , view
     )
 
-import Browser
 import Draw exposing (..)
 import Gipf exposing (..)
 import Html exposing (Html, button, div, p, s, text)
 import Html.Attributes exposing (style)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, g, rect, svg)
-import Svg.Attributes exposing (fill, fontSize, height, viewBox, width, x, y)
+import Svg.Attributes exposing (fill, height, viewBox, width, x, y)
 import Svg.Events exposing (onClick)
 import Task
 
@@ -256,10 +255,10 @@ getActionToSend : Msg -> Model -> Maybe ( Int, String )
 getActionToSend msg model =
     case msg of
         MoveMade move ->
-            Just (Gipf.lastAction model.game)
+            Just (lastAction model.game)
 
         RemovePieces ->
-            Just (Gipf.lastAction model.game)
+            Just (lastAction model.game)
 
         _ ->
             Nothing
