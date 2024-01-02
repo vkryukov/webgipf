@@ -340,13 +340,13 @@ viewSiteBar model =
     viewNavBar
         (case model.user of
             Just user ->
-                [ viewSiteTitle "Project GIPF"
+                [ viewSiteTitle "Play GIPF"
                 , viewBoldText user.screenName
                 , viewText ("<" ++ user.email ++ ">")
                 ]
 
             Nothing ->
-                [ viewSiteTitle "Project GIPF" ]
+                [ viewSiteTitle "Play GIPF" ]
         )
         (case model.user of
             Just _ ->
