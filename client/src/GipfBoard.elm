@@ -43,7 +43,6 @@ type alias Model =
     , player : String -- are we playing black or white
 
     -- useful for the viewer
-    , showDebug : Bool
     , highlightActions : Bool -- should we draw the arrows for the moves / mark stones that are to be removed?
     , lastMove : Maybe Direction
     , willBeRemoved : List Coord
@@ -77,18 +76,12 @@ initFromGame game =
       , gipfsSelected = []
       , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
       , player = ""
-      , showDebug = True
       , highlightActions = False
       , lastMove = Nothing
       , willBeRemoved = []
       }
     , Cmd.none
     )
-
-
-initFromString : String -> ( Model, Cmd msg )
-initFromString s =
-    initFromGame (stringToGameWithDefault s)
 
 
 initWithPlayer : String -> String -> String -> Model
@@ -108,13 +101,11 @@ actionAllowed model =
     let
         actionPlayer =
             playerWithAction model
+
+        _ =
+            Debug.log "actionAllowed called" ( model.player, actionPlayer )
     in
     (model.player == "white" && actionPlayer == White) || (model.player == "black" && actionPlayer == Black)
-
-
-initEmpty : ( Model, Cmd msg )
-initEmpty =
-    initFromGame emptyGame
 
 
 receiveAction : Model -> String -> ( Model, Cmd msg )
@@ -671,15 +662,11 @@ view model =
 
           else
             div [] []
-        , if model.showDebug then
-            div
-                [ style "text-align" "left"
-                , style "width" "610px"
-                , style "word-wrap" "break-word"
-                ]
-                [ p [] [ text (actionsToString model.game.actionHistory) ]
-                ]
-
-          else
-            div [] []
+        , div
+            [ style "text-align" "left"
+            , style "width" "610px"
+            , style "word-wrap" "break-word"
+            ]
+            [ p [] [ text (actionsToString model.game.actionHistory) ]
+            ]
         ]
