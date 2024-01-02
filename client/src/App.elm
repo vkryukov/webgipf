@@ -227,10 +227,10 @@ view : Model -> Browser.Document Msg
 view model =
     case model.page of
         HomeSignedOut ->
-            { title = "Project Gipf"
+            { title = "Play Gipf"
             , body =
                 [ viewSiteBar model
-                , p [ class "p-4" ] [ text "Welcome to Project Gipf" ]
+                , p [ class "p-4" ] [ text "Welcome to Play Gipf" ]
                 ]
             }
 
