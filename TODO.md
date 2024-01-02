@@ -69,15 +69,15 @@ A sign-in user should be able to:
 
 ## Improve play game experience
 
-[ ] Don't show all the auxialry information
+[X] Don't show all the auxialry information
 
-[ ] Refreshing the screen should bring back the game
+[X] Refreshing the screen should bring back the game
 
 [ ] Stop/restart websocket connection on joining/leaving the play game screen as per Elm book
 
 [ ] Display game type
 
-[ ] Correctly handle starting position for Basic and Standard game
+[X] Correctly handle starting position for Basic and Standard game
 
 [X] PlayGame should utilize a generic interface, not deeply embed knowledge of Gipf specifically
 
