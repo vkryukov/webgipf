@@ -10,13 +10,13 @@ module GipfBoard exposing
 
 import Draw exposing (..)
 import Gipf exposing (..)
-import Html exposing (Html, button, div, p, s, text)
+import Html exposing (Html, div, p, text)
 import Html.Attributes exposing (style)
 import Platform.Cmd as Cmd
 import Svg exposing (Svg, g, rect, svg)
-import Svg.Attributes exposing (fill, height, viewBox, width, x, y)
-import Svg.Events exposing (onClick)
+import Svg.Attributes exposing (class, fill, height, viewBox, width, x, y)
 import Task
+import Ui
 
 
 
@@ -213,6 +213,7 @@ update msg model =
         CancelRemovePieces ->
             ( { model
                 | autoSelected = ( [], [] )
+                , selectedToDisambiguate = Nothing
               }
             , Cmd.none
             )
@@ -391,7 +392,7 @@ viewPiecesCounts model =
         , drawMultilineTextAtCoord
             ("Remaining: " ++ String.fromInt model.game.blackCount.own ++ "\nCaptured: " ++ String.fromInt model.game.blackCount.captured)
             ( 8, 2 )
-            -95
+            -105
             0
             13
         ]
@@ -583,22 +584,18 @@ viewConfirmRemoveButton model =
         div [] []
 
     else
-        div []
-            [ button
-                [ style "position" "absolute"
-                , style "top" "75px"
-                , style "left" "543px"
-                , onClick RemovePieces
+        div
+            [ class "flex flex-col items-center"
+            , style "position" "absolute"
+            , style "top" "75px"
+            , style "left" "540px"
+            ]
+            [ div []
+                [ Ui.viewSmallPrimaryButton ( "Remove", RemovePieces )
                 ]
-                [ text "Remove" ]
             , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
-                button
-                    [ style "position" "absolute"
-                    , style "top" "100px"
-                    , style "left" "543px"
-                    , onClick CancelRemovePieces
-                    ]
-                    [ text "Cancel" ]
+                div []
+                    [ Ui.viewSmallSecondaryButton ( "Cancel", CancelRemovePieces ) ]
 
               else
                 div [] []

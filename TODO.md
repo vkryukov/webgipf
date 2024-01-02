@@ -4,6 +4,8 @@
 
 [ ] Fix buttons and fonts on /play
 
+[ ] Attemp to reconnect the websocket if the connection is closed
+
 [ ] Display game type
 
 [ ] Allow to resign the game

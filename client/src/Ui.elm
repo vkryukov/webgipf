@@ -15,6 +15,8 @@ module Ui exposing
     , viewSecondaryButton
     , viewSection
     , viewSiteTitle
+    , viewSmallPrimaryButton
+    , viewSmallSecondaryButton
     , viewStringTable
     , viewText
     )
@@ -56,9 +58,19 @@ viewPrimaryButton ( label, msg ) =
     button [ class "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline", onClick msg ] [ text label ]
 
 
+viewSmallPrimaryButton : ( String, msg ) -> Html msg
+viewSmallPrimaryButton ( label, msg ) =
+    button [ class "bg-blue-500 hover:bg-blue-700 text-white text-xs font-bold py-1 px-2 rounded focus:outline-none focus:shadow-outline", onClick msg ] [ text label ]
+
+
 viewSecondaryButton : ( String, msg ) -> Html msg
 viewSecondaryButton ( label, msg ) =
     button [ class "inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800", onClick msg ] [ text label ]
+
+
+viewSmallSecondaryButton : ( String, msg ) -> Html msg
+viewSmallSecondaryButton ( label, msg ) =
+    button [ class "inline-block align-baseline font-bold text-xs text-blue-500 hover:text-blue-800", onClick msg ] [ text label ]
 
 
 type alias Form msg =
