@@ -1,3 +1,25 @@
+## v1 Launch breakers
+
+[X] Implement "bread crumbs" on various pages to assist with navigation
+
+[ ] Fix buttons and fonts on /play
+
+[ ] Display game type
+
+[ ] Allow to resign the game
+
+[ ] Decide what to do with the screen name that currently have to be unique. For the MVP,
+    requiring it to be unique is probably the best tactic.
+
+[ ] During the registration, if an error occurs, a corresponding field should be highlighted.
+
+[ ] Resend their verification link, and click on it to verify email
+
+[ ] See the status of their email verification in the status bar
+
+[ ] Compile and run the latest version on playgipf.com
+
+
 ## Overall architecture and UI
 
 [X] Main.elm should incorporate Auth.elm 
@@ -10,8 +32,6 @@
     the database?
 
 [X] Dev mode should have an option to use a MockEmailServer for sending email.
-
-[ ] Compile and run the latest version on playgipf.com
 
 ## Improving Sign-in and sign-up
 
@@ -37,11 +57,6 @@
 [X] The server should still check that the passwords match during registration
 
 [X] Use Token type everywhere where it matters in auth.go
- 
-[ ] Decide what to do with the screen name that currently have to be unique. For the MVP,
-    requiring it to be unique is probably the best tactic.
-
-[ ] During the registration, if an error occurs, a corresponding field should be highlighted.
 
 ## User actions for signed-in user
 
@@ -62,10 +77,6 @@ A sign-in user should be able to:
 
 [ ] View and replay their past games
 
-[ ] Resend their verification link, and click on it to verify email
-
-[ ] See the status of their email verification in the status bar
-
 
 ## Improve play game experience
 
@@ -74,8 +85,6 @@ A sign-in user should be able to:
 [X] Refreshing the screen should bring back the game
 
 [ ] Stop/restart websocket connection on joining/leaving the play game screen as per Elm book
-
-[ ] Display game type
 
 [X] Correctly handle starting position for Basic and Standard game
 

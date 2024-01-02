@@ -9,7 +9,7 @@ import Html.Attributes exposing (..)
 import Json.Encode as Encode
 import PlayGame
 import Routes
-import Ui exposing (viewSection)
+import Ui
 import Url
 import Url.Parser exposing ((</>))
 
@@ -221,9 +221,37 @@ subscriptions model =
 -- VIEW
 
 
-viewSiteBar : Model -> Html Msg
-viewSiteBar model =
-    Html.map AuthMsg (Auth.viewSiteBar model.auth)
+viewSiteBar : Model -> String -> Html Msg
+viewSiteBar model page =
+    -- TODO: Display whether email is verified
+    -- TODO: Add a button to resend verification email
+    Ui.viewNavBar
+        (case model.auth.user of
+            Just user ->
+                [ if page /= "" then
+                    Ui.viewBreadcrumbs
+                        [ ( Routes.Home, "Home" )
+                        , ( Routes.Home, page )
+                        ]
+
+                  else
+                    Ui.viewBoldText "Play GIPF"
+                , Ui.viewText user.screenName
+                , Ui.viewText ("<" ++ user.email ++ ">")
+                ]
+
+            Nothing ->
+                [ Ui.viewBoldText "Play GIPF" ]
+        )
+        (case model.auth.user of
+            Just _ ->
+                [ Ui.viewLink "Sign out" (Routes.href Routes.SignOut) ]
+
+            Nothing ->
+                [ Ui.viewLink "Sign in" (Routes.href Routes.SignIn)
+                , Ui.viewLink "Sign up" (Routes.href Routes.SignUp)
+                ]
+        )
 
 
 view : Model -> Browser.Document Msg
@@ -232,7 +260,7 @@ view model =
         HomeSignedOut ->
             { title = "Play Gipf"
             , body =
-                [ viewSiteBar model
+                [ viewSiteBar model ""
                 , p [ class "p-4" ] [ text "Welcome to Play Gipf" ]
                 ]
             }
@@ -240,12 +268,12 @@ view model =
         HomeSignedIn ->
             { title = "Home"
             , body =
-                [ viewSiteBar model
-                , viewSection "Create game"
+                [ viewSiteBar model ""
+                , Ui.viewSection "Create game"
                     [ Html.map GamesMsg (Games.viewCreateNewGame model.game) ]
-                , viewSection "Joinable games"
+                , Ui.viewSection "Joinable games"
                     [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
-                , viewSection "Your games"
+                , Ui.viewSection "Your games"
                     [ Html.map GamesMsg (Games.viewOwnGamesList model.game)
                     ]
                 ]
@@ -254,7 +282,7 @@ view model =
         NotFound ->
             { title = "Page not found"
             , body =
-                [ viewSiteBar model
+                [ viewSiteBar model ""
                 , p [] [ text "Page not found" ]
                 ]
             }
@@ -273,7 +301,7 @@ view model =
         PlayGame playPageModel ->
             { title = "Play game"
             , body =
-                [ viewSiteBar model
+                [ viewSiteBar model ("Game " ++ String.fromInt playPageModel.gameId)
                 , Html.map PlayGameMsg (PlayGame.view playPageModel)
                 ]
             }

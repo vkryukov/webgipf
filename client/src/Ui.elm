@@ -1,7 +1,9 @@
 module Ui exposing
     ( Field
     , Form
+    , viewBoldLink
     , viewBoldText
+    , viewBreadcrumbs
     , viewErrorMessage
     , viewForm
     , viewH2
@@ -20,6 +22,7 @@ module Ui exposing
 import Html exposing (Html, a, button, div, h2, input, label, nav, span, table, tbody, td, text, th, thead, tr)
 import Html.Attributes exposing (checked, class, classList, placeholder, type_, value)
 import Html.Events exposing (onCheck, onClick, onInput)
+import Routes
 
 
 type alias Field msg =
@@ -130,7 +133,12 @@ viewNavBar items actions =
 
 viewLink : String -> Html.Attribute msg -> Html msg
 viewLink text_ attr =
-    a [ class "text-blue-500 hover:underline mr-4 cursor-pointer", attr ] [ text text_ ]
+    a [ class "text-blue-500 hover:underline cursor-pointer", attr ] [ text text_ ]
+
+
+viewBoldLink : String -> Html.Attribute msg -> Html msg
+viewBoldLink text_ attr =
+    a [ class "text-blue-500 hover:underline cursor-pointer font-bold", attr ] [ text text_ ]
 
 
 viewStringTable : List a -> List String -> List (a -> String) -> Html msg
@@ -206,3 +214,29 @@ viewRadio checked_ lbl checkMsg noOpMsg =
             []
         , label [ class "ml-2 block text-sm leading-5 text-gray-700" ] [ text lbl ]
         ]
+
+
+viewBreadcrumbs : List ( Routes.Route, String ) -> Html msg
+viewBreadcrumbs links =
+    let
+        -- Split the links into all but the last one, and the last one
+        allButLast =
+            List.take (List.length links - 1) links
+
+        last =
+            List.drop (List.length links - 1) links
+    in
+    div [ class "flex space-x-1 text-gray-500 mr-4" ]
+        (List.concatMap breadcrumbItem allButLast ++ List.concatMap lastBreadcrumbItem last)
+
+
+breadcrumbItem : ( Routes.Route, String ) -> List (Html msg)
+breadcrumbItem ( url, label ) =
+    [ div [] [ a [ Routes.href url, class "text-blue-500 hover:text-blue-700" ] [ text label ] ]
+    , div [] [ text "/" ]
+    ]
+
+
+lastBreadcrumbItem : ( Routes.Route, String ) -> List (Html msg)
+lastBreadcrumbItem ( url, label ) =
+    [ div [] [ text label ] ]

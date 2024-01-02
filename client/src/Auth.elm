@@ -333,32 +333,6 @@ viewSignUp model =
     viewForm form
 
 
-viewSiteBar : Model -> Html Msg
-viewSiteBar model =
-    -- TODO: Display whether email is verified
-    -- TODO: Add a button to resend verification email
-    viewNavBar
-        (case model.user of
-            Just user ->
-                [ viewSiteTitle "Play GIPF"
-                , viewBoldText user.screenName
-                , viewText ("<" ++ user.email ++ ">")
-                ]
-
-            Nothing ->
-                [ viewSiteTitle "Play GIPF" ]
-        )
-        (case model.user of
-            Just _ ->
-                [ viewLink "Sign out" (Routes.href Routes.SignOut) ]
-
-            Nothing ->
-                [ viewLink "Sign in" (Routes.href Routes.SignIn)
-                , viewLink "Sign up" (Routes.href Routes.SignUp)
-                ]
-        )
-
-
 view : Model -> Html Msg
 view model =
     case model.state of
