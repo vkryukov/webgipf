@@ -49,22 +49,12 @@ type alias Model =
     }
 
 
-init : () -> ( Model, Cmd msg )
-init =
-    \_ ->
-        {-
-           initFromString "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5"
-           initFromGame standardGame
-           initFromGame basicGame
-           one move creates two groups
-           initFromString "We1-e2 Ka1-b2 Wa5-b5 Ke9-e8 Wi5-h5 Ki1-h2 Wc7-c6 Ka3-b4 Wd8-d7 Ka3-b4 Wi4-h4 Ka3-b4"
-           initFromString "GWi3-h3 GKb6-c6 GWi2-h3 GKc7-c6 GWi2-h3 GKc7-c6 Wi4-h4 Ka5-b5 Wi3-h4 Ki4-h4 Wi3-h4 Kg7-g6 Wb6-c6 Kb6-c6 Wi3-h4 Kf8-f7 Wg1-f2 Ka5-b5 xf6,g6 Wa4-b5 Ka4-b5 Wd8-d7 Ke9-e8 xc5,d6,e7,f7 xe6,g4 Wb6-c6 Ka5-b5 Wh6-h5 Ki4-h5 Wi4-h5 Kg7-g6 Wi3-h4 Kh6-h5 Wa5-b5 Ki3-h3 Wi4-h4"
-        -}
-        initFromGame standardGame
-
-
 initFromGame : Game -> ( Model, Cmd msg )
 initFromGame game =
+    let
+        _ =
+            Debug.log "initFromGame called" game
+    in
     ( { game = game
       , kind = game.currentKind
       , highlightedPiece = Nothing
@@ -84,6 +74,25 @@ initFromGame game =
     )
 
 
+updateFromGame : Model -> Game -> Model
+updateFromGame model game =
+    { model
+        | game = game
+        , kind = game.currentKind
+        , highlightedPiece = Nothing
+        , moveFrom = Nothing
+        , moveTo = Nothing
+        , possibleMoves = availableMoves game.board
+        , autoSelected = autoSelectToRemove game
+        , selectedToDisambiguate = Nothing
+        , gipfsSelected = []
+        , gipfHovered = Nothing
+        , highlightActions = False
+        , lastMove = Nothing
+        , willBeRemoved = []
+    }
+
+
 initWithPlayer : String -> String -> String -> Model
 initWithPlayer gameType actions player =
     let
@@ -101,9 +110,6 @@ actionAllowed model =
     let
         actionPlayer =
             playerWithAction model
-
-        _ =
-            Debug.log "actionAllowed called" ( model.player, actionPlayer )
     in
     (model.player == "white" && actionPlayer == White) || (model.player == "black" && actionPlayer == Black)
 
@@ -116,7 +122,7 @@ receiveAction model action =
     in
     case g of
         Just g1 ->
-            initFromGame g1
+            ( updateFromGame model g1, Cmd.none )
 
         Nothing ->
             ( model, Cmd.none )
@@ -182,7 +188,7 @@ update msg model =
             case g of
                 Just g1 ->
                     -- move was valid
-                    initFromGame g1
+                    ( updateFromGame model g1, Cmd.none )
 
                 Nothing ->
                     -- move was invalid
@@ -207,7 +213,7 @@ update msg model =
             in
             case g of
                 Just g1 ->
-                    initFromGame g1
+                    ( updateFromGame model g1, Cmd.none )
 
                 Nothing ->
                     ( model, Cmd.none )
