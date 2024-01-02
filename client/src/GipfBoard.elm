@@ -37,7 +37,6 @@ type alias Model =
     , autoSelected : ( List Coord, List Coord )
     , selectedToDisambiguate : Maybe Coord
     , gipfsSelected : List Coord
-    , gipfHovered : Maybe Coord
 
     -- play related
     , player : String -- are we playing black or white
@@ -51,10 +50,6 @@ type alias Model =
 
 initFromGame : Game -> ( Model, Cmd msg )
 initFromGame game =
-    let
-        _ =
-            Debug.log "initFromGame called" game
-    in
     ( { game = game
       , kind = game.currentKind
       , highlightedPiece = Nothing
@@ -64,7 +59,6 @@ initFromGame game =
       , autoSelected = autoSelectToRemove game
       , selectedToDisambiguate = Nothing
       , gipfsSelected = []
-      , gipfHovered = Nothing -- TODO: Do we need this? We don't use it to draw anything.
       , player = ""
       , highlightActions = False
       , lastMove = Nothing
@@ -86,7 +80,6 @@ updateFromGame model game =
         , autoSelected = autoSelectToRemove game
         , selectedToDisambiguate = Nothing
         , gipfsSelected = []
-        , gipfHovered = Nothing
         , highlightActions = False
         , lastMove = Nothing
         , willBeRemoved = []
@@ -148,9 +141,8 @@ type Msg
     | RemovalDisambiguationEnter Coord
     | RemovalDisambiguationLeave Coord
     | RemovalDisambiguationClick Coord
-    | GipfEnter Coord
-    | GipfLeave Coord
     | GipfClicked Coord
+    | NoOp Coord
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -234,18 +226,15 @@ update msg model =
         RemovalDisambiguationClick coord ->
             ( { model | autoSelected = autoSelectToRemoveWithDisambiguation model.game coord }, Cmd.none )
 
-        GipfEnter coord ->
-            ( { model | gipfHovered = Just coord }, Cmd.none )
-
-        GipfLeave _ ->
-            ( { model | gipfHovered = Nothing }, Cmd.none )
-
         GipfClicked coord ->
             if List.member coord model.gipfsSelected then
                 ( { model | gipfsSelected = List.filter ((/=) coord) model.gipfsSelected }, Cmd.none )
 
             else
                 ( { model | gipfsSelected = coord :: model.gipfsSelected }, Cmd.none )
+
+        NoOp _ ->
+            ( model, Cmd.none )
 
 
 getActionToSend : Msg -> Model -> Maybe ( Int, String )
@@ -581,7 +570,7 @@ viewSelectionAndRemoval model =
         PlayerNeedsToToggleGipfPieces ->
             g []
                 (markedForRemoval
-                    ++ List.map (\p -> drawClickPoint p GipfEnter GipfEnter GipfClicked) (Tuple.second model.autoSelected)
+                    ++ List.map (\p -> drawClickPoint p NoOp NoOp GipfClicked) (Tuple.second model.autoSelected)
                 )
 
         PlayerNeedsToConfirmRemoval ->
