@@ -510,7 +510,7 @@ viewCurrentAction model =
                 g []
                     [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
                     , drawLightMark ( 8, 10 )
-                    , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -80 -10 12
+                    , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -90 -10 12
                     ]
 
             PlayerNeedsToConfirmRemoval ->
@@ -585,20 +585,21 @@ viewConfirmRemoveButton model =
 
     else
         div
-            [ class "flex flex-col items-center"
-            , style "position" "absolute"
-            , style "top" "75px"
-            , style "left" "540px"
+            [ style "position" "absolute"
+            , style "top" "90px"
+            , style "left" "560px"
             ]
-            [ div []
-                [ Ui.viewSmallPrimaryButton ( "Remove", RemovePieces )
-                ]
-            , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
-                div []
-                    [ Ui.viewSmallSecondaryButton ( "Cancel", CancelRemovePieces ) ]
+            [ div [ class "flex flex-col items-center" ]
+                [ div []
+                    [ Ui.viewSmallPrimaryButton ( "Remove", RemovePieces )
+                    ]
+                , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
+                    div []
+                        [ Ui.viewSmallSecondaryButton ( "Cancel", CancelRemovePieces ) ]
 
-              else
-                div [] []
+                  else
+                    div [] []
+                ]
             ]
 
 
@@ -626,7 +627,7 @@ view model =
         allowAction =
             actionAllowed model
     in
-    div [ style "position" "relative" ]
+    div [ style "position" "relative", class "p-4" ]
         [ svg
             [ width "610"
             , height "730"

@@ -126,7 +126,7 @@ viewText text_ =
 
 viewBoldText : String -> Html msg
 viewBoldText text_ =
-    div [ class "font-bold mr-4" ] [ text text_ ]
+    div [ class "font-bold" ] [ text text_ ]
 
 
 viewSiteTitle : String -> Html msg

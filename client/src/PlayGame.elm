@@ -1,13 +1,14 @@
 port module PlayGame exposing (..)
 
-import Browser
 import GipfBoard
-import Html exposing (Html, div, text)
+import Html exposing (Html, div, em, text)
+import Html.Attributes exposing (class)
 import Json.Decode as Decode
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode
 import MD5
 import Platform.Cmd as Cmd
+import Ui exposing (viewBoldText)
 
 
 port sendMessage : Encode.Value -> Cmd msg
@@ -54,6 +55,7 @@ type alias Model =
     , gameId : Int
     , playerToken : String
     , gameToken : String
+    , gameType : String
     , whitePlayer : String
     , blackPlayer : String
     , thisPlayer : String
@@ -65,7 +67,7 @@ type alias Model =
 initWithGameIdToken : Int -> String -> ( Model, Cmd Msg )
 initWithGameIdToken gameId token =
     let
-        ( model, cmd ) =
+        ( model, _ ) =
             init ()
 
         newModel =
@@ -87,6 +89,7 @@ init _ =
             , whitePlayer = ""
             , blackPlayer = ""
             , thisPlayer = ""
+            , gameType = ""
             , state = JoinRequestSent
             , error = Nothing
             }
@@ -238,6 +241,7 @@ update msg model =
                                         , whitePlayer = gameResponse.whitePlayer
                                         , blackPlayer = gameResponse.blackPlayer
                                         , thisPlayer = gameResponse.player
+                                        , gameType = gameResponse.gameType
                                         , state = Joined
                                         , board = board
                                       }
@@ -320,10 +324,30 @@ viewError model =
 
 viewGameInfo : Model -> Html Msg
 viewGameInfo model =
-    div []
-        [ div [] [ text ("White player: " ++ model.whitePlayer) ]
-        , div [] [ text ("Black player: " ++ model.blackPlayer) ]
-        , div [] [ text ("This player: " ++ model.thisPlayer) ]
+    let
+        whitePlayer =
+            if model.thisPlayer == "white" then
+                "You"
+
+            else
+                model.whitePlayer
+
+        blackPlayer =
+            if model.thisPlayer == "black" then
+                "You"
+
+            else
+                model.blackPlayer
+    in
+    div [ class "flex mt-2 ml-4" ]
+        [ div [ class "text-gray-500" ] [ viewBoldText model.gameType ]
+        , div [ class "w-8" ] []
+        , div [ class "flex" ]
+            [ viewBoldText whitePlayer, div [ class "w-1" ] [], text "(white)" ]
+        , div [ class "flex mx-4" ] [ em [] [ text " vs. " ] ]
+        , div
+            [ class "flex" ]
+            [ viewBoldText blackPlayer, div [ class "w-1" ] [], text "(black)" ]
         ]
 
 
@@ -336,7 +360,7 @@ view model =
                 div [] [ text "Joining..." ]
 
             Joined ->
-                div []
+                div [ class "w-full justify-center items-center" ]
                     [ viewGameInfo model
                     , viewBoard model.board
                     ]
@@ -356,12 +380,3 @@ viewBoard someBoard =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     messageReceiver WebSocketMessageReceived
-
-
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
