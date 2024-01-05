@@ -2,24 +2,26 @@
 
 [X] Implement "bread crumbs" on various pages to assist with navigation
 
-[ ] Fix buttons and fonts on /play
+[X] Fix buttons and fonts on /play
 
-[ ] Attemp to reconnect the websocket if the connection is closed
-
-[ ] Display game type
+[X] Display game type
 
 [ ] Allow to resign the game
+
+[ ] Correctly process the games that are over
+
+[ ] Allow to view past games
 
 [ ] Decide what to do with the screen name that currently have to be unique. For the MVP,
     requiring it to be unique is probably the best tactic.
 
 [ ] During the registration, if an error occurs, a corresponding field should be highlighted.
 
-[ ] Resend their verification link, and click on it to verify email
-
-[ ] See the status of their email verification in the status bar
-
 [ ] Compile and run the latest version on playgipf.com
+
+[ ] Only show top 20 games on games page
+
+[ ] Attemp to reconnect the websocket if the connection is closed
 
 
 ## Overall architecture and UI
@@ -59,6 +61,12 @@
 [X] The server should still check that the passwords match during registration
 
 [X] Use Token type everywhere where it matters in auth.go
+
+[ ] Resend their verification link, and click on it to verify email
+
+[ ] See the status of their email verification in the status bar
+
+
 
 ## User actions for signed-in user
 

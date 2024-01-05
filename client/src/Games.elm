@@ -11,7 +11,7 @@ module Games exposing
     )
 
 import Auth
-import Html exposing (Html, a, div, label, option, select, text)
+import Html exposing (Html, a, div, label, option, p, select, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onInput)
 import Http
@@ -21,7 +21,7 @@ import Json.Encode as Encode
 import Routes
 import ServerUtils exposing (HttpResult, parseResult, responseDecoder)
 import Time exposing (Month(..))
-import Ui exposing (viewErrorMessage, viewHtmlTable, viewPrimaryButton, viewRadio, viewSecondaryButton, viewSection)
+import Ui exposing (viewErrorMessage, viewHtmlTable, viewRadio, viewSecondaryButton, viewSmallPrimaryButton)
 
 
 type alias Model =
@@ -240,8 +240,14 @@ viewCreateNewGame model =
         div [] []
 
     else
-        viewSection "Create new game"
-            [ div [ class "flex items-center space-x-4" ]
+        div []
+            [ p [ class "mb-2" ]
+                [ text """You can create a new game here. Currently supported: 
+                1) GIPF basic (no GIPF pieces), 
+                2) GIPF standard (GIPF pieces in a standard starting position), and 
+                3) GIPF tournament (decide where to place GIPF pieces initially and how many).""" ]
+            , div
+                [ class "flex items-center space-x-4" ]
                 [ label [ class "mr-2" ] [ text "Select game type:" ]
                 , select [ class "form-select", onInput SelectGameType ]
                     [ option [] [ text "GIPF basic" ]
@@ -253,7 +259,7 @@ viewCreateNewGame model =
                     [ viewRadio (model.color == "white") "White" (SelectColor "white") NoOp
                     , viewRadio (model.color == "black") "Black" (SelectColor "black") NoOp
                     ]
-                , viewPrimaryButton ( "Create game", CreateGame )
+                , viewSmallPrimaryButton ( "Create game", CreateGame )
                 ]
             , viewErrorMessage model.error
             ]
@@ -283,11 +289,15 @@ viewOwnGamesList model =
 
 viewJoinableGamesList : Model -> Html Msg
 viewJoinableGamesList model =
-    viewHtmlTable model.joinableGames
-        [ "Game Id", "Game type", "White Player", "Black Player", "" ]
-        [ \game -> text (String.fromInt game.id)
-        , \game -> text game.gameType
-        , \game -> text game.whitePlayer
-        , \game -> text game.blackPlayer
-        , \game -> viewPrimaryButton ( "Join", JoinGame game.id )
-        ]
+    if model.joinableGames == [] then
+        div [] [ text "No games to join! Start a new game or wait for someone else to start one." ]
+
+    else
+        viewHtmlTable model.joinableGames
+            [ "Game Id", "Game type", "White Player", "Black Player", "" ]
+            [ \game -> text (String.fromInt game.id)
+            , \game -> text game.gameType
+            , \game -> text game.whitePlayer
+            , \game -> text game.blackPlayer
+            , \game -> viewSecondaryButton ( "Join", JoinGame game.id )
+            ]

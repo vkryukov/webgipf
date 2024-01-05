@@ -271,7 +271,7 @@ view model =
                 [ viewSiteBar model ""
                 , Ui.viewSection "Create game"
                     [ Html.map GamesMsg (Games.viewCreateNewGame model.game) ]
-                , Ui.viewSection "Joinable games"
+                , Ui.viewSection "Games you can join"
                     [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
                 , Ui.viewSection "Your games"
                     [ Html.map GamesMsg (Games.viewOwnGamesList model.game)
