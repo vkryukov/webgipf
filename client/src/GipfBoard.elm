@@ -1,7 +1,7 @@
 module GipfBoard exposing
     ( Model
     , Msg
-    , gameWon
+    , gameIsOver
     , getActionToSend
     , initWithPlayer
     , receiveAction
@@ -127,8 +127,8 @@ selected model =
     Tuple.first model.autoSelected ++ model.gipfsSelected
 
 
-gameWon : Model -> String
-gameWon model =
+gameIsOver : Model -> String
+gameIsOver model =
     if model.game.state == BlackWon then
         "black"
 

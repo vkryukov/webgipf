@@ -306,30 +306,30 @@ sendActionToBoard model action =
                 ( newBoard, cmd ) =
                     GipfBoard.receiveAction board action.action
 
-                gameWon =
-                    GipfBoard.gameWon newBoard
+                gameOver =
+                    GipfBoard.gameIsOver newBoard
 
-                gameWonCmd =
-                    if gameWon == "black" || gameWon == "white" then
-                        sendGameWon model gameWon
+                gameOverCmd =
+                    if gameOver /= "" then
+                        sendGameIsOver model gameOver
 
                     else
                         Cmd.none
             in
-            ( { model | board = GipfBoard newBoard }, Cmd.batch [ Cmd.map GipfBoardMsg cmd, gameWonCmd ] )
+            ( { model | board = GipfBoard newBoard }, Cmd.batch [ Cmd.map GipfBoardMsg cmd, gameOverCmd ] )
 
         _ ->
             ( model, Cmd.none )
 
 
-sendGameWon : Model -> String -> Cmd Msg
-sendGameWon model color =
+sendGameIsOver : Model -> String -> Cmd Msg
+sendGameIsOver model status =
     let
         message =
             { gameId = model.gameId
             , token = model.playerToken
-            , messageType = "GameWon"
-            , message = color
+            , messageType = "GameOver"
+            , message = status
             }
     in
     sendMessage (webSocketMessageEncoder message)
