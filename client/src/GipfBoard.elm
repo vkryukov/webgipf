@@ -1,6 +1,7 @@
 module GipfBoard exposing
     ( Model
     , Msg
+    , gameWon
     , getActionToSend
     , initWithPlayer
     , receiveAction
@@ -124,6 +125,18 @@ receiveAction model action =
 selected : Model -> List Coord
 selected model =
     Tuple.first model.autoSelected ++ model.gipfsSelected
+
+
+gameWon : Model -> String
+gameWon model =
+    if model.game.state == BlackWon then
+        "black"
+
+    else if model.game.state == WhiteWon then
+        "white"
+
+    else
+        ""
 
 
 
@@ -456,7 +469,19 @@ playerWithAction model =
 -}
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
-    if actionAllowed model then
+    if model.game.state == BlackWon then
+        g []
+            [ drawPiece (Piece ( 8, 10 ) Black Regular)
+            , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
+            ]
+
+    else if model.game.state == WhiteWon then
+        g []
+            [ drawPiece (Piece ( 8, 10 ) White Regular)
+            , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
+            ]
+
+    else if actionAllowed model then
         case currentSelectionState model of
             NothingToSelect ->
                 if model.game.state == WaitingForMove then
@@ -486,18 +511,8 @@ viewCurrentAction model =
                             , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
                             ]
 
-                else if model.game.state == BlackWon then
-                    g []
-                        [ drawPiece (Piece ( 8, 10 ) Black Regular)
-                        , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
-                        ]
-
                 else
-                    -- white won
-                    g []
-                        [ drawPiece (Piece ( 8, 10 ) White Regular)
-                        , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
-                        ]
+                    div [] []
 
             PlayerNeedsToDisambiguateRemoval ->
                 g []

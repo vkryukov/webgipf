@@ -6,9 +6,11 @@
 
 [X] Display game type
 
-[ ] Allow to resign the game
-
 [ ] Correctly process the games that are over
+    [X] fix the bug when the other player run out of pieces but the state of the game is not changed to 
+    "you won"
+
+[ ] Allow to resign the game
 
 [ ] Allow to view past games
 
@@ -26,9 +28,11 @@
 
 ## Overall architecture and UI
 
-[X] Main.elm should incorporate Auth.elm 
+[ ] Remove dead code
 
-[ ] Main.elm should incorporate Admin.elm
+[ ] Rename modules (e.g. Games to HomePage) to better match what's going on
+
+[X] Main.elm should incorporate Auth.elm 
 
 [X] Incorporate tailwindcss; ./run_dev.sh script should add tailwindcss rebuilding
 
@@ -36,6 +40,10 @@
     the database?
 
 [X] Dev mode should have an option to use a MockEmailServer for sending email.
+
+[ ] Main.elm should incorporate Admin.elm
+
+
 
 ## Improving Sign-in and sign-up
 

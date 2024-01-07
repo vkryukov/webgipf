@@ -305,11 +305,34 @@ sendActionToBoard model action =
             let
                 ( newBoard, cmd ) =
                     GipfBoard.receiveAction board action.action
+
+                gameWon =
+                    GipfBoard.gameWon newBoard
+
+                gameWonCmd =
+                    if gameWon == "black" || gameWon == "white" then
+                        sendGameWon model gameWon
+
+                    else
+                        Cmd.none
             in
-            ( { model | board = GipfBoard newBoard }, Cmd.map GipfBoardMsg cmd )
+            ( { model | board = GipfBoard newBoard }, Cmd.batch [ Cmd.map GipfBoardMsg cmd, gameWonCmd ] )
 
         _ ->
             ( model, Cmd.none )
+
+
+sendGameWon : Model -> String -> Cmd Msg
+sendGameWon model color =
+    let
+        message =
+            { gameId = model.gameId
+            , token = model.playerToken
+            , messageType = "GameWon"
+            , message = color
+            }
+    in
+    sendMessage (webSocketMessageEncoder message)
 
 
 viewError : Model -> Html Msg
