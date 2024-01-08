@@ -19,6 +19,7 @@ module Gipf exposing
     , boardPoints
     , boardToPieces
     , boardToString
+    , canSwitchFromGipfToBasic
     , connectedGroupOfFour
     , connectedGroupsOfFour
     , coordinatesSlice
@@ -1241,3 +1242,12 @@ autoSelectToRemoveWithDisambiguation game coord =
 
     else
         ( [], [] )
+
+
+canSwitchFromGipfToBasic : Game -> Bool
+canSwitchFromGipfToBasic game =
+    game.gameType
+        == TournamentGipf
+        && ((game.currentColor == Black && not game.blackPlayedNonGipf && game.blackGipfCount > 0)
+                || (game.currentColor == White && not game.whitePlayedNonGipf && game.whiteGipfCount > 0)
+           )

@@ -272,8 +272,8 @@ type Position
     | Right
 
 
-viewToolbar : List (ToolbarButton msg) -> Html msg
-viewToolbar buttons =
+viewToolbar : Html msg -> List (ToolbarButton msg) -> Html msg
+viewToolbar status buttons =
     let
         leftButtons =
             List.filter (\b -> b.position == Left && b.condition) buttons
@@ -295,8 +295,13 @@ viewToolbar buttons =
                 )
                 btns
     in
-    div [ class "flex flex-row justify-between border border-stone-400 rounded p-1" ]
-        [ div [ class "flex space-x-2" ] (displayButtons leftButtons)
-        , div [ class "flex space-x-2" ] (displayButtons centerButtons)
-        , div [ class "flex space-x-2" ] (displayButtons rightButtons)
+    div [ class "flex flex-row border border-stone-400 rounded p-1" ]
+        [ div [ class "flex mr-2 text-sm" ]
+            [ status ]
+        , div
+            [ class "flex flex-row grow justify-between" ]
+            [ div [ class "flex space-x-2" ] (displayButtons leftButtons)
+            , div [ class "flex space-x-2" ] (displayButtons centerButtons)
+            , div [ class "flex space-x-2" ] (displayButtons rightButtons)
+            ]
         ]

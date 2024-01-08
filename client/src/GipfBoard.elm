@@ -474,46 +474,20 @@ playerWithAction model =
 viewCurrentAction : Model -> Svg Msg
 viewCurrentAction model =
     if model.game.state == BlackWon then
-        g []
-            [ drawPiece (Piece ( 8, 10 ) Black Regular)
-            , drawMultilineTextAtCoord "Black\nWon!" ( 8, 10 ) -25 35 10
-            ]
+        drawPiece (Piece ( 8, 10 ) Black Regular)
 
     else if model.game.state == WhiteWon then
-        g []
-            [ drawPiece (Piece ( 8, 10 ) White Regular)
-            , drawMultilineTextAtCoord "White\nWon!" ( 8, 10 ) -25 35 10
-            ]
+        drawPiece (Piece ( 8, 10 ) White Regular)
 
     else if actionAllowed model then
         case currentSelectionState model of
             NothingToSelect ->
                 if model.game.state == WaitingForMove then
-                    if
-                        -- TODO: Move this logic to Gipf.elm
-                        (model.game.currentKind == Regular)
-                            || (not model.game.isBasicGame
-                                    -- In the tournament, you have to play at least one Gipf piece
-                                    && ((model.game.currentColor == Black && model.game.blackGipfCount == 0)
-                                            || (model.game.currentColor == White && model.game.whiteGipfCount == 0)
-                                       )
-                               )
-                    then
-                        drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
+                    if canSwitchFromGipfToBasic model.game then
+                        drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
 
                     else
-                        let
-                            pieceLabel =
-                                if model.kind == Regular then
-                                    "Gipf"
-
-                                else
-                                    "Regular"
-                        in
-                        g []
-                            [ drawPieceWithAction (Piece ( 8, 10 ) model.game.currentColor model.kind) "click" ChangeKind
-                            , drawMultilineTextAtCoord ("Click to\nchange\nto " ++ pieceLabel) ( 8, 10 ) -25 35 10
-                            ]
+                        drawPiece (Piece ( 8, 10 ) model.game.currentColor model.game.currentKind)
 
                 else
                     div [] []
@@ -522,21 +496,16 @@ viewCurrentAction model =
                 g []
                     [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
                     , drawLightMark ( 8, 10 )
-                    , drawMultilineTextAtCoord "Select a\ngroup to\nremove" ( 8, 10 ) -70 -10 12
                     ]
 
             PlayerNeedsToToggleGipfPieces ->
                 g []
                     [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Gipf)
                     , drawLightMark ( 8, 10 )
-                    , drawMultilineTextAtCoord "Toggle Gipf\npieces\nto remove" ( 8, 10 ) -90 -10 12
                     ]
 
             PlayerNeedsToConfirmRemoval ->
-                g []
-                    [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
-                    , drawMultilineTextAtCoord "Click to\nconfirm" ( 8, 10 ) -70 -10 12
-                    ]
+                drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular)
 
     else
         g [] [ drawPiece (Piece ( 8, 10 ) (playerWithAction model) Regular) ]
@@ -621,7 +590,10 @@ view model =
         allowAction =
             actionAllowed model
     in
-    div [ class "p-4", style "width" "642px" ]
+    div
+        [ class "p-4"
+        , style "width" "642px" -- 642 = 610 (width of the board) + 2 * 4 * 4px (p-4 padding)
+        ]
         [ div [ class "mb-2" ]
             [ viewToolbar model ]
         , svg
@@ -648,8 +620,6 @@ view model =
             ]
         , div
             [ style "text-align" "left"
-
-            --  , style "width" "610px"
             , style "word-wrap" "break-word"
             ]
             [ p [] [ text (actionsToString model.game.actionHistory) ]
@@ -666,6 +636,10 @@ viewToolbar model =
         areSelected =
             selected model /= []
 
+        yourMove =
+            (model.player == "black" && model.game.currentColor == Black)
+                || (model.player == "white" && model.game.currentColor == White)
+
         buttons =
             [ Ui.ToolbarButton "Remove"
                 RemovePieces
@@ -680,11 +654,68 @@ viewToolbar model =
                     && ((List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1))
                 )
                 Ui.Left
+            , Ui.ToolbarButton
+                ("Change to "
+                    ++ (if model.kind == Gipf then
+                            "regular piece"
+
+                        else
+                            "GIPF piece"
+                       )
+                )
+                ChangeKind
+                False
+                (yourMove && canSwitchFromGipfToBasic model.game)
+                Ui.Left
             , Ui.ToolbarButton "Resign"
                 ResignGame
                 False
                 True
                 Ui.Right
             ]
+
+        selectionState =
+            currentSelectionState model
+
+        remainingPieces =
+            if model.game.currentColor == White then
+                model.game.whiteCount.own
+
+            else
+                model.game.blackCount.own
+
+        status =
+            if model.game.state == BlackWon then
+                text "Black won"
+
+            else if model.game.state == WhiteWon then
+                text "White won"
+
+            else if selectionState == PlayerNeedsToDisambiguateRemoval then
+                text "Select a group to remove"
+
+            else if selectionState == PlayerNeedsToToggleGipfPieces then
+                text "Click on your own GIPF pieces to toggle removal"
+
+            else if selectionState == PlayerNeedsToConfirmRemoval then
+                text "Confirm removal"
+
+            else if yourMove then
+                if remainingPieces < 5 then
+                    let
+                        piecesStr =
+                            if remainingPieces == 1 then
+                                "piece"
+
+                            else
+                                "pieces"
+                    in
+                    div [ class "text-red-500" ] [ text ("Your move (" ++ String.fromInt remainingPieces ++ " " ++ piecesStr ++ " left)") ]
+
+                else
+                    text "Your move"
+
+            else
+                text "Your opponent's move"
     in
-    Ui.viewToolbar buttons
+    Ui.viewToolbar status buttons
