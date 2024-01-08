@@ -254,7 +254,7 @@ update msg model =
 getActionToSend : Msg -> Model -> Maybe ( Int, String )
 getActionToSend msg model =
     case msg of
-        MoveMade move ->
+        MoveMade _ ->
             Just (lastAction model.game)
 
         RemovePieces ->
