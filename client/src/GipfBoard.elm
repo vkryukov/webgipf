@@ -151,6 +151,7 @@ type Msg
     | ChangeKind
     | RemovePieces
     | CancelRemovePieces
+    | ResignGame
     | RemovalDisambiguationEnter Coord
     | RemovalDisambiguationLeave Coord
     | RemovalDisambiguationClick Coord
@@ -230,6 +231,9 @@ update msg model =
               }
             , Cmd.none
             )
+
+        ResignGame ->
+            ( model, Cmd.none )
 
         RemovalDisambiguationEnter coord ->
             ( { model | selectedToDisambiguate = Just coord }, Cmd.none )
@@ -593,31 +597,6 @@ viewSelectionAndRemoval model =
             g [] markedForRemoval
 
 
-viewConfirmRemoveButton : Model -> Html Msg
-viewConfirmRemoveButton model =
-    if selected model == [] then
-        div [] []
-
-    else
-        div
-            [ style "position" "absolute"
-            , style "top" "90px"
-            , style "left" "560px"
-            ]
-            [ div [ class "flex flex-col items-center" ]
-                [ div []
-                    [ Ui.viewSmallPrimaryButton ( "Remove", RemovePieces )
-                    ]
-                , if (List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1) then
-                    div []
-                        [ Ui.viewSmallSecondaryButton ( "Cancel", CancelRemovePieces ) ]
-
-                  else
-                    div [] []
-                ]
-            ]
-
-
 viewActionHighlights : Model -> Svg msg
 viewActionHighlights model =
     if model.highlightActions then
@@ -642,8 +621,10 @@ view model =
         allowAction =
             actionAllowed model
     in
-    div [ style "position" "relative", class "p-4" ]
-        [ svg
+    div [ class "p-4", style "width" "642px" ]
+        [ div [ class "mb-2" ]
+            [ viewToolbar model ]
+        , svg
             [ width "610"
             , height "730"
             , viewBox "0 0 610 730"
@@ -665,16 +646,45 @@ view model =
               else
                 g [] []
             ]
-        , if allowAction then
-            viewConfirmRemoveButton model
-
-          else
-            div [] []
         , div
             [ style "text-align" "left"
-            , style "width" "610px"
+
+            --  , style "width" "610px"
             , style "word-wrap" "break-word"
             ]
             [ p [] [ text (actionsToString model.game.actionHistory) ]
             ]
         ]
+
+
+viewToolbar : Model -> Html Msg
+viewToolbar model =
+    let
+        allowAction =
+            actionAllowed model
+
+        areSelected =
+            selected model /= []
+
+        buttons =
+            [ Ui.ToolbarButton "Remove"
+                RemovePieces
+                True
+                (allowAction && areSelected)
+                Ui.Left
+            , Ui.ToolbarButton "Cancel"
+                CancelRemovePieces
+                False
+                (allowAction
+                    && areSelected
+                    && ((List.length model.game.currentPlayerFourStones > 1) || (List.length model.game.otherPlayerFourStones > 1))
+                )
+                Ui.Left
+            , Ui.ToolbarButton "Resign"
+                ResignGame
+                False
+                True
+                Ui.Right
+            ]
+    in
+    Ui.viewToolbar buttons

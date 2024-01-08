@@ -1,6 +1,8 @@
 module Ui exposing
     ( Field
     , Form
+    , Position(..)
+    , ToolbarButton
     , viewBoldLink
     , viewBoldText
     , viewBreadcrumbs
@@ -19,6 +21,7 @@ module Ui exposing
     , viewSmallSecondaryButton
     , viewStringTable
     , viewText
+    , viewToolbar
     )
 
 import Html exposing (Html, a, button, div, h2, input, label, nav, span, table, tbody, td, text, th, thead, tr)
@@ -252,3 +255,48 @@ breadcrumbItem ( url, label ) =
 lastBreadcrumbItem : ( Routes.Route, String ) -> List (Html msg)
 lastBreadcrumbItem ( url, label ) =
     [ div [] [ text label ] ]
+
+
+type alias ToolbarButton msg =
+    { label : String
+    , message : msg
+    , isPrimary : Bool
+    , condition : Bool
+    , position : Position
+    }
+
+
+type Position
+    = Left
+    | Center
+    | Right
+
+
+viewToolbar : List (ToolbarButton msg) -> Html msg
+viewToolbar buttons =
+    let
+        leftButtons =
+            List.filter (\b -> b.position == Left && b.condition) buttons
+
+        centerButtons =
+            List.filter (\b -> b.position == Center && b.condition) buttons
+
+        rightButtons =
+            List.filter (\b -> b.position == Right && b.condition) buttons
+
+        displayButtons btns =
+            List.map
+                (\b ->
+                    if b.isPrimary then
+                        viewSmallPrimaryButton ( b.label, b.message )
+
+                    else
+                        viewSmallSecondaryButton ( b.label, b.message )
+                )
+                btns
+    in
+    div [ class "flex flex-row justify-between border border-stone-400 rounded p-1" ]
+        [ div [ class "flex space-x-2" ] (displayButtons leftButtons)
+        , div [ class "flex space-x-2" ] (displayButtons centerButtons)
+        , div [ class "flex space-x-2" ] (displayButtons rightButtons)
+        ]

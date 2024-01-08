@@ -20,3 +20,26 @@ Here is a redesigned minimal interface between PlayGame and different games:
 
 3. An exposed `GipfBoard.lastAction` method that should be called and the respective action
    should be sent to the server if the message belongs to the list `updateAction` messages.
+
+
+## Toolbar for GipfBoard.elm
+
+Right now, `GipfBoard.view` displays buttons and messages in a few places:
+
+1. `viewConfirmRemoveButton`
+   We show Remove and Cancel button, based on certain conditions using
+   viewSmall(Primary|Secondary)Button
+
+2. `viewCurrentAction`
+   Uses drawMultilineTextAtCoord to display various statuses
+
+3. `viewSelectionAndRemoval`
+   Mostly affects the boards depending on the various state of
+   the position (`currentSelectionState model`)
+
+4. `viewPossibleMoves`
+   Only affects edge points, so can be ignored for now
+
+We can replace the 1 and 2 with the toolbar and a status text below it.
+The toolbar will show a bunch of buttons, whether primary or secondary,
+based on a certain condition.
