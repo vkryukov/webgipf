@@ -3,7 +3,7 @@ module App exposing (Model, Msg(..), init, main, subscriptions, update, view)
 import Auth
 import Browser
 import Browser.Navigation as Nav
-import Games
+import HomePage
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Encode as Encode
@@ -47,7 +47,7 @@ type alias Model =
     { key : Nav.Key
     , page : Page
     , auth : Auth.Model
-    , game : Games.Model
+    , game : HomePage.Model
     }
 
 
@@ -58,7 +58,7 @@ init flags url key =
             Auth.init flags
 
         ( game, gameCmd ) =
-            Games.init auth.user
+            HomePage.init auth.user
 
         initialModel =
             Model key NotFound auth game
@@ -71,7 +71,7 @@ init flags url key =
     , Cmd.batch
         [ cmd
         , Cmd.map AuthMsg authCmd
-        , Cmd.map GamesMsg gameCmd
+        , Cmd.map HomePageMsg gameCmd
         ]
     )
 
@@ -84,7 +84,7 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | NewRoute (Maybe Routes.Route)
     | AuthMsg Auth.Msg
-    | GamesMsg Games.Msg
+    | HomePageMsg HomePage.Msg
     | PlayGameMsg PlayGame.Msg
     | NoOp
 
@@ -96,9 +96,9 @@ setNewPage maybeRoute model =
             if Auth.isAuthenticated model.auth then
                 let
                     ( games, gamesCmd ) =
-                        Games.updateModelWithUser model.auth.user model.game
+                        HomePage.updateModelWithUser model.auth.user model.game
                 in
-                ( { model | page = HomeSignedIn, game = games }, Cmd.map GamesMsg gamesCmd )
+                ( { model | page = HomeSignedIn, game = games }, Cmd.map HomePageMsg gamesCmd )
 
             else
                 ( { model | page = HomeSignedOut }, Cmd.none )
@@ -185,12 +185,12 @@ update msg model =
                 ]
             )
 
-        ( HomeSignedIn, GamesMsg gamesMsg ) ->
+        ( HomeSignedIn, HomePageMsg gamesMsg ) ->
             let
                 ( games, gamesCmd ) =
-                    Games.update gamesMsg model.game
+                    HomePage.update gamesMsg model.game
             in
-            ( { model | game = games }, Cmd.map GamesMsg gamesCmd )
+            ( { model | game = games }, Cmd.map HomePageMsg gamesCmd )
 
         ( PlayGame playGameModel, PlayGameMsg playGameMsg ) ->
             let
@@ -270,11 +270,11 @@ view model =
             , body =
                 [ viewSiteBar model ""
                 , Ui.viewSection "Create game"
-                    [ Html.map GamesMsg (Games.viewCreateNewGame model.game) ]
+                    [ Html.map HomePageMsg (HomePage.viewCreateNewGame model.game) ]
                 , Ui.viewSection "Games you can join"
-                    [ Html.map GamesMsg (Games.viewJoinableGamesList model.game) ]
+                    [ Html.map HomePageMsg (HomePage.viewJoinableGamesList model.game) ]
                 , Ui.viewSection "Your games"
-                    [ Html.map GamesMsg (Games.viewOwnGamesList model.game)
+                    [ Html.map HomePageMsg (HomePage.viewOwnGamesList model.game)
                     ]
                 ]
             }

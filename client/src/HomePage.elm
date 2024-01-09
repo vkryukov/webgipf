@@ -1,4 +1,4 @@
-module Games exposing
+module HomePage exposing
     ( Model
     , Msg(..)
     , cancelGame
@@ -247,8 +247,8 @@ viewCreateNewGame model =
                 2) GIPF standard (GIPF pieces in a standard starting position), and 
                 3) GIPF tournament (decide where to place GIPF pieces initially and how many).""" ]
             , div
-                [ class "flex items-center space-x-4" ]
-                [ label [ class "mr-2" ] [ text "Select game type:" ]
+                [ class "flex items-center space-x-4 bg-cyan-100 rounded p-3" ]
+                [ label [ class "mr-2" ] [ text "Game type:" ]
                 , select [ class "form-select", onInput SelectGameType ]
                     [ option [] [ text "GIPF basic" ]
                     , option [] [ text "GIPF standard" ]
